@@ -2,123 +2,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Home</title>
-
+    <title>Sistema Académico</title>
     <style>
-        body{
-            margin: 0;
-            font-family: 'Segoe UI', sans-serif;
-            background-image: url("{% static 'img/fondo.jpg' %}");
-            background-size: cover;
-            background-position: center;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        /* ===== NAVBAR ===== */
-        .navbar{
-            width: 95%;
-            margin: 20px auto 0 auto;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            border-radius: 20px;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-        }
-
-        .navbar h2{
-            color: white;
-            margin: 0;
-            font-size: 22px;
-            font-weight: 600;
-        }
-
-        .nav-buttons{
-            display: flex;
-            gap: 15px;
-        }
-
-        .nav-buttons a{
-            text-decoration: none;
-            padding: 10px 25px;
-            border-radius: 12px;
-            font-size: 15px;
-            font-weight: 500;
-            background: rgba(255,255,255,0.2);
-            color: white;
-            transition: 0.3s;
-        }
-
-        .nav-buttons a:hover{
-            background: rgba(255,255,255,0.4);
-            transform: scale(1.05);
-        }
-
-        /* ===== CONTENIDO CENTRAL ===== */
-        .container{
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-        }
-
-        .box{
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            padding: 60px;
-            border-radius: 20px;
-            text-align: center;
-            width: 400px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-        }
-
-        /* ===== TEXTO SECRETO ABAJO DERECHA ===== */
-        .secret-link{
-            position: absolute;
-            bottom: 20px;
-            right: 25px;
-            font-size: 15px;
-            color: #ffb6d9; /* rosado suave */
-            text-decoration: none;
-            transition: 0.3s;
-        }
-
-        .secret-link:hover{
-            color: #ff69b4;
-            text-decoration: underline;
-        }
-
+        body{margin:0;font-family:'Segoe UI',sans-serif;background-image:url("{% static 'img/fondo.jpg' %}");background-size:cover;background-position:center;height:100vh;display:flex;flex-direction:column;position:relative;}
+        .navbar{width:95%;margin:20px auto 0;background:rgba(11,61,145,.55);backdrop-filter:blur(15px);border-radius:20px;padding:20px 40px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 8px 32px rgba(0,0,0,.3);}
+        .navbar h2,.container{color:white}.nav-buttons{display:flex;gap:15px}
+        .nav-buttons a{text-decoration:none;padding:10px 25px;border-radius:12px;font-size:15px;background:rgba(133,193,233,.35);color:white;transition:.3s}
+        .nav-buttons a:hover{background:rgba(174,214,241,.6);transform:scale(1.05)}
+        .container{flex:1;display:flex;justify-content:center;align-items:center}
+        .box{background:rgba(11,61,145,.55);backdrop-filter:blur(15px);padding:60px;border-radius:20px;text-align:center;width:430px;box-shadow:0 8px 32px rgba(0,0,0,.3)}
+        .secret-link{position:absolute;bottom:20px;right:25px;font-size:15px;color:#d6eaf8;text-decoration:none;transition:.3s}
+        .secret-link:hover{color:#85c1e9;text-decoration:underline}
     </style>
 </head>
-
 <body>
-
     <div class="navbar">
-        <h2>Proyecto Contabilidad</h2>
-
+        <h2>Sistema Académico</h2>
         <div class="nav-buttons">
             <a href="{% url 'login' %}">Iniciar Sesión</a>
             <a href="{% url 'register' %}">Registrarse</a>
         </div>
     </div>
-
-    <div class="container">
-        <div class="box">
-            <h1>Bienvenido</h1>
-            <p>Gestiona tu sistema contable de forma rápida y segura.</p>
-        </div>
-    </div>
-
-    <!-- TEXTO SECRETO -->
-    <a href="{% url 'meme' %}" class="secret-link">
-        Solo hacer click si es el Inge
-    </a>
-
+    <div class="container"><div class="box"><h1>Bienvenido</h1><p>Administra estudiantes y profesores de forma rápida y segura.</p></div></div>
+    <a href="{% url 'meme' %}" class="secret-link">Solo hacer click si es el Inge</a>
 </body>
 </html>
