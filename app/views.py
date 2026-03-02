@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
 from django.contrib import messages
+from django.db import OperationalError
 from .forms import RegistroForm
 from .models import Usuario
 
@@ -23,9 +24,18 @@ def register(request):
 
         # Si el formulario es válido (ya valida usuario, email, contraseñas)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Usuario registrado correctamente.")
-            return redirect('login')
+            try:
+                form.save()
+                messages.success(request, "Usuario registrado correctamente.")
+                return redirect('login')
+            except OperationalError as error:
+                if 'tipo_usuario' in str(error):
+                    messages.error(
+                        request,
+                        "La base de datos está desactualizada. Ejecute: python manage.py migrate"
+                    )
+                else:
+                    raise
 
         else:
             # Si hay errores, se enviarán al template automáticamente
