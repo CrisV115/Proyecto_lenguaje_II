@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>「 ✦ Registrarse ✦ 」</title>
+    <title>Registro Académico</title>
 
     <style>
         body {
@@ -18,153 +18,113 @@
         }
 
         .container {
-            background: linear-gradient(135deg, rgba(140, 0, 255, 0.45), rgba(255, 0, 200, 0.45));
+            background: linear-gradient(135deg, rgba(7, 74, 142, 0.8), rgba(41, 128, 185, 0.8));
             padding: 35px;
             border-radius: 20px;
-            width: 400px;
+            width: 420px;
             color: white;
             backdrop-filter: blur(12px);
             box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
         }
 
-        h2 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        label {
-            font-size: 14px;
-            display: block;
-            margin-top: 10px;
-            margin-bottom: 5px;
-        }
+        h2 { text-align: center; margin-bottom: 20px; }
+        label { font-size: 14px; display: block; margin-top: 10px; margin-bottom: 5px; }
 
         input, select {
-            width: 100%;
-            padding: 12px;
-            border-radius: 12px;
-            border: none;
-            outline: none;
-            margin-bottom: 5px;
-            font-size: 14px;
-            background: rgba(255, 255, 255, 0.9);
+            width: 100%; padding: 12px; border-radius: 12px; border: none; outline: none;
+            margin-bottom: 5px; font-size: 14px; background: rgba(255, 255, 255, 0.95);
         }
 
-        input:focus, select:focus {
-            box-shadow: 0 0 5px #ff00c8;
-        }
+        input:focus, select:focus { box-shadow: 0 0 5px #5dade2; }
 
-        .btn-group {
-            display: flex;
-            justify-content: space-between;
-            gap: 10px;
-            margin-top: 15px;
-        }
+        .btn-group { display: flex; justify-content: space-between; gap: 10px; margin-top: 15px; }
 
         .btn {
-            flex: 1;
-            padding: 12px;
-            border-radius: 20px;
-            border: none;
-            font-weight: bold;
-            font-size: 14px;
-            font-family: Arial, sans-serif;
-            cursor: pointer;
-            transition: 0.3s;
-            text-decoration: none;
-            color: white;
-            text-align: center;
-            background: linear-gradient(45deg, #8c00ff, #ff00c8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            flex: 1; padding: 12px; border-radius: 20px; border: none;
+            font-weight: bold; font-size: 14px; font-family: Arial, sans-serif; cursor: pointer;
+            transition: 0.3s; text-decoration: none; color: white; text-align: center;
+            background: linear-gradient(45deg, #1b4f72, #2e86c1);
+            display: flex; align-items: center; justify-content: center;
         }
 
-        button.btn {
-            appearance: none;
-            -webkit-appearance: none;
-        }
-
-        .btn:hover {
-            transform: scale(1.05);
-            opacity: 0.9;
-        }
-
-        .error {
-            color: #ffcccc;
-            font-size: 12px;
-            margin-bottom: 8px;
-        }
+        .btn:hover { transform: scale(1.05); opacity: 0.9; }
+        .error { color: #d6eaf8; font-size: 12px; margin-bottom: 8px; }
+        .help { font-size: 12px; color: #ebf5fb; margin-top: 2px; }
     </style>
 </head>
 
 <body>
-
 <div class="container">
-    <h2>Registro</h2>
+    <h2>Registro del Sistema Académico</h2>
 
     <form method="POST">
         {% csrf_token %}
 
         {% if form.non_field_errors %}
-            <div class="error">
-                {{ form.non_field_errors }}
-            </div>
+            <div class="error">{{ form.non_field_errors }}</div>
         {% endif %}
 
         <label>Usuario</label>
         {{ form.username }}
-        {% if form.username.errors %}
-            <div class="error">{{ form.username.errors }}</div>
-        {% endif %}
+        {% if form.username.errors %}<div class="error">{{ form.username.errors }}</div>{% endif %}
 
         <label>Correo</label>
         {{ form.email }}
-        {% if form.email.errors %}
-            <div class="error">{{ form.email.errors }}</div>
-        {% endif %}
+        {% if form.email.errors %}<div class="error">{{ form.email.errors }}</div>{% endif %}
 
         <label>Número de Teléfono</label>
         {{ form.telefono }}
-        {% if form.telefono.errors %}
-            <div class="error">{{ form.telefono.errors }}</div>
-        {% endif %}
+        {% if form.telefono.errors %}<div class="error">{{ form.telefono.errors }}</div>{% endif %}
+
+        <label>Tipo de Usuario</label>
+        {{ form.tipo_usuario }}
+        {% if form.tipo_usuario.errors %}<div class="error">{{ form.tipo_usuario.errors }}</div>{% endif %}
+
+        <div id="codigo-profesor-container" style="display: none;">
+            <label>Código de Verificación del Profesor</label>
+            {{ form.codigo_verificacion_profesor }}
+            <div class="help">Solicítalo al administrador académico.</div>
+            {% if form.codigo_verificacion_profesor.errors %}
+                <div class="error">{{ form.codigo_verificacion_profesor.errors }}</div>
+            {% endif %}
+        </div>
 
         <label>Contraseña</label>
         {{ form.password1 }}
-        {% if form.password1.errors %}
-            <div class="error">{{ form.password1.errors }}</div>
-        {% endif %}
+        {% if form.password1.errors %}<div class="error">{{ form.password1.errors }}</div>{% endif %}
 
         <label>Repetir Contraseña</label>
         {{ form.password2 }}
-        {% if form.password2.errors %}
-            <div class="error">{{ form.password2.errors }}</div>
-        {% endif %}
+        {% if form.password2.errors %}<div class="error">{{ form.password2.errors }}</div>{% endif %}
 
         <label>Pregunta de Seguridad</label>
         {{ form.pregunta_seguridad }}
-        {% if form.pregunta_seguridad.errors %}
-            <div class="error">{{ form.pregunta_seguridad.errors }}</div>
-        {% endif %}
+        {% if form.pregunta_seguridad.errors %}<div class="error">{{ form.pregunta_seguridad.errors }}</div>{% endif %}
 
         <label>Respuesta de Seguridad</label>
         {{ form.respuesta_seguridad }}
-        {% if form.respuesta_seguridad.errors %}
-            <div class="error">{{ form.respuesta_seguridad.errors }}</div>
-        {% endif %}
+        {% if form.respuesta_seguridad.errors %}<div class="error">{{ form.respuesta_seguridad.errors }}</div>{% endif %}
 
         <div class="btn-group">
-            <button type="submit" class="btn">
-                Registrarse
-            </button>
-
-            <a href="{% url 'home' %}" class="btn">
-                Volver al Inicio
-            </a>
+            <button type="submit" class="btn">Registrarse</button>
+            <a href="{% url 'home' %}" class="btn">Volver al Inicio</a>
         </div>
     </form>
 </div>
+
+<script>
+    const tipoUsuario = document.getElementById('id_tipo_usuario');
+    const codigoContainer = document.getElementById('codigo-profesor-container');
+
+    function toggleCodigoProfesor() {
+        codigoContainer.style.display = tipoUsuario.value === 'profesor' ? 'block' : 'none';
+    }
+
+    if (tipoUsuario) {
+        tipoUsuario.addEventListener('change', toggleCodigoProfesor);
+        toggleCodigoProfesor();
+    }
+</script>
 
 </body>
 </html>
