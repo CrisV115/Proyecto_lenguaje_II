@@ -1,0 +1,206 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo de Estudiantes</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #eef3fb;
+            color: #1b2a4e;
+            display: flex;
+        }
+
+        .sidebar {
+            width: 220px;
+            background: #f7f9ff;
+            border-right: 1px solid #dbe5f5;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px 12px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            color: #1b4f72;
+            font-weight: 700;
+        }
+
+        .brand-badge {
+            width: 30px;
+            height: 30px;
+            border-radius: 9px;
+            background: linear-gradient(135deg, #1b4f72, #2e86c1);
+            color: white;
+            display: grid;
+            place-items: center;
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .menu-item {
+            background: rgba(46, 134, 193, 0.15);
+            color: #2e86c1;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .logout {
+            color: #e74c3c;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .content {
+            flex: 1;
+            padding: 28px;
+        }
+
+        .header {
+            background: #ffffff;
+            border: 1px solid #dbe5f5;
+            border-radius: 16px;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #2c6fd6, #5248e8);
+            border-radius: 26px;
+            padding: 34px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .hero h1 { margin: 0 0 10px; font-size: 44px; }
+        .hero p { margin: 0; max-width: 520px; line-height: 1.4; }
+
+        .stats { display: flex; gap: 14px; }
+
+        .stat {
+            min-width: 105px;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 18px;
+            text-align: center;
+            padding: 14px;
+            backdrop-filter: blur(3px);
+        }
+
+        .stat strong { display: block; font-size: 28px; }
+        .stat span { font-size: 11px; letter-spacing: .7px; }
+
+        .card {
+            margin-top: 24px;
+            background: #ffffff;
+            border: 1px solid #dbe5f5;
+            border-radius: 16px;
+            padding: 18px;
+            max-width: 580px;
+            box-shadow: 0 10px 25px rgba(60, 90, 140, 0.08);
+        }
+
+        .progress {
+            margin-top: 10px;
+            width: 100%;
+            height: 8px;
+            border-radius: 999px;
+            background: #e9eef8;
+            overflow: hidden;
+        }
+
+        .progress > div {
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg, #5c76ff, #7889ff);
+        }
+
+        .disabled-btn {
+            margin-top: 16px;
+            border: none;
+            background: #10203d;
+            color: white;
+            border-radius: 10px;
+            padding: 11px 20px;
+            font-weight: 700;
+            font-size: 12px;
+            opacity: .8;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div>
+            <div class="brand">
+                <div class="brand-badge">E</div>
+                <span>EduPro</span>
+            </div>
+
+            <div class="menu-item">Mi Panel</div>
+        </div>
+
+        <a href="{% url 'home' %}" class="logout">↪ Salir</a>
+    </aside>
+
+    <main class="content">
+        <div class="header">
+            <div>
+                <strong>EduPro Académico</strong><br>
+                <small>Instituto de Formación Superior</small>
+            </div>
+            <div>
+                <strong>María García</strong><br>
+                <small>Student</small>
+            </div>
+        </div>
+
+        <section class="hero">
+            <div>
+                <h1>¡Hola, María!</h1>
+                <p>Tu camino hacia la excelencia comienza aquí. Completa tu inducción para desbloquear todas las funciones.</p>
+            </div>
+
+            <div class="stats">
+                <div class="stat">
+                    <strong>1</strong>
+                    <span>CURSOS</span>
+                </div>
+                <div class="stat">
+                    <strong>0</strong>
+                    <span>LOGROS</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h3>Inducción a la Vida Universitaria</h3>
+            <small>2 módulos académicos</small>
+            <div class="progress"><div></div></div>
+            <button class="disabled-btn" type="button" disabled>CONTINUAR</button>
+        </section>
+    </main>
+</body>
+</html>

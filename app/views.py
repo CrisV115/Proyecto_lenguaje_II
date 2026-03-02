@@ -56,7 +56,7 @@ def login_view(request):
 
         if user is not None:
             login(request, user)
-            return redirect("home")
+            return redirect("estudiantes")
         else:
             messages.error(request, "Usuario o contraseña incorrectos.")
             return redirect("login")
@@ -129,3 +129,6 @@ def password_reset(request):
 
 def meme(request):
     return render(request, 'meme.html')
+
+def estudiantes(request):
+    return render(request, 'estudiantes.html')

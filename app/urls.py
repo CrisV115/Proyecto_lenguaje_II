@@ -8,6 +8,7 @@ urlpatterns = [
     path('register/', views.register, name='register'),
     path('password_reset/', views.password_reset, name='password_reset'),
     path('meme/', views.meme, name='meme'),
+    path('estudiantes/', views.estudiantes, name='estudiantes'),
      # Recuperar contraseña
     path('password_reset/', 
          auth_views.PasswordResetView.as_view(
