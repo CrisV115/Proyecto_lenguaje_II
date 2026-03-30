@@ -73,3 +73,13 @@ class RegistroForm(UserCreationForm):
             )
 
         return cleaned_data
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            widget = field.widget
+            current_class = widget.attrs.get("class", "")
+            if isinstance(widget, (forms.TextInput, forms.EmailInput, forms.PasswordInput, forms.Select)):
+                widget.attrs["class"] = f"{current_class} form-control".strip()
+            if isinstance(widget, forms.Select):
+                widget.attrs["class"] = f"{current_class} form-select".strip()

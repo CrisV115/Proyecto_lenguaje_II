@@ -1,144 +1,56 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel del Estudiante</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #eef3fb;
-            color: #1a2747;
-        }
+{% extends "base.html" %}
 
-        .page {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 32px 20px 48px;
-        }
+{% block title %}Panel del estudiante{% endblock %}
 
-        .topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 24px;
-        }
+{% block content %}
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <h1 class="display-6 fw-bold">Ruta académica del estudiante</h1>
+    <p class="lead mb-0">Desde aquí puedes rendir el test diagnóstico, revisar tu progreso y avanzar hacia la certificación final.</p>
+</section>
 
-        .topbar a,
-        .action {
-            display: inline-block;
-            padding: 12px 18px;
-            border-radius: 10px;
-            text-decoration: none;
-            color: white;
-            background: #2457c5;
-            font-weight: 700;
-        }
-
-        .action.secondary {
-            background: #10203d;
-        }
-
-        .hero {
-            background: linear-gradient(135deg, #2c6fd6, #5248e8);
-            color: white;
-            padding: 28px;
-            border-radius: 22px;
-            margin-bottom: 24px;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 18px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 18px;
-            padding: 20px;
-            box-shadow: 0 10px 24px rgba(38, 61, 110, 0.08);
-        }
-
-        .card h3 {
-            margin-top: 0;
-        }
-
-        .muted {
-            color: #5f6f92;
-        }
-
-        ul {
-            padding-left: 18px;
-        }
-
-        .pill {
-            display: inline-block;
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 700;
-            background: #dfe9ff;
-            color: #2457c5;
-        }
-    </style>
-</head>
-<body>
-    <div class="page">
-        <div class="topbar">
-            <div>
-                <strong>{{ request.user.get_full_name|default:request.user.username }}</strong><br>
-                <span class="muted">{{ request.user.get_tipo_usuario_display }}</span>
-            </div>
-            <a href="{% url 'logout' %}">Cerrar sesión</a>
-        </div>
-
-        <section class="hero">
-            <h1>Ruta académica del estudiante</h1>
-            <p>Desde aquí puedes rendir el test diagnóstico, revisar tu progreso y avanzar hacia la certificación final.</p>
-        </section>
-
-        <div class="grid">
-            <section class="card">
-                <h3>Test diagnóstico</h3>
-                {% if latest_result %}
-                    <p class="muted">Último resultado: <strong>{{ latest_result.test.name }}</strong></p>
-                    <p><span class="pill">{% if latest_result.passed %}Aprobado{% else %}Requiere nivelación{% endif %}</span></p>
-                    <a class="action" href="{% url 'test_result' latest_result.test.id %}">Ver resultado</a>
-                {% elif active_test %}
-                    <p class="muted">Hay un test activo listo para ser rendido.</p>
-                    <a class="action" href="{% url 'take_test' active_test.id %}">Rendir test</a>
-                {% else %}
-                    <p class="muted">Todavía no hay tests activos configurados.</p>
-                {% endif %}
-            </section>
-
-            <section class="card">
-                <h3>Seguimiento</h3>
-                {% if progress_entries %}
-                    <ul>
-                        {% for progress in progress_entries %}
-                            <li>{{ progress.get_phase_display }}: {{ progress.percentage }}% {% if progress.completed %}(completado){% endif %}</li>
-                        {% endfor %}
-                    </ul>
-                    <a class="action secondary" href="{% url 'tracking_overview' %}">Ver detalle</a>
-                {% else %}
-                    <p class="muted">Aún no hay fases registradas para este usuario.</p>
-                {% endif %}
-            </section>
-
-            <section class="card">
-                <h3>Certificación</h3>
-                {% if certificate %}
-                    <p class="muted">Ya tienes un certificado válido emitido.</p>
-                    <a class="action" href="{% url 'certificate_detail' certificate.id %}">Ver certificado</a>
-                {% else %}
-                    <p class="muted">El certificado se habilitará cuando completes inducción o nivelación.</p>
-                {% endif %}
-            </section>
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="glass-card rounded-4 p-4 h-100">
+            <h2 class="h4">Test diagnóstico</h2>
+            {% if latest_result %}
+                <p class="text-secondary">Último resultado: <strong>{{ latest_result.test.name }}</strong></p>
+                <span class="badge text-bg-primary mb-3">{% if latest_result.passed %}Aprobado{% else %}Requiere nivelación{% endif %}</span><br>
+                <a class="btn btn-primary" href="{% url 'test_result' latest_result.test.id %}">Ver resultado</a>
+            {% elif active_test %}
+                <p class="text-secondary">Hay un test activo listo para ser rendido.</p>
+                <a class="btn btn-primary" href="{% url 'take_test' active_test.id %}">Rendir test</a>
+            {% else %}
+                <p class="text-secondary mb-0">Todavía no hay tests activos configurados.</p>
+            {% endif %}
         </div>
     </div>
-</body>
-</html>
+
+    <div class="col-lg-4">
+        <div class="glass-card rounded-4 p-4 h-100">
+            <h2 class="h4">Seguimiento</h2>
+            {% if progress_entries %}
+                <ul class="mb-3">
+                    {% for progress in progress_entries %}
+                        <li>{{ progress.get_phase_display }}: {{ progress.percentage }}% {% if progress.completed %}(completado){% endif %}</li>
+                    {% endfor %}
+                </ul>
+                <a class="btn btn-outline-primary" href="{% url 'tracking_overview' %}">Ver detalle</a>
+            {% else %}
+                <p class="text-secondary mb-0">Aún no hay fases registradas para este usuario.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="glass-card rounded-4 p-4 h-100">
+            <h2 class="h4">Certificación</h2>
+            {% if certificate %}
+                <p class="text-secondary">Ya tienes un certificado válido emitido.</p>
+                <a class="btn btn-success" href="{% url 'certificate_detail' certificate.id %}">Ver certificado</a>
+            {% else %}
+                <p class="text-secondary mb-0">El certificado se habilitará cuando completes inducción o nivelación.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

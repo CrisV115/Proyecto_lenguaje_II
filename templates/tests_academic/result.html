@@ -1,37 +1,26 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resultado del Test</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #eef3fb; margin: 0; padding: 30px; color: #1c2b4a; }
-        .wrap { max-width: 760px; margin: 0 auto; }
-        .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 10px 24px rgba(38, 61, 110, 0.08); }
-        .btn { display: inline-block; margin-top: 12px; margin-right: 10px; padding: 10px 14px; border-radius: 10px; text-decoration: none; background: #2457c5; color: white; font-weight: 700; }
-        .status { font-size: 18px; font-weight: 700; }
-    </style>
-</head>
-<body>
-    <div class="wrap">
-        <div class="card">
-            <h1>Resultado de {{ test.name }}</h1>
-            <p>Nota obtenida: <strong>{{ result.score|floatformat:2 }}%</strong></p>
-            <p class="status">
-                {% if result.passed %}
-                    Aprobado. Debes completar la inducción para cerrar tu ruta.
-                {% else %}
-                    No aprobado. Debes pasar por nivelación.
-                {% endif %}
-            </p>
+{% extends "base.html" %}
 
-            <a class="btn" href="{% url 'student_dashboard' %}">Volver al panel</a>
-            {% if result.passed %}
-                <a class="btn" href="{% url 'induction_dashboard' %}">Ir a inducción</a>
-            {% else %}
-                <a class="btn" href="{% url 'leveling_dashboard' %}">Ir a nivelación</a>
-            {% endif %}
-        </div>
+{% block title %}Resultado del test{% endblock %}
+
+{% block content %}
+<div class="glass-card rounded-4 p-4">
+    <h1 class="h2 mb-3">Resultado de {{ test.name }}</h1>
+    <p class="fs-5">Nota obtenida: <strong>{{ result.score|floatformat:2 }}%</strong></p>
+    <p class="fw-semibold">
+        {% if result.passed %}
+            Aprobado. Debes completar la inducción para cerrar tu ruta.
+        {% else %}
+            No aprobado. Debes pasar por nivelación.
+        {% endif %}
+    </p>
+
+    <div class="d-flex gap-2 flex-wrap">
+        <a class="btn btn-outline-primary" href="{% url 'student_dashboard' %}">Volver al panel</a>
+        {% if result.passed %}
+            <a class="btn btn-primary" href="{% url 'induction_dashboard' %}">Ir a inducción</a>
+        {% else %}
+            <a class="btn btn-primary" href="{% url 'leveling_dashboard' %}">Ir a nivelación</a>
+        {% endif %}
     </div>
-</body>
-</html>
+</div>
+{% endblock %}
