@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificado</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #eef3fb; margin: 0; padding: 30px; color: #1c2b4a; }
+        .wrap { max-width: 850px; margin: 0 auto; }
+        .card { background: white; border-radius: 18px; padding: 30px; box-shadow: 0 10px 24px rgba(38, 61, 110, 0.08); text-align: center; }
+        .code { font-size: 18px; font-weight: 700; color: #2457c5; }
+        .btn { display: inline-block; margin-top: 18px; padding: 10px 14px; border-radius: 10px; text-decoration: none; background: #2457c5; color: white; font-weight: 700; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="card">
+            <h1>Certificado Académico</h1>
+            <p>Se certifica que <strong>{{ request.user.get_full_name|default:request.user.username }}</strong> completó su ruta académica.</p>
+            <p>Fase de cierre: <strong>{{ certificate.get_source_phase_display|default:certificate.source_phase }}</strong></p>
+            <p>Fecha de emisión: <strong>{{ certificate.issue_date }}</strong></p>
+            <p class="code">Código de validación: {{ certificate.code }}</p>
+            <a class="btn" href="{% url 'student_dashboard' %}">Volver al panel</a>
+        </div>
+    </div>
+</body>
+</html>

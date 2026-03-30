@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tests Disponibles</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #eef3fb; margin: 0; padding: 30px; color: #1c2b4a; }
+        .wrap { max-width: 900px; margin: 0 auto; }
+        .card { background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 10px 24px rgba(38, 61, 110, 0.08); }
+        .btn { display: inline-block; margin-top: 12px; padding: 10px 14px; border-radius: 10px; text-decoration: none; background: #2457c5; color: white; font-weight: 700; }
+        .done { color: #1d7d3a; font-weight: 700; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <h1>Tests disponibles</h1>
+        <p><a class="btn" href="{% url 'student_dashboard' %}">Volver al panel</a></p>
+
+        {% for test in tests %}
+            <div class="card">
+                <h3>{{ test.name }}</h3>
+                <p>Tipo: {{ test.get_type_display }} | Duración: {{ test.duration }} minutos | Nota mínima: {{ test.passing_score }}%</p>
+                {% if test.id in completed_test_ids %}
+                    <p class="done">Ya rendiste este test.</p>
+                    <a class="btn" href="{% url 'test_result' test.id %}">Ver resultado</a>
+                {% else %}
+                    <a class="btn" href="{% url 'take_test' test.id %}">Rendir test</a>
+                {% endif %}
+            </div>
+        {% empty %}
+            <div class="card">
+                <p>No hay tests activos configurados todavía.</p>
+            </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

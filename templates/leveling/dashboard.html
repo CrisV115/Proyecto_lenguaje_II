@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nivelación</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #eef3fb; margin: 0; padding: 30px; color: #1c2b4a; }
+        .wrap { max-width: 760px; margin: 0 auto; }
+        .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 10px 24px rgba(38, 61, 110, 0.08); }
+        .btn { display: inline-block; margin-top: 12px; margin-right: 10px; padding: 10px 14px; border-radius: 10px; text-decoration: none; background: #2457c5; color: white; font-weight: 700; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="card">
+            <h1>Nivelación</h1>
+            <p>Progreso: <strong>{{ progress.percentage }}%</strong></p>
+            {% if progress.completed %}
+                <p>Curso completado. Ya puedes emitir tu certificado.</p>
+                <a class="btn" href="{% url 'generate_certificate' %}">Generar certificado</a>
+            {% else %}
+                <p>Debes completar esta fase para cerrar tu ruta académica.</p>
+                <a class="btn" href="{% url 'complete_leveling' %}">Completar nivelación</a>
+            {% endif %}
+            <a class="btn" href="{% url 'student_dashboard' %}">Volver al panel</a>
+        </div>
+    </div>
+</body>
+</html>
