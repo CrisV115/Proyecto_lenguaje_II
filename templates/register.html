@@ -1,12 +1,14 @@
 {% extends "base.html" %}
 
 {% block title %}Registro{% endblock %}
+{% block body_class %}auth-page{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
+<div class="row justify-content-center align-items-center auth-shell">
     <div class="col-xl-7 col-lg-9">
-        <div class="glass-card rounded-4 p-4">
+        <div class="auth-card rounded-4 p-4 p-lg-5">
             <h1 class="h3 mb-4">Registro de usuario</h1>
+            <p class="mb-4">Crea tu cuenta para empezar el recorrido de diagnóstico, seguimiento académico y certificación.</p>
             <form method="post" class="row g-3">
                 {% csrf_token %}
 
