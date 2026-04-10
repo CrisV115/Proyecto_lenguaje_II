@@ -1,17 +1,56 @@
 {% extends "base.html" %}
 
-{% block title %}Seguimiento académico{% endblock %}
+{% block title %}Seguimiento academico{% endblock %}
 
 {% block content %}
-<div class="glass-card rounded-4 p-4">
-    <h1 class="h2 mb-3">Seguimiento académico</h1>
-    <ul class="mb-3">
-        {% for progress in progress_entries %}
-            <li>{{ progress.get_phase_display }}: {{ progress.percentage }}% {% if progress.completed %}(completado){% endif %}</li>
-        {% empty %}
-            <li>No hay fases registradas todavía.</li>
-        {% endfor %}
-    </ul>
-    <a class="btn btn-outline-primary" href="{% url 'student_dashboard' %}">Volver al panel</a>
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <span class="section-kicker mb-3">Seguimiento</span>
+    <h1 class="h2 mb-2">Avance academico por fases</h1>
+    <p class="text-white-50 mb-0">Consulta el estado actual de cada etapa del proceso y detecta rapidamente lo que ya se completo.</p>
+</section>
+
+<div class="glass-card rounded-4 p-4 p-lg-5">
+    <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-4">
+        <div>
+            <div class="soft-label mb-2">Resumen</div>
+            <p class="text-secondary mb-0">Vista consolidada del progreso registrado para este usuario.</p>
+        </div>
+        <a class="btn btn-outline-primary" href="{% url 'student_dashboard' %}">Volver al panel</a>
+    </div>
+
+    {% if progress_entries %}
+        <div class="table-responsive">
+            <table class="table table-soft align-middle">
+                <thead>
+                    <tr>
+                        <th>Fase</th>
+                        <th>Progreso</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for progress in progress_entries %}
+                        <tr>
+                            <td class="fw-semibold">{{ progress.get_phase_display }}</td>
+                            <td style="min-width: 220px;">
+                                <div class="d-flex justify-content-between gap-3 mb-2">
+                                    <span class="text-secondary">Avance</span>
+                                    <span class="fw-semibold">{{ progress.percentage }}%</span>
+                                </div>
+                                <div class="progress-shell"><span style="width: {{ progress.percentage }}%;"></span></div>
+                            </td>
+                            <td>
+                                <span class="status-pill {% if progress.completed %}success{% else %}warn{% endif %}">
+                                    {% if progress.completed %}Completado{% else %}En proceso{% endif %}
+                                </span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">No hay fases registradas todavia.</div>
+    {% endif %}
 </div>
 {% endblock %}

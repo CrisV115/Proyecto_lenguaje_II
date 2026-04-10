@@ -4,52 +4,97 @@
 
 {% block content %}
 <section class="hero-strip p-4 p-lg-5 mb-4">
-    <h1 class="display-6 fw-bold">Ruta académica del estudiante</h1>
-    <p class="lead mb-0">Desde aquí puedes rendir el test diagnóstico, revisar tu progreso y avanzar hacia la certificación final.</p>
+    <div class="row align-items-end g-4">
+        <div class="col-lg-8">
+            <span class="section-kicker mb-3">Panel principal</span>
+            <h1 class="display-6 fw-bold mb-3">Ruta academica del estudiante</h1>
+            <p class="lead mb-0 text-white-50">Desde aqui puedes rendir el test diagnostico, revisar tu progreso y avanzar hacia la certificacion final.</p>
+        </div>
+        <div class="col-lg-4">
+            <div class="row g-3">
+                <div class="col-6">
+                    <div class="metric-card">
+                        <div class="soft-label">Fases</div>
+                        <div class="metric-value">{{ progress_entries|length }}</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="metric-card">
+                        <div class="soft-label">Estado</div>
+                        <div class="metric-value">{% if certificate %}OK{% else %}GO{% endif %}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </section>
 
 <div class="row g-4">
     <div class="col-lg-4">
-        <div class="glass-card rounded-4 p-4 h-100">
-            <h2 class="h4">Test diagnóstico</h2>
-            {% if latest_result %}
-                <p class="text-secondary">Último resultado: <strong>{{ latest_result.test.name }}</strong></p>
-                <span class="badge text-bg-primary mb-3">{% if latest_result.passed %}Aprobado{% else %}Requiere nivelación{% endif %}</span><br>
-                <a class="btn btn-primary" href="{% url 'test_result' latest_result.test.id %}">Ver resultado</a>
-            {% elif active_test %}
-                <p class="text-secondary">Hay un test activo listo para ser rendido.</p>
-                <a class="btn btn-primary" href="{% url 'take_test' active_test.id %}">Rendir test</a>
-            {% else %}
-                <p class="text-secondary mb-0">Todavía no hay tests activos configurados.</p>
-            {% endif %}
+        <div class="glass-card dashboard-card">
+            <div class="card-header">
+                <div class="soft-label">Evaluacion</div>
+                <h2 class="h4 mb-0">Test diagnostico</h2>
+            </div>
+            <div class="card-body">
+                {% if latest_result %}
+                    <p class="text-secondary">Ultimo resultado: <strong>{{ latest_result.test.name }}</strong></p>
+                    <span class="status-pill {% if latest_result.passed %}success{% else %}warn{% endif %} mb-3">{% if latest_result.passed %}Aprobado{% else %}Requiere nivelacion{% endif %}</span><br>
+                    <a class="btn btn-primary" href="{% url 'test_result' latest_result.test.id %}">Ver resultado</a>
+                {% elif active_test %}
+                    <p class="text-secondary">Hay un test activo listo para ser rendido.</p>
+                    <a class="btn btn-primary" href="{% url 'take_test' active_test.id %}">Rendir test</a>
+                {% else %}
+                    <div class="empty-state">Todavia no hay tests activos configurados.</div>
+                {% endif %}
+            </div>
         </div>
     </div>
 
     <div class="col-lg-4">
-        <div class="glass-card rounded-4 p-4 h-100">
-            <h2 class="h4">Seguimiento</h2>
-            {% if progress_entries %}
-                <ul class="mb-3">
-                    {% for progress in progress_entries %}
-                        <li>{{ progress.get_phase_display }}: {{ progress.percentage }}% {% if progress.completed %}(completado){% endif %}</li>
-                    {% endfor %}
-                </ul>
-                <a class="btn btn-outline-primary" href="{% url 'tracking_overview' %}">Ver detalle</a>
-            {% else %}
-                <p class="text-secondary mb-0">Aún no hay fases registradas para este usuario.</p>
-            {% endif %}
+        <div class="glass-card dashboard-card">
+            <div class="card-header">
+                <div class="soft-label">Progreso</div>
+                <h2 class="h4 mb-0">Seguimiento</h2>
+            </div>
+            <div class="card-body">
+                {% if progress_entries %}
+                    <ul class="status-list mb-3">
+                        {% for progress in progress_entries %}
+                            <li>
+                                <div class="w-100">
+                                    <div class="d-flex justify-content-between gap-3 mb-2">
+                                        <strong>{{ progress.get_phase_display }}</strong>
+                                        <span class="text-secondary">{{ progress.percentage }}%</span>
+                                    </div>
+                                    <div class="progress-shell mb-2"><span style="width: {{ progress.percentage }}%;"></span></div>
+                                    <div class="text-secondary small">{% if progress.completed %}Fase completada.{% else %}Fase en curso.{% endif %}</div>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <a class="btn btn-outline-primary" href="{% url 'tracking_overview' %}">Ver detalle</a>
+                {% else %}
+                    <div class="empty-state">Aun no hay fases registradas para este usuario.</div>
+                {% endif %}
+            </div>
         </div>
     </div>
 
     <div class="col-lg-4">
-        <div class="glass-card rounded-4 p-4 h-100">
-            <h2 class="h4">Certificación</h2>
-            {% if certificate %}
-                <p class="text-secondary">Ya tienes un certificado válido emitido.</p>
-                <a class="btn btn-success" href="{% url 'certificate_detail' certificate.id %}">Ver certificado</a>
-            {% else %}
-                <p class="text-secondary mb-0">El certificado se habilitará cuando completes inducción o nivelación.</p>
-            {% endif %}
+        <div class="glass-card dashboard-card">
+            <div class="card-header">
+                <div class="soft-label">Cierre</div>
+                <h2 class="h4 mb-0">Certificacion</h2>
+            </div>
+            <div class="card-body">
+                {% if certificate %}
+                    <p class="text-secondary">Ya tienes un certificado valido emitido.</p>
+                    <a class="btn btn-success" href="{% url 'certificate_detail' certificate.id %}">Ver certificado</a>
+                {% else %}
+                    <div class="empty-state">El certificado se habilitara cuando completes induccion o nivelacion.</div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>

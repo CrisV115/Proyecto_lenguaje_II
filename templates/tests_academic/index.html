@@ -3,18 +3,36 @@
 {% block title %}Tests disponibles{% endblock %}
 
 {% block content %}
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
+        <div>
+            <span class="section-kicker mb-3">Centro de evaluaciones</span>
+            <h1 class="h2 mb-1">Tests disponibles</h1>
+            <p class="text-white-50 mb-0">Selecciona el test que deseas rendir y revisa tu historial reciente.</p>
+        </div>
+        <a class="btn btn-light" href="{% url 'student_dashboard' %}">Volver al panel</a>
+    </div>
+</section>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h2 mb-1">Tests disponibles</h1>
-        <p class="text-secondary mb-0">Selecciona el test que deseas rendir.</p>
+        <div class="soft-label mb-2">Listado activo</div>
+        <p class="text-secondary mb-0">Cada test muestra su tipo, duracion y nota minima para aprobar.</p>
     </div>
-    <a class="btn btn-outline-primary" href="{% url 'student_dashboard' %}">Volver al panel</a>
 </div>
 
 {% for test in tests %}
     <div class="glass-card rounded-4 p-4 mb-3">
-        <h2 class="h4">{{ test.name }}</h2>
-        <p class="text-secondary mb-3">Tipo: {{ test.get_type_display }} | Duración: {{ test.duration }} minutos | Nota mínima: {{ test.passing_score }}%</p>
+        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+            <div>
+                <div class="soft-label mb-2">{{ test.get_type_display }}</div>
+                <h2 class="h4">{{ test.name }}</h2>
+                <p class="text-secondary mb-3">Duracion: {{ test.duration }} minutos | Nota minima: {{ test.passing_score }}%</p>
+            </div>
+            <div class="status-pill {% if test.id in completed_test_ids %}success{% else %}warn{% endif %}">
+                {% if test.id in completed_test_ids %}Completado{% else %}Pendiente{% endif %}
+            </div>
+        </div>
         {% if test.id in completed_test_ids %}
             <p class="text-success fw-semibold">Ya rendiste este test.</p>
             <a class="btn btn-primary" href="{% url 'test_result' test.id %}">Ver resultado</a>
@@ -24,7 +42,7 @@
     </div>
 {% empty %}
     <div class="glass-card rounded-4 p-4">
-        <p class="mb-0">No hay tests activos configurados todavía.</p>
+        <div class="empty-state">No hay tests activos configurados todavia.</div>
     </div>
 {% endfor %}
 {% endblock %}

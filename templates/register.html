@@ -7,8 +7,9 @@
 <div class="row justify-content-center align-items-center auth-shell">
     <div class="col-xl-7 col-lg-9">
         <div class="auth-card rounded-4 p-4 p-lg-5">
-            <h1 class="h3 mb-4">Registro de usuario</h1>
-            <p class="mb-4">Crea tu cuenta para empezar el recorrido de diagnóstico, seguimiento académico y certificación.</p>
+            <span class="section-kicker mb-3">Nuevo acceso</span>
+            <h1 class="h2 mb-3">Registro de usuario</h1>
+            <p class="mb-4">Crea tu cuenta para empezar el recorrido de diagnostico, seguimiento academico y certificacion.</p>
             <form method="post" class="row g-3">
                 {% csrf_token %}
 
@@ -25,7 +26,7 @@
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label">Teléfono</label>
+                    <label class="form-label">Telefono</label>
                     {{ form.telefono }}
                     {% if form.telefono.errors %}<div class="text-danger small mt-1">{{ form.telefono.errors }}</div>{% endif %}
                 </div>
@@ -37,19 +38,19 @@
                 </div>
 
                 <div class="col-12" id="codigo-profesor-container" style="display: none;">
-                    <label class="form-label">Código de verificación del profesor</label>
+                    <label class="form-label">Codigo de verificacion del profesor</label>
                     {{ form.codigo_verificacion_profesor }}
                     {% if form.codigo_verificacion_profesor.errors %}<div class="text-danger small mt-1">{{ form.codigo_verificacion_profesor.errors }}</div>{% endif %}
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label">Contraseña</label>
+                    <label class="form-label">Contrasena</label>
                     {{ form.password1 }}
                     {% if form.password1.errors %}<div class="text-danger small mt-1">{{ form.password1.errors }}</div>{% endif %}
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label">Repetir contraseña</label>
+                    <label class="form-label">Repetir contrasena</label>
                     {{ form.password2 }}
                     {% if form.password2.errors %}<div class="text-danger small mt-1">{{ form.password2.errors }}</div>{% endif %}
                 </div>
@@ -66,7 +67,7 @@
                     {% if form.respuesta_seguridad.errors %}<div class="text-danger small mt-1">{{ form.respuesta_seguridad.errors }}</div>{% endif %}
                 </div>
 
-                <div class="col-12 d-flex gap-2">
+                <div class="col-12 d-flex gap-2 flex-wrap pt-2">
                     <button type="submit" class="btn btn-primary">Registrarse</button>
                     <a href="{% url 'home' %}" class="btn btn-outline-secondary">Volver</a>
                 </div>

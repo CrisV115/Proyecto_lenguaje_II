@@ -1,17 +1,27 @@
 {% extends "base.html" %}
 
-{% block title %}Nivelación{% endblock %}
+{% block title %}Nivelacion{% endblock %}
 
 {% block content %}
-<div class="glass-card rounded-4 p-4">
-    <h1 class="h2 mb-3">Nivelación</h1>
-    <p>Progreso actual: <strong>{{ progress.percentage }}%</strong></p>
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <span class="section-kicker mb-3">Cierre academico</span>
+    <h1 class="h2 mb-2">Nivelacion</h1>
+    <p class="text-white-50 mb-0">Completa esta etapa para cerrar tu recorrido y habilitar la certificacion final.</p>
+</section>
+
+<div class="glass-card rounded-4 p-4 p-lg-5">
+    <div class="soft-label mb-2">Progreso actual</div>
+    <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-2">
+        <h2 class="h3 mb-0">Estado de la nivelacion</h2>
+        <span class="status-pill {% if progress.completed %}success{% else %}warn{% endif %}">{{ progress.percentage }}%</span>
+    </div>
+    <div class="progress-shell mb-4"><span style="width: {{ progress.percentage }}%;"></span></div>
     {% if progress.completed %}
         <p>Curso completado. Ya puedes emitir tu certificado.</p>
         <a class="btn btn-success" href="{% url 'generate_certificate' %}">Generar certificado</a>
     {% else %}
-        <p>Debes completar esta fase para cerrar tu ruta académica.</p>
-        <a class="btn btn-primary" href="{% url 'complete_leveling' %}">Completar nivelación</a>
+        <p>Debes completar esta fase para cerrar tu ruta academica.</p>
+        <a class="btn btn-primary" href="{% url 'complete_leveling' %}">Completar nivelacion</a>
     {% endif %}
     <a class="btn btn-outline-primary ms-2" href="{% url 'student_dashboard' %}">Volver al panel</a>
 </div>

@@ -5,10 +5,11 @@
 
 {% block content %}
 <div class="row justify-content-center align-items-center auth-shell">
-    <div class="col-lg-5">
+    <div class="col-lg-5 col-xl-4">
         <div class="auth-card rounded-4 p-4 p-lg-5">
-            <h1 class="h3 mb-3">Iniciar sesión</h1>
-            <p class="mb-4">Accede a tu ruta académica para rendir tests, revisar tu progreso y consultar tu certificado.</p>
+            <span class="section-kicker mb-3">Acceso al sistema</span>
+            <h1 class="h2 mb-3">Iniciar sesion</h1>
+            <p class="mb-4">Entra a tu ruta academica para rendir tests, revisar tu progreso y consultar tu certificado.</p>
             <form method="post" class="vstack gap-3">
                 {% csrf_token %}
                 <div>
@@ -16,13 +17,13 @@
                     <input type="text" name="username" class="form-control">
                 </div>
                 <div>
-                    <label class="form-label">Contraseña</label>
+                    <label class="form-label">Contrasena</label>
                     <input type="password" name="password" class="form-control">
                 </div>
-                <button type="submit" class="btn btn-primary">Entrar</button>
+                <button type="submit" class="btn btn-primary btn-lg w-100">Entrar</button>
             </form>
-            <div class="mt-3 d-flex justify-content-between flex-wrap gap-2">
-                <a href="{% url 'password_reset' %}">Recuperar contraseña</a>
+            <div class="mt-4 pt-3 border-top border-light border-opacity-25 d-flex justify-content-between flex-wrap gap-2">
+                <a href="{% url 'password_reset' %}">Recuperar contrasena</a>
                 <a href="{% url 'register' %}">Crear cuenta</a>
             </div>
         </div>
