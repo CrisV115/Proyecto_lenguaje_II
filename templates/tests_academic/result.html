@@ -8,18 +8,18 @@
     <p class="fs-5">Nota obtenida: <strong>{{ result.score|floatformat:2 }}%</strong></p>
     <p class="fw-semibold">
         {% if result.passed %}
-            Aprobado. Debes completar la inducción para cerrar tu ruta.
+            Aprobado. Debes completar la induccion para cerrar tu ruta.
         {% else %}
-            No aprobado. Debes pasar por nivelación.
+            No aprobado. Debes pasar por nivelacion.
         {% endif %}
     </p>
 
     <div class="d-flex gap-2 flex-wrap">
         <a class="btn btn-outline-primary" href="{% url 'student_dashboard' %}">Volver al panel</a>
         {% if result.passed %}
-            <a class="btn btn-primary" href="{% url 'induction_dashboard' %}">Ir a inducción</a>
+            <a class="btn btn-primary" href="{% url 'induction_dashboard' %}">Ir a induccion</a>
         {% else %}
-            <a class="btn btn-primary" href="{% url 'leveling_dashboard' %}">Ir a nivelación</a>
+            <a class="btn btn-primary" href="{% url 'leveling_dashboard' %}">Ir a nivelacion</a>
         {% endif %}
     </div>
 </div>

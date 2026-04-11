@@ -10,7 +10,7 @@ class UsuarioAdmin(UserAdmin):
     list_filter = ("tipo_usuario", "is_staff", "is_active")
     fieldsets = UserAdmin.fieldsets + (
         (
-            "Información adicional",
+            "Informacion adicional",
             {
                 "fields": (
                     "telefono",
@@ -23,7 +23,7 @@ class UsuarioAdmin(UserAdmin):
     )
     add_fieldsets = UserAdmin.add_fieldsets + (
         (
-            "Información adicional",
+            "Informacion adicional",
             {
                 "fields": (
                     "email",

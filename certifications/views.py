@@ -23,7 +23,7 @@ def generate_certificate(request):
     if not induction_ready and not leveling_ready:
         messages.warning(
             request,
-            "Todavía no cumples las condiciones para generar el certificado.",
+            "Todavia no cumples las condiciones para generar el certificado.",
         )
         return redirect("student_dashboard")
 

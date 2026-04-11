@@ -32,12 +32,12 @@ def take_test(request, test_id):
     if Result.objects.filter(student=request.user, test=test).exists():
         messages.warning(
             request,
-            "Ya registraste un intento para este test. No se permiten múltiples intentos.",
+            "Ya registraste un intento para este test. No se permiten multiples intentos.",
         )
         return redirect("test_result", test_id=test.id)
 
     if not test.questions.exists():
-        messages.warning(request, "Este test todavía no tiene preguntas configuradas.")
+        messages.warning(request, "Este test todavia no tiene preguntas configuradas.")
         return redirect("tests_index")
 
     if request.method == "POST":

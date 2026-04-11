@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import redirect, render
 
 from certifications.models import Certificate
 
@@ -19,25 +19,29 @@ def overview(request):
 
 @login_required
 def induction_dashboard(request):
-    progress = get_object_or_404(
-        Progress,
+    progress = Progress.objects.filter(
         student=request.user,
         phase=Progress.Phases.INDUCTION,
-    )
+    ).first()
+    if progress is None:
+        messages.info(request, "Aun no tienes la fase de induccion habilitada.")
+        return redirect("student_dashboard")
     return render(request, "tracking/induction.html", {"progress": progress})
 
 
 @login_required
 def complete_induction(request):
-    progress = get_object_or_404(
-        Progress,
+    progress = Progress.objects.filter(
         student=request.user,
         phase=Progress.Phases.INDUCTION,
-    )
+    ).first()
+    if progress is None:
+        messages.warning(request, "No existe una fase de induccion para completar.")
+        return redirect("student_dashboard")
     progress.percentage = 100
     progress.completed = True
     progress.save(update_fields=["percentage", "completed", "updated_at"])
-    messages.success(request, "Inducción completada correctamente.")
+    messages.success(request, "Induccion completada correctamente.")
     return redirect("generate_certificate")
 
 
@@ -47,7 +51,7 @@ def current_certificate(request):
     if certificate is None:
         messages.info(
             request,
-            "Todavía no tienes un certificado generado. Completa tu ruta académica primero.",
+            "Todavia no tienes un certificado generado. Completa tu ruta academica primero.",
         )
         return redirect("student_dashboard")
     return redirect("certificate_detail", certificate_id=certificate.id)

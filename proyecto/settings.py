@@ -5,6 +5,10 @@ Django settings for proyecto project.
 from pathlib import Path
 
 from decouple import Csv, config
+import pymysql
+
+
+pymysql.install_as_MySQLdb()
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -67,7 +71,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "proyecto.wsgi.application"
 
 
-DB_ENGINE = config("DB_ENGINE", default="sqlite")
+DB_ENGINE = config("DB_ENGINE", default="sqlite").strip().lower()
 
 if DB_ENGINE == "mysql":
     DATABASES = {
@@ -78,6 +82,7 @@ if DB_ENGINE == "mysql":
             "PASSWORD": config("DB_PASSWORD"),
             "HOST": config("DB_HOST", default="127.0.0.1"),
             "PORT": config("DB_PORT", default="3306"),
+            "CONN_MAX_AGE": config("DB_CONN_MAX_AGE", default=60, cast=int),
             "OPTIONS": {
                 "charset": "utf8mb4",
             },

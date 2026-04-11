@@ -4,15 +4,15 @@ from django.db import models
 
 class Usuario(AbstractUser):
     PREGUNTAS_SEGURIDAD = [
-        ("mascota", "¿Cómo se llama tu primera mascota?"),
-        ("madre", "¿Cuál es el segundo nombre de tu madre?"),
-        ("ciudad", "¿En qué ciudad naciste?"),
+        ("mascota", "Como se llama tu primera mascota?"),
+        ("madre", "Cual es el segundo nombre de tu madre?"),
+        ("ciudad", "En que ciudad naciste?"),
     ]
 
     ROLES = [
         ("estudiante", "Estudiante"),
         ("profesor", "Profesor"),
-        ("admin_academico", "Administrador académico"),
+        ("admin_academico", "Administrador academico"),
     ]
 
     email = models.EmailField(unique=True)

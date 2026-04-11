@@ -6,8 +6,8 @@ from django.db import models
 
 class Certificate(models.Model):
     SOURCE_PHASE_CHOICES = [
-        ("induction", "Inducción"),
-        ("leveling", "Nivelación"),
+        ("induction", "Induccion"),
+        ("leveling", "Nivelacion"),
     ]
 
     student = models.ForeignKey(

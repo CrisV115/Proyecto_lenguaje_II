@@ -10,7 +10,7 @@ class Test(models.Model):
 
     name = models.CharField(max_length=100)
     type = models.CharField(max_length=50, choices=TIPO_CHOICES)
-    duration = models.PositiveIntegerField(help_text="Duración en minutos")
+    duration = models.PositiveIntegerField(help_text="Duracion en minutos")
     passing_score = models.PositiveIntegerField(default=70)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}Inducción{% endblock %}
+{% block title %}Induccion{% endblock %}
 
 {% block content %}
 <div class="glass-card rounded-4 p-4">
-    <h1 class="h2 mb-3">Inducción</h1>
+    <h1 class="h2 mb-3">Induccion</h1>
     <p>Progreso actual: <strong>{{ progress.percentage }}%</strong></p>
     {% if progress.completed %}
         <p>Ya completaste esta fase. Puedes consultar tu certificado.</p>
         <a class="btn btn-success" href="{% url 'current_certificate' %}">Ver certificado</a>
     {% else %}
-        <p>Completa esta fase para habilitar la certificación.</p>
-        <a class="btn btn-primary" href="{% url 'complete_induction' %}">Completar inducción</a>
+        <p>Completa esta fase para habilitar la certificacion.</p>
+        <a class="btn btn-primary" href="{% url 'complete_induction' %}">Completar induccion</a>
     {% endif %}
     <a class="btn btn-outline-primary ms-2" href="{% url 'student_dashboard' %}">Volver al panel</a>
 </div>

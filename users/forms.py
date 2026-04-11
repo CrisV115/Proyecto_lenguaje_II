@@ -17,7 +17,7 @@ class RegistroForm(UserCreationForm):
                 "placeholder": "Ej: 0991234567",
                 "pattern": "[0-9]{10}",
                 "maxlength": "10",
-                "title": "Ingrese exactamente 10 números",
+                "title": "Ingrese exactamente 10 numeros",
             }
         ),
     )
@@ -30,7 +30,7 @@ class RegistroForm(UserCreationForm):
     codigo_verificacion_profesor = forms.CharField(
         required=False,
         widget=forms.PasswordInput(
-            attrs={"placeholder": "Código exclusivo para profesores"}
+            attrs={"placeholder": "Codigo exclusivo para profesores"}
         ),
     )
 
@@ -58,7 +58,7 @@ class RegistroForm(UserCreationForm):
     def clean_telefono(self):
         telefono = self.cleaned_data.get("telefono", "")
         if not re.fullmatch(r"\d{10}", telefono):
-            raise ValidationError("El teléfono debe tener exactamente 10 números.")
+            raise ValidationError("El telefono debe tener exactamente 10 numeros.")
         return telefono
 
     def clean(self):
@@ -69,7 +69,7 @@ class RegistroForm(UserCreationForm):
         if tipo_usuario == "profesor" and codigo != self.CODIGO_PROFESOR:
             self.add_error(
                 "codigo_verificacion_profesor",
-                "Código de verificación de profesor inválido.",
+                "Codigo de verificacion de profesor invalido.",
             )
 
         return cleaned_data
@@ -79,7 +79,10 @@ class RegistroForm(UserCreationForm):
         for field_name, field in self.fields.items():
             widget = field.widget
             current_class = widget.attrs.get("class", "")
-            if isinstance(widget, (forms.TextInput, forms.EmailInput, forms.PasswordInput, forms.Select)):
+            if isinstance(
+                widget,
+                (forms.TextInput, forms.EmailInput, forms.PasswordInput, forms.Select),
+            ):
                 widget.attrs["class"] = f"{current_class} form-control".strip()
             if isinstance(widget, forms.Select):
                 widget.attrs["class"] = f"{current_class} form-select".strip()

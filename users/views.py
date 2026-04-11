@@ -46,7 +46,7 @@ def login_view(request):
 
         user = authenticate(request, username=username, password=password)
         if user is None:
-            messages.error(request, "Usuario o contraseña incorrectos.")
+            messages.error(request, "Usuario o contrasena incorrectos.")
             return redirect("login")
 
         login(request, user)
@@ -57,7 +57,7 @@ def login_view(request):
 
 def logout_view(request):
     logout(request)
-    messages.info(request, "Sesión cerrada correctamente.")
+    messages.info(request, "Sesion cerrada correctamente.")
     return redirect("home")
 
 
@@ -99,7 +99,7 @@ def password_reset_security(request):
 
         usuario.set_password(nueva_password)
         usuario.save()
-        messages.success(request, "Contraseña cambiada correctamente.")
+        messages.success(request, "Contrasena cambiada correctamente.")
         return redirect("login")
 
     return render(request, "password_reset.html", context)
