@@ -1,13 +1,13 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
 from certifications.models import Certificate
+from users.decorators import role_required
 
 from .models import Progress
 
 
-@login_required
+@role_required("estudiante")
 def overview(request):
     progress_entries = Progress.objects.filter(student=request.user).order_by("phase")
     return render(
@@ -17,7 +17,7 @@ def overview(request):
     )
 
 
-@login_required
+@role_required("estudiante")
 def induction_dashboard(request):
     progress = Progress.objects.filter(
         student=request.user,
@@ -29,7 +29,7 @@ def induction_dashboard(request):
     return render(request, "tracking/induction.html", {"progress": progress})
 
 
-@login_required
+@role_required("estudiante")
 def complete_induction(request):
     progress = Progress.objects.filter(
         student=request.user,
@@ -45,7 +45,7 @@ def complete_induction(request):
     return redirect("generate_certificate")
 
 
-@login_required
+@role_required("estudiante")
 def current_certificate(request):
     certificate = Certificate.objects.filter(student=request.user, valid=True).first()
     if certificate is None:

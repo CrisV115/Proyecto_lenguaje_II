@@ -28,5 +28,13 @@ class Usuario(AbstractUser):
     )
     respuesta_seguridad = models.CharField(max_length=100)
 
+    @property
+    def is_student(self):
+        return self.tipo_usuario == "estudiante"
+
+    @property
+    def is_professor(self):
+        return self.tipo_usuario == "profesor"
+
     def __str__(self):
         return self.username

@@ -10,9 +10,9 @@ class AnswerInline(admin.TabularInline):
 
 @admin.register(Test)
 class TestAdmin(admin.ModelAdmin):
-    list_display = ("name", "type", "duration", "passing_score", "is_active")
+    list_display = ("name", "type", "duration", "passing_score", "is_active", "created_by")
     list_filter = ("type", "is_active")
-    search_fields = ("name",)
+    search_fields = ("name", "created_by__username")
 
 
 @admin.register(Question)

@@ -11,7 +11,15 @@ from .forms import RegistroForm
 from .models import Usuario
 
 
+def redirect_user_dashboard(user):
+    if getattr(user, "tipo_usuario", "") == "profesor":
+        return redirect("teacher_dashboard")
+    return redirect("student_dashboard")
+
+
 def home(request):
+    if request.user.is_authenticated:
+        return redirect_user_dashboard(request.user)
     return render(request, "home.html")
 
 
@@ -34,7 +42,7 @@ def register(request):
 
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect("student_dashboard")
+        return redirect_user_dashboard(request.user)
 
     if request.method == "POST":
         username = request.POST.get("username", "").strip()
@@ -50,7 +58,7 @@ def login_view(request):
             return redirect("login")
 
         login(request, user)
-        return redirect("student_dashboard")
+        return redirect_user_dashboard(user)
 
     return render(request, "login.html")
 
@@ -110,7 +118,15 @@ def meme(request):
 
 
 @login_required
+def role_dashboard(request):
+    return redirect_user_dashboard(request.user)
+
+
+@login_required
 def student_dashboard(request):
+    if request.user.tipo_usuario != "estudiante":
+        return redirect_user_dashboard(request.user)
+
     latest_result = Result.objects.filter(student=request.user).select_related("test").first()
     progress_entries = Progress.objects.filter(student=request.user).order_by("phase")
     active_test = Test.objects.filter(is_active=True).order_by("name").first()
@@ -126,3 +142,24 @@ def student_dashboard(request):
             "certificate": certificate,
         },
     )
+
+
+@login_required
+def teacher_dashboard(request):
+    if request.user.tipo_usuario != "profesor":
+        return redirect_user_dashboard(request.user)
+
+    tests = Test.objects.select_related("created_by").prefetch_related("questions")[:5]
+    recent_results = Result.objects.select_related("student", "test")[:8]
+    students = Usuario.objects.filter(tipo_usuario="estudiante").order_by("username")[:8]
+
+    context = {
+        "tests_count": Test.objects.count(),
+        "active_tests_count": Test.objects.filter(is_active=True).count(),
+        "students_count": Usuario.objects.filter(tipo_usuario="estudiante").count(),
+        "results_count": Result.objects.count(),
+        "tests": tests,
+        "recent_results": recent_results,
+        "students": students,
+    }
+    return render(request, "teachers/dashboard.html", context)

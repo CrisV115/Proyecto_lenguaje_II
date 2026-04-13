@@ -1,11 +1,11 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
 from tracking.models import Progress
+from users.decorators import role_required
 
 
-@login_required
+@role_required("estudiante")
 def dashboard(request):
     progress = Progress.objects.filter(
         student=request.user,
@@ -17,7 +17,7 @@ def dashboard(request):
     return render(request, "leveling/dashboard.html", {"progress": progress})
 
 
-@login_required
+@role_required("estudiante")
 def complete_leveling(request):
     progress = Progress.objects.filter(
         student=request.user,

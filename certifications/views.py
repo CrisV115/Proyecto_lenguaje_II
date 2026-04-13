@@ -1,13 +1,13 @@
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
 from tracking.models import Progress
+from users.decorators import role_required
 
 from .models import Certificate
 
 
-@login_required
+@role_required("estudiante")
 def generate_certificate(request):
     induction_ready = Progress.objects.filter(
         student=request.user,
@@ -50,7 +50,7 @@ def generate_certificate(request):
     )
 
 
-@login_required
+@role_required("estudiante")
 def certificate_detail(request, certificate_id):
     certificate = get_object_or_404(
         Certificate,
