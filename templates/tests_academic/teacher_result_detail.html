@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle del resultado{% endblock %}
+
+{% block content %}
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
+        <div>
+            <span class="section-kicker mb-3">Resultado individual</span>
+            <h1 class="h2 mb-1 text-white">{{ result.student.username }} · {{ result.test.name }}</h1>
+            <p class="text-white-50 mb-0">Revision completa del intento del estudiante, incluyendo respuestas seleccionadas.</p>
+        </div>
+        <a class="btn btn-outline-light" href="{% url 'teacher_results' %}">Volver a resultados</a>
+    </div>
+</section>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="metric-card">
+            <div class="soft-label">Calificacion</div>
+            <div class="metric-value">{{ result.score|floatformat:2 }}%</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="metric-card">
+            <div class="soft-label">Estado</div>
+            <div class="metric-value">{% if result.passed %}OK{% else %}NO{% endif %}</div>
+            <div class="text-secondary mt-2">{% if result.passed %}Ruta de induccion habilitada.{% else %}Ruta de nivelacion habilitada.{% endif %}</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="metric-card">
+            <div class="soft-label">Fecha</div>
+            <div class="metric-value">{{ result.submitted_at|date:"d/m" }}</div>
+            <div class="text-secondary mt-2">{{ result.submitted_at|date:"H:i" }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card rounded-4 p-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+        <div>
+            <div class="soft-label mb-2">Respuestas</div>
+            <h2 class="h4 mb-0">Detalle por pregunta</h2>
+        </div>
+        <span class="badge-soft">{{ result.student_answers.count }} respuestas registradas</span>
+    </div>
+    <div class="vstack gap-3">
+        {% for item in result.student_answers.all %}
+            <div class="surface-panel p-4">
+                <div class="soft-label mb-2">Pregunta {{ forloop.counter }}</div>
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-2">
+                    <h3 class="h5 mb-0">{{ item.question.text }}</h3>
+                    <span class="badge-soft">{{ item.question.get_question_type_display }}</span>
+                </div>
+                {% if item.question.question_type == "checkboxes" %}
+                    <div class="mb-0">
+                        <div class="mb-2">Respuestas elegidas:</div>
+                        <ul class="list-clean">
+                            {% for option in item.question.answers.all %}
+                                {% if option.id in item.selected_answer_ids %}
+                                    <li><strong>{{ option.text }}</strong></li>
+                                {% endif %}
+                            {% empty %}
+                                <li>Sin opciones registradas.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% elif item.answer %}
+                    <p class="mb-0">Respuesta elegida: <strong>{{ item.answer.text }}</strong></p>
+                {% else %}
+                    <p class="mb-0">Respuesta escrita: <strong>{{ item.text_response|default:"Sin respuesta" }}</strong></p>
+                {% endif %}
+                <div class="mt-3">
+                    <span class="status-pill {% if item.is_correct %}success{% else %}warn{% endif %}">
+                        {% if item.is_correct %}Respuesta correcta{% else %}Respuesta incorrecta{% endif %}
+                    </span>
+                </div>
+            </div>
+        {% empty %}
+            <div class="empty-state">No se encontraron respuestas asociadas a este resultado.</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

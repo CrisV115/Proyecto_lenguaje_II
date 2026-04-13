@@ -45,16 +45,25 @@ def take_test(request, test_id):
     if request.method == "POST":
         form = TestForm(request.POST, test=test)
         if form.is_valid():
-            total = len(form.cleaned_data)
+            total = len(form.fields)
             correctas = 0
-            respuestas = []
+            student_answers = []
 
             with transaction.atomic():
-                for answer_id in form.cleaned_data.values():
-                    answer = Answer.objects.select_related("question").get(id=answer_id)
-                    if answer.is_correct:
+                for field_name, value in form.cleaned_data.items():
+                    question_id = int(field_name.split("_")[1])
+                    question = form.question_map[question_id]
+                    answer_data, is_correct = _build_student_answer(question, value)
+                    if is_correct:
                         correctas += 1
-                    respuestas.append(answer)
+                    student_answers.append(
+                        StudentAnswer(
+                            student=request.user,
+                            question=question,
+                            **answer_data,
+                            is_correct=is_correct,
+                        )
+                    )
 
                 final_score = (correctas / total) * 100 if total else 0
                 passed = final_score >= test.passing_score
@@ -66,17 +75,9 @@ def take_test(request, test_id):
                     passed=passed,
                 )
 
-                StudentAnswer.objects.bulk_create(
-                    [
-                        StudentAnswer(
-                            result=result,
-                            student=request.user,
-                            question=answer.question,
-                            answer=answer,
-                        )
-                        for answer in respuestas
-                    ]
-                )
+                for student_answer in student_answers:
+                    student_answer.result = result
+                StudentAnswer.objects.bulk_create(student_answers)
 
                 Progress.objects.update_or_create(
                     student=request.user,
@@ -129,7 +130,8 @@ def test_result(request, test_id):
 @role_required("profesor")
 def teacher_tests(request):
     tests = (
-        Test.objects.select_related("created_by")
+        Test.objects.filter(created_by=request.user)
+        .select_related("created_by")
         .annotate(
             questions_count=Count("questions", distinct=True),
             results_count=Count("results", distinct=True),
@@ -159,7 +161,7 @@ def teacher_test_create(request):
 
 @role_required("profesor")
 def teacher_test_edit(request, test_id):
-    test = get_object_or_404(Test, id=test_id)
+    test = get_object_or_404(Test, id=test_id, created_by=request.user)
 
     if request.method == "POST":
         form = TeacherTestForm(request.POST, instance=test)
@@ -179,7 +181,11 @@ def teacher_test_edit(request, test_id):
 
 @role_required("profesor")
 def teacher_results(request):
-    results = Result.objects.select_related("student", "test").order_by("-submitted_at")
+    results = (
+        Result.objects.filter(test__created_by=request.user)
+        .select_related("student", "test")
+        .order_by("-submitted_at")
+    )
     return render(request, "tests_academic/teacher_results.html", {"results": results})
 
 
@@ -189,12 +195,13 @@ def teacher_result_detail(request, result_id):
         Result.objects.select_related("student", "test").prefetch_related(
             Prefetch(
                 "student_answers",
-                queryset=StudentAnswer.objects.select_related("question", "answer").order_by(
-                    "question__order", "question__id"
-                ),
+                queryset=StudentAnswer.objects.select_related("question", "answer")
+                .prefetch_related("question__answers")
+                .order_by("question__order", "question__id"),
             )
         ),
         id=result_id,
+        test__created_by=request.user,
     )
     return render(
         request,
@@ -228,15 +235,17 @@ def _save_test_with_questions(form, user):
             question = Question.objects.create(
                 test=test,
                 text=parsed_question["text"],
+                question_type=parsed_question["question_type"],
+                required=parsed_question["required"],
                 order=order,
             )
-            questions.append(question)
             answers.extend(
                 [
                     Answer(
                         question=question,
                         text=answer_data["text"],
                         is_correct=answer_data["is_correct"],
+                        order=answer_data["order"],
                     )
                     for answer_data in parsed_question["answers"]
                 ]
@@ -244,3 +253,30 @@ def _save_test_with_questions(form, user):
 
         if answers:
             Answer.objects.bulk_create(answers)
+
+
+def _build_student_answer(question, value):
+    if question.question_type in {"multiple_choice", "dropdown"}:
+        answer = question.answers.get(id=int(value))
+        return {"answer": answer, "text_response": "", "selected_answer_ids": []}, answer.is_correct
+
+    if question.question_type == "checkboxes":
+        selected_ids = [int(answer_id) for answer_id in value]
+        selected_answers = list(question.answers.filter(id__in=selected_ids))
+        correct_ids = set(
+            question.answers.filter(is_correct=True).values_list("id", flat=True)
+        )
+        return {
+            "answer": None,
+            "text_response": "",
+            "selected_answer_ids": selected_ids,
+        }, set(selected_ids) == correct_ids and bool(correct_ids)
+
+    expected_answer = question.answers.filter(is_correct=True).first()
+    normalized_value = (value or "").strip()
+    expected_text = expected_answer.text.strip() if expected_answer else ""
+    return {
+        "answer": None,
+        "text_response": normalized_value,
+        "selected_answer_ids": [],
+    }, normalized_value.lower() == expected_text.lower()

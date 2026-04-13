@@ -3,13 +3,16 @@
 {% block title %}{{ test.name }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h1 class="h2 mb-1">{{ test.name }}</h1>
-        <p class="text-secondary mb-0">Tipo: {{ test.get_type_display }} | Duracion estimada: {{ test.duration }} minutos</p>
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
+        <div>
+            <span class="section-kicker mb-3">Test diagnostico</span>
+            <h1 class="h2 mb-1 text-white">{{ test.name }}</h1>
+            <p class="text-white-50 mb-0">Tipo: {{ test.get_type_display }} · Duracion estimada: {{ test.duration }} minutos</p>
+        </div>
+        <a class="btn btn-outline-light" href="{% url 'tests_index' %}">Volver a tests</a>
     </div>
-    <a class="btn btn-outline-primary" href="{% url 'tests_index' %}">Volver a tests</a>
-</div>
+</section>
 
 <div class="glass-card rounded-4 p-4">
     <form method="post" class="vstack gap-3">
@@ -17,6 +20,9 @@
         {% for field in form %}
             <fieldset class="border rounded-4 p-3">
                 <legend class="float-none w-auto px-2 fs-6 fw-semibold">{{ field.label }}</legend>
+                {% if field.help_text %}
+                    <div class="text-secondary small mb-3">{{ field.help_text }}</div>
+                {% endif %}
                 {{ field }}
                 {% if field.errors %}
                     <div class="text-danger small mt-2">{{ field.errors }}</div>

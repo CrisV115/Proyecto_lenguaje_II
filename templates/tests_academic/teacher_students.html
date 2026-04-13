@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Estudiantes{% endblock %}
+
+{% block content %}
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
+        <div>
+            <span class="section-kicker mb-3">Base estudiantil</span>
+            <h1 class="h2 mb-1 text-white">Estudiantes registrados</h1>
+            <p class="text-white-50 mb-0">Consulta quienes forman parte del sistema y cuantos resultados tienen almacenados.</p>
+        </div>
+        <a class="btn btn-outline-light" href="{% url 'teacher_dashboard' %}">Volver al panel</a>
+    </div>
+</section>
+
+<div class="glass-card rounded-4 p-4">
+    {% if students %}
+        <div class="table-responsive">
+            <table class="table table-soft align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th>Correo</th>
+                        <th>Telefono</th>
+                        <th>Resultados</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                        <tr>
+                            <td>{{ student.username }}</td>
+                            <td>{{ student.email }}</td>
+                            <td>{{ student.telefono }}</td>
+                            <td>{{ student.results_count }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">No hay estudiantes registrados actualmente.</div>
+    {% endif %}
+</div>
+{% endblock %}

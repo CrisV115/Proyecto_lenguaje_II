@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Panel del profesor{% endblock %}
+
+{% block content %}
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <div class="row align-items-end g-4">
+        <div class="col-lg-8">
+            <span class="section-kicker mb-3">Panel docente</span>
+            <h1 class="display-6 fw-bold mb-3 text-white">Gestion del diagnostico academico</h1>
+            <p class="lead mb-0 text-white-50">Crea tests, revisa respuestas enviadas por estudiantes y monitorea el rendimiento general desde un solo lugar.</p>
+        </div>
+        <div class="col-lg-4">
+            <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+                <a class="btn btn-light" href="{% url 'teacher_test_create' %}">Crear test</a>
+                <a class="btn btn-outline-light" href="{% url 'teacher_results' %}">Ver resultados</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="soft-label">Tests creados</div>
+            <div class="metric-value">{{ tests_count }}</div>
+            <div class="text-secondary mt-2">Evaluaciones registradas por este profesor.</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="soft-label">Tests activos</div>
+            <div class="metric-value">{{ active_tests_count }}</div>
+            <div class="text-secondary mt-2">Disponibles para los estudiantes actualmente.</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="soft-label">Resultados</div>
+            <div class="metric-value">{{ results_count }}</div>
+            <div class="text-secondary mt-2">Intentos enviados en tests bajo tu gestion.</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="soft-label">Estudiantes</div>
+            <div class="metric-value">{{ students_count }}</div>
+            <div class="text-secondary mt-2">Usuarios registrados con rol de estudiante.</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-5">
+        <div class="glass-card dashboard-card">
+            <div class="card-header">
+                <div class="soft-label">Tests recientes</div>
+                <h2 class="h4 mb-0">Diagnosticos publicados</h2>
+            </div>
+            <div class="card-body">
+                {% if tests %}
+                    <ul class="status-list">
+                        {% for test in tests %}
+                            <li>
+                                <div class="w-100">
+                                    <div class="d-flex justify-content-between gap-3 flex-wrap mb-2">
+                                        <div>
+                                            <strong>{{ test.name }}</strong>
+                                            <div class="text-secondary small">{{ test.get_type_display }} · {{ test.questions.count }} preguntas</div>
+                                        </div>
+                                        <span class="status-pill {% if test.is_active %}success{% else %}warn{% endif %}">
+                                            {% if test.is_active %}Activo{% else %}Inactivo{% endif %}
+                                        </span>
+                                    </div>
+                                    <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_test_edit' test.id %}">Editar test</a>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="empty-state">Todavia no has creado tests. Empieza publicando un diagnostico para tus estudiantes.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        <div class="glass-card dashboard-card">
+            <div class="card-header d-flex justify-content-between align-items-center gap-3">
+                <div>
+                    <div class="soft-label">Actividad</div>
+                    <h2 class="h4 mb-0">Ultimos resultados enviados</h2>
+                </div>
+                <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_results' %}">Abrir listado completo</a>
+            </div>
+            <div class="card-body">
+                {% if recent_results %}
+                    <div class="table-responsive">
+                        <table class="table table-soft align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Estudiante</th>
+                                    <th>Test</th>
+                                    <th>Nota</th>
+                                    <th>Estado</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for result in recent_results %}
+                                    <tr>
+                                        <td>{{ result.student.username }}</td>
+                                        <td>{{ result.test.name }}</td>
+                                        <td>{{ result.score|floatformat:2 }}%</td>
+                                        <td>
+                                            <span class="status-pill {% if result.passed %}success{% else %}warn{% endif %}">
+                                                {% if result.passed %}Aprobado{% else %}Nivelacion{% endif %}
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_result_detail' result.id %}">Ver detalle</a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">Aun no hay respuestas registradas en los tests que has creado.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card rounded-4 p-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+        <div>
+            <div class="soft-label mb-2">Acceso rapido</div>
+            <h2 class="h4 mb-0">Estudiantes registrados</h2>
+        </div>
+        <a class="btn btn-outline-primary" href="{% url 'teacher_students' %}">Ver todos</a>
+    </div>
+    {% if students %}
+        <div class="d-flex flex-wrap gap-2">
+            {% for student in students %}
+                <span class="badge-soft">{{ student.username }}</span>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">No hay estudiantes registrados todavia.</div>
+    {% endif %}
+</div>
+{% endblock %}

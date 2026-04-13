@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Resultados de estudiantes{% endblock %}
+
+{% block content %}
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
+        <div>
+            <span class="section-kicker mb-3">Seguimiento docente</span>
+            <h1 class="h2 mb-1 text-white">Resultados de estudiantes</h1>
+            <p class="text-white-50 mb-0">Consulta el desempeno por test y accede al detalle de cada respuesta enviada.</p>
+        </div>
+        <a class="btn btn-outline-light" href="{% url 'teacher_dashboard' %}">Volver al panel</a>
+    </div>
+</section>
+
+<div class="glass-card rounded-4 p-4">
+    {% if results %}
+        <div class="table-responsive">
+            <table class="table table-soft align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Estudiante</th>
+                        <th>Test</th>
+                        <th>Nota</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for result in results %}
+                        <tr>
+                            <td>{{ result.student.username }}</td>
+                            <td>{{ result.test.name }}</td>
+                            <td>{{ result.score|floatformat:2 }}%</td>
+                            <td>
+                                <span class="status-pill {% if result.passed %}success{% else %}warn{% endif %}">
+                                    {% if result.passed %}Aprobado{% else %}Nivelacion{% endif %}
+                                </span>
+                            </td>
+                            <td>{{ result.submitted_at|date:"d/m/Y H:i" }}</td>
+                            <td class="text-end">
+                                <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_result_detail' result.id %}">Ver detalle</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">Aun no existen resultados para los tests creados por este profesor.</div>
+    {% endif %}
+</div>
+{% endblock %}

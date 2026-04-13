@@ -31,8 +31,22 @@ class Test(models.Model):
 
 
 class Question(models.Model):
+    QUESTION_TYPES = [
+        ("short_text", "Respuesta corta"),
+        ("long_text", "Respuesta larga"),
+        ("multiple_choice", "Seleccion multiple"),
+        ("checkboxes", "Casillas de verificacion"),
+        ("dropdown", "Lista desplegable"),
+    ]
+
     test = models.ForeignKey(Test, on_delete=models.CASCADE, related_name="questions")
     text = models.TextField()
+    question_type = models.CharField(
+        max_length=20,
+        choices=QUESTION_TYPES,
+        default="multiple_choice",
+    )
+    required = models.BooleanField(default=True)
     order = models.PositiveIntegerField(default=1)
 
     class Meta:
@@ -50,6 +64,10 @@ class Answer(models.Model):
     )
     text = models.CharField(max_length=255)
     is_correct = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        ordering = ["question", "order", "id"]
 
     def __str__(self):
         return self.text
@@ -92,7 +110,15 @@ class StudentAnswer(models.Model):
         related_name="student_answers",
     )
     question = models.ForeignKey(Question, on_delete=models.CASCADE)
-    answer = models.ForeignKey(Answer, on_delete=models.CASCADE)
+    answer = models.ForeignKey(
+        Answer,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+    text_response = models.TextField(blank=True)
+    selected_answer_ids = models.JSONField(default=list, blank=True)
+    is_correct = models.BooleanField(null=True, blank=True)
     answered_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

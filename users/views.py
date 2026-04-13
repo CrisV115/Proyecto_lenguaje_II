@@ -149,15 +149,25 @@ def teacher_dashboard(request):
     if request.user.tipo_usuario != "profesor":
         return redirect_user_dashboard(request.user)
 
-    tests = Test.objects.select_related("created_by").prefetch_related("questions")[:5]
-    recent_results = Result.objects.select_related("student", "test")[:8]
+    tests = (
+        Test.objects.filter(created_by=request.user)
+        .select_related("created_by")
+        .prefetch_related("questions")[:5]
+    )
+    recent_results = (
+        Result.objects.filter(test__created_by=request.user)
+        .select_related("student", "test")[:8]
+    )
     students = Usuario.objects.filter(tipo_usuario="estudiante").order_by("username")[:8]
 
     context = {
-        "tests_count": Test.objects.count(),
-        "active_tests_count": Test.objects.filter(is_active=True).count(),
+        "tests_count": Test.objects.filter(created_by=request.user).count(),
+        "active_tests_count": Test.objects.filter(
+            created_by=request.user,
+            is_active=True,
+        ).count(),
         "students_count": Usuario.objects.filter(tipo_usuario="estudiante").count(),
-        "results_count": Result.objects.count(),
+        "results_count": Result.objects.filter(test__created_by=request.user).count(),
         "tests": tests,
         "recent_results": recent_results,
         "students": students,

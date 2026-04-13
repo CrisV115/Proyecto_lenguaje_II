@@ -1,7 +1,14 @@
+import json
+
 from django import forms
 from django.core.exceptions import ValidationError
 
 from .models import Question, Test
+
+
+QUESTION_TYPE_LABELS = dict(Question.QUESTION_TYPES)
+OPTION_BASED_TYPES = {"multiple_choice", "checkboxes", "dropdown"}
+TEXT_BASED_TYPES = {"short_text", "long_text"}
 
 
 class TestForm(forms.Form):
@@ -9,31 +16,55 @@ class TestForm(forms.Form):
         test = kwargs.pop("test")
         super().__init__(*args, **kwargs)
 
-        for question in Question.objects.filter(test=test).prefetch_related("answers"):
-            answers = question.answers.all()
-            self.fields[f"question_{question.id}"] = forms.ChoiceField(
-                label=question.text,
-                choices=[(answer.id, answer.text) for answer in answers],
-                widget=forms.RadioSelect,
-            )
+        questions = Question.objects.filter(test=test).prefetch_related("answers")
+        self.question_map = {question.id: question for question in questions}
+
+        for question in questions:
+            field_name = f"question_{question.id}"
+            common = {
+                "label": question.text,
+                "required": question.required,
+                "help_text": QUESTION_TYPE_LABELS.get(question.question_type, ""),
+            }
+
+            if question.question_type == "short_text":
+                self.fields[field_name] = forms.CharField(
+                    widget=forms.TextInput(attrs={"class": "form-control"}),
+                    **common,
+                )
+            elif question.question_type == "long_text":
+                self.fields[field_name] = forms.CharField(
+                    widget=forms.Textarea(
+                        attrs={"class": "form-control", "rows": 4}
+                    ),
+                    **common,
+                )
+            elif question.question_type == "multiple_choice":
+                self.fields[field_name] = forms.ChoiceField(
+                    choices=[(answer.id, answer.text) for answer in question.answers.all()],
+                    widget=forms.RadioSelect(attrs={"class": "list-clean vstack gap-2"}),
+                    **common,
+                )
+            elif question.question_type == "checkboxes":
+                self.fields[field_name] = forms.MultipleChoiceField(
+                    choices=[(answer.id, answer.text) for answer in question.answers.all()],
+                    widget=forms.CheckboxSelectMultiple(
+                        attrs={"class": "list-clean vstack gap-2"}
+                    ),
+                    **common,
+                )
+            elif question.question_type == "dropdown":
+                self.fields[field_name] = forms.ChoiceField(
+                    choices=[("", "Seleccione una opcion"), *[
+                        (answer.id, answer.text) for answer in question.answers.all()
+                    ]],
+                    widget=forms.Select(attrs={"class": "form-select"}),
+                    **common,
+                )
 
 
 class TeacherTestForm(forms.ModelForm):
-    questions_payload = forms.CharField(
-        label="Preguntas y respuestas",
-        widget=forms.Textarea(
-            attrs={
-                "rows": 12,
-                "placeholder": (
-                    "Formato por linea:\n"
-                    "Pregunta|Respuesta correcta*|Respuesta 2|Respuesta 3|Respuesta 4"
-                ),
-            }
-        ),
-        help_text=(
-            "Marca la respuesta correcta con * y separa cada elemento con |."
-        ),
-    )
+    questions_payload = forms.CharField(widget=forms.HiddenInput())
 
     class Meta:
         model = Test
@@ -61,59 +92,136 @@ class TeacherTestForm(forms.ModelForm):
             elif isinstance(widget, forms.CheckboxInput):
                 widget.attrs["class"] = f"{current_class} form-check-input".strip()
 
-        if self.instance.pk and self.instance.questions.exists():
-            lines = []
+        if self.instance.pk:
+            payload = []
             for question in self.instance.questions.prefetch_related("answers"):
-                options = []
-                for answer in question.answers.all():
-                    suffix = "*" if answer.is_correct else ""
-                    options.append(f"{answer.text}{suffix}")
-                lines.append("|".join([question.text, *options]))
-            self.fields["questions_payload"].initial = "\n".join(lines)
+                options = [
+                    {
+                        "text": answer.text,
+                        "is_correct": answer.is_correct,
+                    }
+                    for answer in question.answers.all()
+                ]
+                payload.append(
+                    {
+                        "id": question.id,
+                        "text": question.text,
+                        "question_type": question.question_type,
+                        "required": question.required,
+                        "options": options,
+                    }
+                )
+            self.fields["questions_payload"].initial = json.dumps(payload, ensure_ascii=True)
+        else:
+            self.fields["questions_payload"].initial = "[]"
 
     def clean_questions_payload(self):
-        payload = self.cleaned_data["questions_payload"]
-        parsed_questions = []
+        payload = self.cleaned_data.get("questions_payload", "[]")
+        try:
+            parsed = json.loads(payload)
+        except json.JSONDecodeError as exc:
+            raise ValidationError("No se pudo interpretar la estructura del formulario.") from exc
 
-        for line_number, raw_line in enumerate(payload.splitlines(), start=1):
-            line = raw_line.strip()
-            if not line:
-                continue
+        if not isinstance(parsed, list) or not parsed:
+            raise ValidationError("Debes agregar al menos una pregunta.")
 
-            parts = [part.strip() for part in line.split("|") if part.strip()]
-            if len(parts) < 3:
-                raise ValidationError(
-                    f"La linea {line_number} debe incluir una pregunta y al menos dos respuestas."
-                )
+        normalized_questions = []
 
-            question_text, *raw_answers = parts
-            answers = []
-            correct_answers = 0
+        for index, raw_question in enumerate(parsed, start=1):
+            if not isinstance(raw_question, dict):
+                raise ValidationError(f"La pregunta {index} no tiene un formato valido.")
 
-            for raw_answer in raw_answers:
-                is_correct = raw_answer.endswith("*")
-                answer_text = raw_answer[:-1].strip() if is_correct else raw_answer
-                if not answer_text:
-                    raise ValidationError(
-                        f"La linea {line_number} tiene una respuesta vacia."
-                    )
-                correct_answers += 1 if is_correct else 0
-                answers.append({"text": answer_text, "is_correct": is_correct})
+            text = str(raw_question.get("text", "")).strip()
+            question_type = str(raw_question.get("question_type", "")).strip()
+            required = bool(raw_question.get("required", True))
+            raw_options = raw_question.get("options", [])
 
-            if correct_answers != 1:
-                raise ValidationError(
-                    f"La linea {line_number} debe tener exactamente una respuesta correcta."
-                )
+            if not text:
+                raise ValidationError(f"La pregunta {index} debe tener un enunciado.")
 
-            parsed_questions.append(
+            if question_type not in QUESTION_TYPE_LABELS:
+                raise ValidationError(f"La pregunta {index} tiene un tipo no permitido.")
+
+            if question_type in OPTION_BASED_TYPES:
+                options = self._clean_option_question(index, question_type, raw_options)
+            else:
+                options = self._clean_text_question(index, question_type, raw_options)
+
+            normalized_questions.append(
                 {
-                    "text": question_text,
-                    "answers": answers,
+                    "text": text,
+                    "question_type": question_type,
+                    "required": required,
+                    "answers": options,
                 }
             )
 
-        if not parsed_questions:
-            raise ValidationError("Debes ingresar al menos una pregunta.")
-
-        self.parsed_questions = parsed_questions
+        self.parsed_questions = normalized_questions
         return payload
+
+    def _clean_option_question(self, index, question_type, raw_options):
+        if not isinstance(raw_options, list):
+            raise ValidationError(
+                f"La pregunta {index} debe incluir una lista de opciones."
+            )
+
+        options = []
+        correct_count = 0
+
+        for option_index, raw_option in enumerate(raw_options, start=1):
+            text = str(raw_option.get("text", "")).strip()
+            if not text:
+                continue
+            is_correct = bool(raw_option.get("is_correct", False))
+            correct_count += 1 if is_correct else 0
+            options.append(
+                {
+                    "text": text,
+                    "is_correct": is_correct,
+                    "order": option_index,
+                }
+            )
+
+        if len(options) < 2:
+            raise ValidationError(
+                f"La pregunta {index} debe tener al menos dos opciones."
+            )
+
+        if question_type == "checkboxes":
+            if correct_count < 1:
+                raise ValidationError(
+                    f"La pregunta {index} debe tener al menos una opcion correcta."
+                )
+        elif correct_count != 1:
+            raise ValidationError(
+                f"La pregunta {index} debe tener exactamente una opcion correcta."
+            )
+
+        return options
+
+    def _clean_text_question(self, index, question_type, raw_options):
+        if not isinstance(raw_options, list):
+            raise ValidationError(
+                f"La pregunta {index} debe incluir la respuesta esperada."
+            )
+
+        options = []
+        for option_index, raw_option in enumerate(raw_options, start=1):
+            text = str(raw_option.get("text", "")).strip()
+            if not text:
+                continue
+            options.append(
+                {
+                    "text": text,
+                    "is_correct": option_index == 1,
+                    "order": option_index,
+                }
+            )
+
+        if not options:
+            label = "respuesta esperada" if question_type == "short_text" else "guia de respuesta"
+            raise ValidationError(
+                f"La pregunta {index} debe incluir una {label}."
+            )
+
+        return options

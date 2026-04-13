@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
+        <div>
+            <span class="section-kicker mb-3">Constructor docente</span>
+            <h1 class="h2 mb-1 text-white">{{ page_title }}</h1>
+            <p class="text-white-50 mb-0">Disena tu test como un formulario visual. Tipos permitidos: respuesta corta, respuesta larga, seleccion multiple, casillas de verificacion y lista desplegable.</p>
+        </div>
+        <a class="btn btn-outline-light" href="{% url 'teacher_tests' %}">Volver a tests</a>
+    </div>
+</section>
+
+<form method="post" id="teacher-test-form" class="builder-shell">
+    {% csrf_token %}
+    {{ form.questions_payload }}
+
+    {% if form.non_field_errors or form.questions_payload.errors %}
+        <div class="alert alert-danger mb-0">
+            {{ form.non_field_errors }}
+            {{ form.questions_payload.errors }}
+        </div>
+    {% endif %}
+
+    <div class="builder-card">
+        <div class="builder-card__accent"></div>
+        <div class="builder-card__body">
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <label class="form-label">Titulo del formulario</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors }}</div>{% endif %}
+                </div>
+                <div class="col-lg-5">
+                    <label class="form-label">Categoria del test</label>
+                    {{ form.type }}
+                    {% if form.type.errors %}<div class="text-danger small mt-1">{{ form.type.errors }}</div>{% endif %}
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Descripcion</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}<div class="text-danger small mt-1">{{ form.description.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Duracion (minutos)</label>
+                    {{ form.duration }}
+                    {% if form.duration.errors %}<div class="text-danger small mt-1">{{ form.duration.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Nota minima para aprobar</label>
+                    {{ form.passing_score }}
+                    {% if form.passing_score.errors %}<div class="text-danger small mt-1">{{ form.passing_score.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <div class="form-check mb-2">
+                        {{ form.is_active }}
+                        <label class="form-check-label ms-2" for="{{ form.is_active.id_for_label }}">Publicar test para estudiantes</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="builder-layout">
+        <div id="question-builder" class="vstack gap-4"></div>
+
+        <aside class="builder-toolbar vstack gap-3">
+            <div class="builder-card">
+                <div class="builder-card__body">
+                    <div class="soft-label mb-2">Herramientas</div>
+                    <h2 class="h4 mb-3">Agregar preguntas</h2>
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-primary add-question" data-type="short_text">Respuesta corta</button>
+                        <button type="button" class="btn btn-outline-primary add-question" data-type="long_text">Respuesta larga</button>
+                        <button type="button" class="btn btn-outline-primary add-question" data-type="multiple_choice">Seleccion multiple</button>
+                        <button type="button" class="btn btn-outline-primary add-question" data-type="checkboxes">Casillas de verificacion</button>
+                        <button type="button" class="btn btn-outline-primary add-question" data-type="dropdown">Lista desplegable</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="builder-card">
+                <div class="builder-card__body">
+                    <div class="soft-label mb-2">Publicacion</div>
+                    <p class="text-secondary mb-3">Las preguntas se ordenan de arriba hacia abajo. Puedes duplicar, eliminar o cambiar el tipo antes de guardar.</p>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Guardar test</button>
+                        <a class="btn btn-outline-secondary" href="{% url 'teacher_tests' %}">Cancelar</a>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const questionLabels = {
+        short_text: "Respuesta corta",
+        long_text: "Respuesta larga",
+        multiple_choice: "Seleccion multiple",
+        checkboxes: "Casillas de verificacion",
+        dropdown: "Lista desplegable"
+    };
+
+    const typeIcons = {
+        short_text: "Aa",
+        long_text: "¶",
+        multiple_choice: "◉",
+        checkboxes: "☑",
+        dropdown: "▾"
+    };
+
+    const payloadInput = document.getElementById("id_questions_payload");
+    const builder = document.getElementById("question-builder");
+    const form = document.getElementById("teacher-test-form");
+
+    function safeParsePayload() {
+        try {
+            const parsed = JSON.parse(payloadInput.value || "[]");
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    let questions = safeParsePayload();
+    let activeQuestionIndex = questions.length ? 0 : null;
+
+    function createOption(text = "", isCorrect = false) {
+        return { text, is_correct: isCorrect };
+    }
+
+    function createQuestion(type) {
+        const optionDefaults = {
+            short_text: [createOption("")],
+            long_text: [createOption("")],
+            multiple_choice: [createOption("Opcion 1", true), createOption("Opcion 2", false)],
+            checkboxes: [createOption("Opcion 1", true), createOption("Opcion 2", false)],
+            dropdown: [createOption("Opcion 1", true), createOption("Opcion 2", false)]
+        };
+
+        return {
+            text: "",
+            question_type: type,
+            required: true,
+            options: optionDefaults[type].map(option => ({ ...option }))
+        };
+    }
+
+    function ensureValidStructure() {
+        questions = questions.map((question) => ({
+            text: question.text || "",
+            question_type: question.question_type in questionLabels ? question.question_type : "multiple_choice",
+            required: question.required !== false,
+            options: Array.isArray(question.options) && question.options.length
+                ? question.options.map((option) => ({
+                    text: option.text || "",
+                    is_correct: Boolean(option.is_correct)
+                }))
+                : createQuestion(question.question_type || "multiple_choice").options
+        }));
+    }
+
+    function syncPayload() {
+        payloadInput.value = JSON.stringify(questions);
+    }
+
+    function previewMarkup(question, option, optionIndex) {
+        if (question.question_type === "multiple_choice") {
+            return `<span class="builder-option-bullet">◉</span>`;
+        }
+        if (question.question_type === "checkboxes") {
+            return `<span class="builder-option-bullet">☑</span>`;
+        }
+        if (question.question_type === "dropdown") {
+            return `<span class="builder-option-bullet">${optionIndex + 1}</span>`;
+        }
+        return `<span class="builder-option-bullet">${optionIndex + 1}</span>`;
+    }
+
+    function updateCorrectSelection(question, optionIndex, checked) {
+        if (question.question_type === "checkboxes") {
+            question.options[optionIndex].is_correct = checked;
+            return;
+        }
+
+        question.options = question.options.map((option, index) => ({
+            ...option,
+            is_correct: index === optionIndex
+        }));
+    }
+
+    function addOption(questionIndex) {
+        questions[questionIndex].options.push(createOption(`Opcion ${questions[questionIndex].options.length + 1}`));
+        renderBuilder();
+    }
+
+    function removeOption(questionIndex, optionIndex) {
+        if (questions[questionIndex].options.length <= 1) {
+            return;
+        }
+        questions[questionIndex].options.splice(optionIndex, 1);
+        if (!questions[questionIndex].options.some((option) => option.is_correct)) {
+            questions[questionIndex].options[0].is_correct = true;
+        }
+        renderBuilder();
+    }
+
+    function moveQuestion(questionIndex, direction) {
+        const targetIndex = questionIndex + direction;
+        if (targetIndex < 0 || targetIndex >= questions.length) {
+            return;
+        }
+        const [question] = questions.splice(questionIndex, 1);
+        questions.splice(targetIndex, 0, question);
+        activeQuestionIndex = targetIndex;
+        renderBuilder();
+    }
+
+    function duplicateQuestion(questionIndex) {
+        const clone = JSON.parse(JSON.stringify(questions[questionIndex]));
+        questions.splice(questionIndex + 1, 0, clone);
+        activeQuestionIndex = questionIndex + 1;
+        renderBuilder();
+    }
+
+    function renderQuestion(question, questionIndex) {
+        const isTextType = ["short_text", "long_text"].includes(question.question_type);
+        const correctInputType = question.question_type === "checkboxes" ? "checkbox" : "radio";
+        const optionsTitle = question.question_type === "long_text"
+            ? "Guia de respuesta esperada"
+            : (question.question_type === "short_text" ? "Respuesta esperada" : "Opciones");
+
+        return `
+            <article class="builder-card builder-question ${activeQuestionIndex === questionIndex ? "active" : ""}" data-index="${questionIndex}">
+                <div class="builder-card__accent"></div>
+                <div class="builder-card__body">
+                    <div class="d-flex justify-content-between gap-3 flex-wrap mb-3">
+                        <span class="question-type-badge">${typeIcons[question.question_type]} ${questionLabels[question.question_type]}</span>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="button" class="btn btn-outline-secondary btn-sm move-up" ${questionIndex === 0 ? "disabled" : ""}>Subir</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm move-down" ${questionIndex === questions.length - 1 ? "disabled" : ""}>Bajar</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm duplicate-question">Duplicar</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm delete-question">Eliminar</button>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-lg-8">
+                            <label class="form-label">Pregunta</label>
+                            <input type="text" class="form-control question-text" value="${question.text.replace(/"/g, "&quot;")}" placeholder="Escribe la pregunta">
+                        </div>
+                        <div class="col-lg-4">
+                            <label class="form-label">Tipo de respuesta</label>
+                            <select class="form-select question-type">
+                                ${Object.entries(questionLabels).map(([value, label]) => `
+                                    <option value="${value}" ${question.question_type === value ? "selected" : ""}>${label}</option>
+                                `).join("")}
+                            </select>
+                        </div>
+                        <div class="col-12 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <div>
+                                <div class="soft-label mb-1">${optionsTitle}</div>
+                                <div class="text-secondary small">
+                                    ${isTextType ? "Define la respuesta con la que se comparara la entrada del estudiante." : "Marca la o las respuestas correctas segun el tipo de pregunta."}
+                                </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input question-required" type="checkbox" ${question.required ? "checked" : ""}>
+                                <label class="form-check-label">Obligatoria</label>
+                            </div>
+                        </div>
+                        <div class="col-12 options-panel">
+                            ${question.options.map((option, optionIndex) => `
+                                <div class="builder-option-row" data-option-index="${optionIndex}">
+                                    ${previewMarkup(question, option, optionIndex)}
+                                    <input type="text" class="form-control option-text" value="${option.text.replace(/"/g, "&quot;")}" placeholder="${isTextType ? "Respuesta esperada" : `Opcion ${optionIndex + 1}`}">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm remove-option" ${question.options.length <= 1 ? "disabled" : ""}>×</button>
+                                    <div></div>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <input type="${correctInputType}" class="form-check-input option-correct" name="correct-${questionIndex}" ${option.is_correct ? "checked" : ""}>
+                                        <span class="text-secondary small">${question.question_type === "checkboxes" ? "Respuesta correcta" : "Correcta"}</span>
+                                    </div>
+                                    <div></div>
+                                </div>
+                            `).join("")}
+                            ${isTextType ? "" : `<button type="button" class="btn btn-outline-primary btn-sm add-option mt-2">Agregar opcion</button>`}
+                        </div>
+                    </div>
+                </div>
+            </article>
+        `;
+    }
+
+    function renderBuilder() {
+        ensureValidStructure();
+        syncPayload();
+
+        if (!questions.length) {
+            builder.innerHTML = `
+                <div class="builder-empty">
+                    <h2 class="h4 mb-2">Aun no hay preguntas</h2>
+                    <p class="mb-0">Usa el panel lateral para agregar preguntas y construir el test como un formulario visual.</p>
+                </div>
+            `;
+            return;
+        }
+
+        builder.innerHTML = questions.map(renderQuestion).join("");
+        attachQuestionEvents();
+    }
+
+    function attachQuestionEvents() {
+        builder.querySelectorAll(".builder-question").forEach((questionCard) => {
+            const questionIndex = Number(questionCard.dataset.index);
+            const question = questions[questionIndex];
+
+            questionCard.addEventListener("click", () => {
+                activeQuestionIndex = questionIndex;
+                renderBuilder();
+            });
+
+            questionCard.querySelector(".question-text").addEventListener("input", (event) => {
+                question.text = event.target.value;
+                syncPayload();
+            });
+
+            questionCard.querySelector(".question-type").addEventListener("change", (event) => {
+                const replacement = createQuestion(event.target.value);
+                replacement.text = question.text;
+                replacement.required = question.required;
+                questions[questionIndex] = replacement;
+                activeQuestionIndex = questionIndex;
+                renderBuilder();
+            });
+
+            questionCard.querySelector(".question-required").addEventListener("change", (event) => {
+                question.required = event.target.checked;
+                syncPayload();
+            });
+
+            questionCard.querySelector(".move-up").addEventListener("click", (event) => {
+                event.stopPropagation();
+                moveQuestion(questionIndex, -1);
+            });
+
+            questionCard.querySelector(".move-down").addEventListener("click", (event) => {
+                event.stopPropagation();
+                moveQuestion(questionIndex, 1);
+            });
+
+            questionCard.querySelector(".duplicate-question").addEventListener("click", (event) => {
+                event.stopPropagation();
+                duplicateQuestion(questionIndex);
+            });
+
+            questionCard.querySelector(".delete-question").addEventListener("click", (event) => {
+                event.stopPropagation();
+                questions.splice(questionIndex, 1);
+                activeQuestionIndex = questions.length ? Math.max(0, questionIndex - 1) : null;
+                renderBuilder();
+            });
+
+            questionCard.querySelectorAll(".builder-option-row").forEach((optionRow) => {
+                const optionIndex = Number(optionRow.dataset.optionIndex);
+
+                optionRow.querySelector(".option-text").addEventListener("input", (event) => {
+                    question.options[optionIndex].text = event.target.value;
+                    syncPayload();
+                });
+
+                optionRow.querySelector(".option-correct").addEventListener("change", (event) => {
+                    updateCorrectSelection(question, optionIndex, event.target.checked);
+                    renderBuilder();
+                });
+
+                const removeButton = optionRow.querySelector(".remove-option");
+                if (removeButton) {
+                    removeButton.addEventListener("click", (event) => {
+                        event.stopPropagation();
+                        removeOption(questionIndex, optionIndex);
+                    });
+                }
+            });
+
+            const addOptionButton = questionCard.querySelector(".add-option");
+            if (addOptionButton) {
+                addOptionButton.addEventListener("click", (event) => {
+                    event.stopPropagation();
+                    addOption(questionIndex);
+                });
+            }
+        });
+    }
+
+    document.querySelectorAll(".add-question").forEach((button) => {
+        button.addEventListener("click", () => {
+            questions.push(createQuestion(button.dataset.type));
+            activeQuestionIndex = questions.length - 1;
+            renderBuilder();
+        });
+    });
+
+    form.addEventListener("submit", () => {
+        syncPayload();
+    });
+
+    renderBuilder();
+</script>
+{% endblock %}

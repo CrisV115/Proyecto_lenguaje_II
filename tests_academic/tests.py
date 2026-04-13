@@ -20,10 +20,20 @@ class AcademicFlowTests(TestCase):
             pregunta_seguridad="mascota",
             respuesta_seguridad="firulais",
         )
+        self.professor = self.user_model.objects.create_user(
+            username="profesor_demo",
+            password="ClaveSegura123",
+            email="profesor_demo@example.com",
+            telefono="0987654321",
+            tipo_usuario="profesor",
+            pregunta_seguridad="madre",
+            respuesta_seguridad="maria",
+        )
         self.test = Test.objects.create(
             name="Test demo",
             type="conocimientos",
             duration=20,
+            created_by=self.professor,
         )
         self.question_one = Question.objects.create(
             test=self.test,
@@ -141,3 +151,51 @@ class AcademicFlowTests(TestCase):
         certificate = Certificate.objects.get(student=self.user)
         self.assertEqual(certificate.source_phase, Progress.Phases.INDUCTION)
         self.assertTrue(certificate.valid)
+
+    def test_login_redirects_user_by_role(self):
+        self.client.logout()
+
+        response = self.client.post(
+            reverse("login"),
+            {"username": "estudiante_demo", "password": "ClaveSegura123"},
+        )
+        self.assertRedirects(response, reverse("student_dashboard"))
+
+        self.client.logout()
+        response = self.client.post(
+            reverse("login"),
+            {"username": "profesor_demo", "password": "ClaveSegura123"},
+        )
+        self.assertRedirects(response, reverse("teacher_dashboard"))
+
+    def test_teacher_can_manage_tests_and_review_student_results(self):
+        Result.objects.create(
+            student=self.user,
+            test=self.test,
+            score=100,
+            passed=True,
+        )
+
+        self.client.logout()
+        self.client.login(username="profesor_demo", password="ClaveSegura123")
+
+        dashboard_response = self.client.get(reverse("teacher_dashboard"))
+        self.assertEqual(dashboard_response.status_code, 200)
+        self.assertContains(dashboard_response, "Gestion del diagnostico academico")
+
+        tests_response = self.client.get(reverse("teacher_tests"))
+        self.assertEqual(tests_response.status_code, 200)
+        self.assertContains(tests_response, self.test.name)
+
+        results_response = self.client.get(reverse("teacher_results"))
+        self.assertEqual(results_response.status_code, 200)
+        self.assertContains(results_response, self.user.username)
+
+    def test_student_sees_active_teacher_test_in_dashboard_and_list(self):
+        dashboard_response = self.client.get(reverse("student_dashboard"))
+        self.assertEqual(dashboard_response.status_code, 200)
+        self.assertContains(dashboard_response, reverse("take_test", args=[self.test.id]))
+
+        tests_response = self.client.get(reverse("tests_index"))
+        self.assertEqual(tests_response.status_code, 200)
+        self.assertContains(tests_response, self.test.name)
