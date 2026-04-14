@@ -5,10 +5,6 @@ Django settings for proyecto project.
 from pathlib import Path
 
 from decouple import Csv, config
-import pymysql
-
-
-pymysql.install_as_MySQLdb()
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -74,6 +70,10 @@ WSGI_APPLICATION = "proyecto.wsgi.application"
 DB_ENGINE = config("DB_ENGINE", default="sqlite").strip().lower()
 
 if DB_ENGINE == "mysql":
+    import pymysql
+
+    pymysql.install_as_MySQLdb()
+
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.mysql",
