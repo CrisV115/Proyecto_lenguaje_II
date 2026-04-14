@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte academico{% endblock %}
+
+{% block content %}
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
+        <div>
+            <span class="section-kicker mb-3">Seguimiento docente</span>
+            <h1 class="h2 mb-1 text-white">Reporte academico consolidado</h1>
+            <p class="text-white-50 mb-0">Vista unica del diagnostico, la induccion, la nivelacion y la certificacion de cada estudiante.</p>
+        </div>
+        <a class="btn btn-outline-light" href="{% url 'teacher_dashboard' %}">Volver al panel</a>
+    </div>
+</section>
+
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="soft-label">Estudiantes</div>
+            <div class="metric-value">{{ students_count }}</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="soft-label">Induccion completa</div>
+            <div class="metric-value">{{ induction_completed_count }}</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="soft-label">Nivelacion completa</div>
+            <div class="metric-value">{{ leveling_completed_count }}</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="soft-label">Certificados</div>
+            <div class="metric-value">{{ certified_count }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card rounded-4 p-4">
+    {% if report_rows %}
+        <div class="table-responsive">
+            <table class="table table-soft align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Estudiante</th>
+                        <th>Diagnostico</th>
+                        <th>Induccion</th>
+                        <th>Nivelacion</th>
+                        <th>Certificacion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in report_rows %}
+                        <tr>
+                            <td>
+                                <strong>{{ row.student.username }}</strong>
+                                <div class="text-secondary small">{{ row.student.email }}</div>
+                            </td>
+                            <td>
+                                {% if row.latest_result %}
+                                    <div><strong>{{ row.latest_result.test.name }}</strong></div>
+                                    <div class="text-secondary small">{{ row.latest_result.score|floatformat:2 }}% {% if row.latest_result.passed %}Aprobado{% else %}Requiere nivelacion{% endif %}</div>
+                                {% else %}
+                                    <span class="text-secondary">Sin resultado</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if row.induction_progress %}
+                                    <div>{{ row.induction_progress.percentage }}%</div>
+                                    <div class="text-secondary small">{{ row.induction_completed }} / {{ row.induction_required }} modulos</div>
+                                    {% if row.constancy %}
+                                        <div class="text-secondary small">Constancia: {{ row.constancy.code }}</div>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-secondary">No habilitada</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if row.leveling_record %}
+                                    <div>{{ row.leveling_record.participation_percentage }}% participacion</div>
+                                    <div class="text-secondary small">Examen: {{ row.leveling_record.final_exam_score|floatformat:2 }}%</div>
+                                {% elif row.leveling_progress %}
+                                    <div>{{ row.leveling_progress.percentage }}%</div>
+                                {% else %}
+                                    <span class="text-secondary">No aplica</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if row.certificate %}
+                                    <a class="btn btn-outline-primary btn-sm" href="{% url 'verify_certificate' row.certificate.code %}">Validar</a>
+                                {% else %}
+                                    <span class="text-secondary">Sin certificado</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">Todavia no hay estudiantes para generar el reporte.</div>
+    {% endif %}
+</div>
+{% endblock %}

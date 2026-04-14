@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Verificacion de certificado{% endblock %}
+
+{% block content %}
+<div class="glass-card rounded-4 p-5 text-center">
+    <div class="soft-label mb-3">Validacion publica</div>
+    {% if certificate and certificate.valid %}
+        <h1 class="display-6 fw-bold mb-3">Certificado valido</h1>
+        <p class="lead">El certificado corresponde a <strong>{{ certificate.student.get_full_name|default:certificate.student.username }}</strong>.</p>
+        <p>Fase de cierre: <strong>{{ certificate.get_source_phase_display|default:certificate.source_phase }}</strong></p>
+        <p>Fecha de emision: <strong>{{ certificate.issue_date }}</strong></p>
+        <p class="fs-5 fw-semibold text-primary">Codigo verificado: {{ certificate.code }}</p>
+    {% else %}
+        <h1 class="display-6 fw-bold mb-3">Certificado no valido</h1>
+        <p class="lead">No existe un certificado activo asociado al codigo consultado.</p>
+    {% endif %}
+</div>
+{% endblock %}

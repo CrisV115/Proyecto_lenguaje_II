@@ -3,16 +3,89 @@
 {% block title %}Induccion{% endblock %}
 
 {% block content %}
-<div class="glass-card rounded-4 p-4">
-    <h1 class="h2 mb-3">Induccion</h1>
-    <p>Progreso actual: <strong>{{ progress.percentage }}%</strong></p>
-    {% if progress.completed %}
-        <p>Ya completaste esta fase. Puedes consultar tu certificado.</p>
-        <a class="btn btn-success" href="{% url 'current_certificate' %}">Ver certificado</a>
-    {% else %}
-        <p>Completa esta fase para habilitar la certificacion.</p>
-        <a class="btn btn-primary" href="{% url 'complete_induction' %}">Completar induccion</a>
-    {% endif %}
-    <a class="btn btn-outline-primary ms-2" href="{% url 'student_dashboard' %}">Volver al panel</a>
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <span class="section-kicker mb-3">Fase 2</span>
+    <h1 class="h2 mb-2">Induccion institucional</h1>
+    <p class="text-white-50 mb-0">La induccion ahora registra asistencia, participacion y genera una constancia automatica cuando completas todos los modulos obligatorios.</p>
+</section>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="metric-card h-100">
+            <div class="soft-label">Progreso general</div>
+            <div class="metric-value">{{ progress.percentage }}%</div>
+            <div class="text-secondary mt-2">{{ completed_required }} de {{ required_total }} modulos obligatorios completados.</div>
+            {% if progress.completed %}
+                <span class="status-pill success mt-3">Induccion validada</span>
+            {% else %}
+                <span class="status-pill warn mt-3">Proceso en curso</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="glass-card rounded-4 p-4">
+            <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-3">
+                <div>
+                    <div class="soft-label mb-2">Control digital</div>
+                    <h2 class="h4 mb-0">Modulos de induccion</h2>
+                </div>
+                {% if constancy %}
+                    <a class="btn btn-success" href="{% url 'induction_constancy_detail' %}">Ver constancia</a>
+                {% endif %}
+            </div>
+
+            <div class="vstack gap-3">
+                {% for module in modules %}
+                    <div class="surface-panel p-4">
+                        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                            <div>
+                                <div class="soft-label mb-2">Modulo {{ module.order }}</div>
+                                <h3 class="h5 mb-1">{{ module.title }}</h3>
+                                <p class="text-secondary mb-0">{{ module.description }}</p>
+                            </div>
+                            <span class="badge-soft">{{ module.get_modality_display }}</span>
+                        </div>
+
+                        <div class="d-flex gap-2 flex-wrap mb-3">
+                            <span class="status-pill {% if module.student_attended %}success{% else %}warn{% endif %}">
+                                {% if module.student_attended %}Asistencia registrada{% else %}Sin asistencia{% endif %}
+                            </span>
+                            <span class="status-pill {% if module.student_completed %}success{% else %}warn{% endif %}">
+                                {% if module.student_completed %}Participacion validada{% else %}Pendiente{% endif %}
+                            </span>
+                        </div>
+
+                        <div class="d-flex gap-2 flex-wrap">
+                            {% if not module.student_attended %}
+                                <form method="post" class="m-0">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="module_id" value="{{ module.id }}">
+                                    <input type="hidden" name="action" value="attend">
+                                    <button type="submit" class="btn btn-outline-primary btn-sm">Registrar asistencia</button>
+                                </form>
+                            {% endif %}
+
+                            {% if module.student_attended and not module.student_completed %}
+                                <form method="post" class="m-0">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="module_id" value="{{ module.id }}">
+                                    <input type="hidden" name="action" value="complete">
+                                    <button type="submit" class="btn btn-primary btn-sm">Registrar participacion</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap mt-4">
+                {% if progress.completed %}
+                    <a class="btn btn-primary" href="{% url 'generate_certificate' %}">Generar certificado final</a>
+                {% endif %}
+                <a class="btn btn-outline-primary" href="{% url 'student_dashboard' %}">Volver al panel</a>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

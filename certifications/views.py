@@ -62,3 +62,12 @@ def certificate_detail(request, certificate_id):
         "certifications/certificate.html",
         {"certificate": certificate},
     )
+
+
+def verify_certificate(request, code):
+    certificate = Certificate.objects.filter(code=code).select_related("student").first()
+    return render(
+        request,
+        "certifications/verify_certificate.html",
+        {"certificate": certificate},
+    )

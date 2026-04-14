@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from certifications.models import Certificate
+from leveling.models import LevelingRecord
 from tracking.models import Progress
 
 from .models import Answer, Question, Result, StudentAnswer, Test
@@ -128,12 +129,24 @@ class AcademicFlowTests(TestCase):
         )
         self.assertFalse(leveling_progress.completed)
 
+        for _ in range(3):
+            self.client.post(reverse("leveling_dashboard"), {"action": "sync_attendance"}, follow=True)
+        for _ in range(4):
+            self.client.post(reverse("leveling_dashboard"), {"action": "async_activity"}, follow=True)
+        self.client.post(
+            reverse("leveling_dashboard"),
+            {"action": "exam_score", "final_exam_score": "85"},
+            follow=True,
+        )
+
         response = self.client.get(reverse("complete_leveling"), follow=True)
         self.assertEqual(response.status_code, 200)
 
         certificate = Certificate.objects.get(student=self.user)
         self.assertEqual(certificate.source_phase, Progress.Phases.LEVELING)
         self.assertTrue(certificate.valid)
+        record = LevelingRecord.objects.get(student=self.user)
+        self.assertTrue(record.ready_for_completion)
 
     def test_induction_completion_generates_certificate(self):
         self.client.post(
@@ -145,12 +158,67 @@ class AcademicFlowTests(TestCase):
             follow=True,
         )
 
-        response = self.client.get(reverse("complete_induction"), follow=True)
+        induction_page = self.client.get(reverse("induction_dashboard"))
+        self.assertEqual(induction_page.status_code, 200)
+
+        for module in induction_page.context["modules"]:
+            self.client.post(
+                reverse("induction_dashboard"),
+                {"action": "attend", "module_id": module.id},
+                follow=True,
+            )
+            self.client.post(
+                reverse("induction_dashboard"),
+                {"action": "complete", "module_id": module.id},
+                follow=True,
+            )
+
+        response = self.client.get(reverse("induction_constancy_detail"), follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        induction_progress = Progress.objects.get(
+            student=self.user,
+            phase=Progress.Phases.INDUCTION,
+        )
+        self.assertTrue(induction_progress.completed)
+
+        response = self.client.get(reverse("generate_certificate"), follow=True)
         self.assertEqual(response.status_code, 200)
 
         certificate = Certificate.objects.get(student=self.user)
         self.assertEqual(certificate.source_phase, Progress.Phases.INDUCTION)
         self.assertTrue(certificate.valid)
+
+    def test_public_certificate_verification_page(self):
+        self.client.post(
+            reverse("take_test", args=[self.test.id]),
+            {
+                f"question_{self.question_one.id}": str(self.correct_one.id),
+                f"question_{self.question_two.id}": str(self.correct_two.id),
+            },
+            follow=True,
+        )
+
+        induction_page = self.client.get(reverse("induction_dashboard"))
+        for module in induction_page.context["modules"]:
+            self.client.post(
+                reverse("induction_dashboard"),
+                {"action": "attend", "module_id": module.id},
+                follow=True,
+            )
+            self.client.post(
+                reverse("induction_dashboard"),
+                {"action": "complete", "module_id": module.id},
+                follow=True,
+            )
+        self.client.get(reverse("generate_certificate"), follow=True)
+
+        certificate = Certificate.objects.get(student=self.user)
+
+        self.client.logout()
+        response = self.client.get(reverse("verify_certificate", args=[certificate.code]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Certificado valido")
 
     def test_login_redirects_user_by_role(self):
         self.client.logout()
