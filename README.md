@@ -1,57 +1,103 @@
 # Proyecto Prog II
 
-Plataforma académica desarrollada con Django para el curso de Programación II.
+Plataforma academica desarrollada con Django para el curso de Programacion II.
 
 ## Estado actual
 
-El proyecto ya incluye:
+El proyecto incluye:
 
-- autenticación con usuario personalizado
-- registro y recuperación de contraseña por pregunta de seguridad
-- test diagnóstico con corrección automática
+- autenticacion con usuario personalizado
+- registro y recuperacion de contrasena por pregunta de seguridad
+- test diagnostico con correccion automatica
 - guardado de respuestas individuales
-- decisión académica automática
+- decision academica automatica
 - seguimiento de fases (`test`, `induction`, `leveling`)
-- cierre de ruta con certificado básico
+- cierre de ruta con certificado basico
 - panel administrativo para cargar usuarios, tests, preguntas, respuestas, resultados, seguimiento y certificados
 
-## Tecnologías
+## Tecnologias
 
-- Python 3.13
-- Django 6.0.3
+- Python 3.11+
+- Django 5.2.x
 - Bootstrap 5
 - `python-decouple` para variables de entorno
-- `PyMySQL` para dejar preparada la conexión futura a MySQL
+- `PyMySQL` para conexion a MySQL
+- `cryptography` (opcional, recomendado solo si usas MySQL con `caching_sha2_password`)
 
-## Estructura principal
+## Configuracion rapida (SQLite, recomendado para desarrollo local)
 
-- `users/`: autenticación, registro y dashboard
-- `tests_academic/`: tests, preguntas, respuestas, resultados y respuestas del estudiante
-- `tracking/`: seguimiento académico e inducción
-- `leveling/`: nivelación
-- `certifications/`: emisión y consulta de certificados
-
-## Primer arranque en VS Code
-
-1. Abrir la carpeta del proyecto en VS Code.
-2. Verificar que VS Code use `.\.venv\Scripts\python.exe`.
-3. Crear el archivo `.env` a partir de `.env.example`.
-4. Ejecutar migraciones:
+1. Crear `.env` desde `.env.example`.
+2. Instalar dependencias de Python:
 
 ```powershell
-.\.venv\Scripts\python.exe .\manage.py migrate
+python -m pip install -r requirements.txt
+```
+3. Ejecutar migraciones:
+
+```powershell
+python .\manage.py migrate
 ```
 
-5. Crear un superusuario:
+4. Crear superusuario:
 
 ```powershell
-.\.venv\Scripts\python.exe .\manage.py createsuperuser
+python .\manage.py createsuperuser
 ```
 
-6. Iniciar el servidor:
+5. Iniciar servidor:
 
 ```powershell
-.\.venv\Scripts\python.exe .\manage.py runserver
+python .\manage.py runserver
+```
+
+Comando unico (instala, migra y arranca):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start_server.ps1
+```
+
+## Configuracion MySQL (opcional)
+
+1. Cambiar en `.env`:
+
+```env
+DB_ENGINE=mysql
+```
+
+2. Crear base y usuario:
+
+```powershell
+cmd /c """C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe"" -u root -p < mysql_setup.sql"
+```
+
+3. Ejecutar migraciones:
+
+```powershell
+python .\manage.py migrate
+```
+
+Si tu usuario MySQL usa `caching_sha2_password`, instala tambien:
+
+```powershell
+python -m pip install cryptography
+```
+
+## Variables de entorno
+
+```env
+DB_ENGINE=mysql
+DB_NAME=proyecto_prog2
+DB_USER=proyecto_user
+DB_PASSWORD=proyecto123
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_CONN_MAX_AGE=60
+```
+
+## Pruebas automaticas
+
+```powershell
+python .\manage.py test
 ```
 
 ## Accesos principales
@@ -60,47 +106,4 @@ El proyecto ya incluye:
 - Admin: `http://127.0.0.1:8000/admin/`
 - Tests: `http://127.0.0.1:8000/tests/`
 - Seguimiento: `http://127.0.0.1:8000/tracking/`
-- Nivelación: `http://127.0.0.1:8000/leveling/`
-
-## Carga inicial recomendada desde admin
-
-1. Crear usuarios.
-2. Crear un `Test`.
-3. Crear `Question` asociadas al test.
-4. Crear `Answer` para cada pregunta y marcar la correcta.
-5. Iniciar sesión con un estudiante y rendir el test.
-
-## Cambio futuro a MySQL
-
-Cuando MySQL Server ya esté instalado y configurado:
-
-1. Editar `.env` y cambiar:
-
-```env
-DB_ENGINE=mysql
-DB_NAME=proyecto_prog2
-DB_USER=proyecto_user
-DB_PASSWORD=tu_clave
-DB_HOST=127.0.0.1
-DB_PORT=3306
-```
-
-2. Ejecutar migraciones sobre MySQL:
-
-```powershell
-.\.venv\Scripts\python.exe .\manage.py migrate
-```
-
-## Pruebas automáticas
-
-Ejecutar la suite:
-
-```powershell
-.\.venv\Scripts\python.exe .\manage.py test
-```
-
-## Notas
-
-- El proyecto usa SQLite como respaldo local mientras MySQL no esté disponible.
-- La carpeta `app/` quedó como legado y ya no forma parte de `INSTALLED_APPS`.
-- El siguiente paso natural es enriquecer el contenido real de inducción y nivelación, y añadir reportes académicos.
+- Nivelacion: `http://127.0.0.1:8000/leveling/`
