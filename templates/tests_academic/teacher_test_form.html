@@ -320,7 +320,13 @@
             const questionIndex = Number(questionCard.dataset.index);
             const question = questions[questionIndex];
 
-            questionCard.addEventListener("click", () => {
+            questionCard.addEventListener("click", (event) => {
+                if (event.target.closest("input, textarea, select, button, label, a")) {
+                    return;
+                }
+                if (activeQuestionIndex === questionIndex) {
+                    return;
+                }
                 activeQuestionIndex = questionIndex;
                 renderBuilder();
             });
