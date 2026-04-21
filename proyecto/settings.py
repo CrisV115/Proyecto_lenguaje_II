@@ -67,7 +67,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "proyecto.wsgi.application"
 
 
-DB_ENGINE = config("DB_ENGINE", default="mysql").strip().lower()
+DB_ENGINE = config("DB_ENGINE", default="sqlite").strip().lower()
 
 if DB_ENGINE == "mysql":
     import pymysql
@@ -88,11 +88,18 @@ if DB_ENGINE == "mysql":
             },
         }
     }
-else:
+elif DB_ENGINE == "sqlite":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": BASE_DIR / config("SQLITE_NAME", default="dev.sqlite3"),
+        }
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "dev.sqlite3",
         }
     }
 
