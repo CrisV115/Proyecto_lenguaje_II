@@ -67,7 +67,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "proyecto.wsgi.application"
 
 
-DB_ENGINE = config("DB_ENGINE", default="sqlite").strip().lower()
+DB_ENGINE = config("DB_ENGINE", default="mysql").strip().lower()
 
 if DB_ENGINE == "mysql":
     import pymysql
