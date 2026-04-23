@@ -259,6 +259,46 @@ class AcademicFlowTests(TestCase):
         self.assertEqual(results_response.status_code, 200)
         self.assertContains(results_response, self.user.username)
 
+    def test_student_leveling_menu_only_appears_with_score_below_seven(self):
+        Result.objects.create(
+            student=self.user,
+            test=self.test,
+            score=60,
+            passed=False,
+        )
+
+        response = self.client.get(reverse("student_dashboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, reverse("leveling_dashboard"))
+
+        Result.objects.filter(student=self.user, test=self.test).delete()
+        Result.objects.create(
+            student=self.user,
+            test=self.test,
+            score=80,
+            passed=True,
+        )
+
+        response = self.client.get(reverse("student_dashboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, reverse("leveling_dashboard"))
+
+    def test_teacher_can_open_leveling_dashboard(self):
+        Result.objects.create(
+            student=self.user,
+            test=self.test,
+            score=60,
+            passed=False,
+        )
+
+        self.client.logout()
+        self.client.login(username="profesor_demo", password="ClaveSegura123")
+
+        response = self.client.get(reverse("teacher_leveling_dashboard"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Seguimiento de nivelacion")
+        self.assertContains(response, self.user.username)
+
     def test_student_sees_active_teacher_test_in_dashboard_and_list(self):
         dashboard_response = self.client.get(reverse("student_dashboard"))
         self.assertEqual(dashboard_response.status_code, 200)

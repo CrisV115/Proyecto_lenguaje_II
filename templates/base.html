@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Proyecto Prog II{% endblock %}</title>
+    <title>{% block title %}Universitario Japon{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -515,10 +515,10 @@
         <nav class="navbar navbar-expand-lg topbar">
             <div class="container">
                 <a class="navbar-brand fw-bold d-flex align-items-center gap-3 m-0" href="{% url 'home' %}">
-                    <span class="brand-mark">P2</span>
+                    <span class="brand-mark">IJ</span>
                     <span>
-                        <span class="d-block text-dark">Proyecto Prog II</span>
-                        <small class="text-secondary fw-semibold">Plataforma academica modular</small>
+                        <span class="d-block text-dark">Universitario Japon</span>
+                        <small class="text-secondary fw-semibold">Sistema academico modular</small>
                     </span>
                 </a>
                 <div class="d-flex gap-2 flex-wrap">
@@ -529,10 +529,14 @@
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_tests' %}">Gestionar tests</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_results' %}">Resultados</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_students' %}">Estudiantes</a>
+                            <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_leveling_dashboard' %}">Nivelacion</a>
                         {% else %}
                             <a class="btn btn-outline-primary btn-sm" href="{% url 'student_dashboard' %}">Panel</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'tests_index' %}">Tests</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'tracking_overview' %}">Seguimiento</a>
+                            {% if show_student_leveling_menu %}
+                                <a class="btn btn-outline-secondary btn-sm" href="{% url 'leveling_dashboard' %}">Nivelacion</a>
+                            {% endif %}
                         {% endif %}
                         <a class="btn btn-primary btn-sm" href="{% url 'logout' %}">Salir</a>
                     {% else %}

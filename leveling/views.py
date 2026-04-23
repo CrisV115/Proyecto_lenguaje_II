@@ -1,8 +1,11 @@
 from django.contrib import messages
+from django.db.models import OuterRef, Subquery
 from django.shortcuts import redirect, render
 
+from tests_academic.models import Result
 from tracking.models import Progress
 from users.decorators import role_required
+from users.models import Usuario
 
 from .models import LevelingRecord
 
@@ -78,3 +81,48 @@ def complete_leveling(request):
     progress.save(update_fields=["percentage", "completed", "updated_at"])
     messages.success(request, "Nivelacion completada correctamente.")
     return redirect("generate_certificate")
+
+
+@role_required("profesor")
+def teacher_dashboard(request):
+    latest_results = Result.objects.filter(student=OuterRef("pk")).order_by("-submitted_at")
+    leveling_progress = Progress.objects.filter(
+        student=OuterRef("pk"),
+        phase=Progress.Phases.LEVELING,
+    )
+
+    students = (
+        Usuario.objects.filter(tipo_usuario="estudiante")
+        .annotate(
+            latest_score=Subquery(latest_results.values("score")[:1]),
+            latest_test_name=Subquery(latest_results.values("test__name")[:1]),
+            leveling_percentage=Subquery(leveling_progress.values("percentage")[:1]),
+            leveling_completed=Subquery(leveling_progress.values("completed")[:1]),
+        )
+        .order_by("username")
+    )
+
+    students_in_leveling = []
+    for student in students:
+        if student.latest_score is None or student.latest_score >= 70:
+            continue
+
+        record = LevelingRecord.objects.filter(student=student).first()
+        students_in_leveling.append(
+            {
+                "student": student,
+                "latest_score": round(student.latest_score / 10, 2),
+                "latest_test_name": student.latest_test_name,
+                "leveling_percentage": student.leveling_percentage or 0,
+                "leveling_completed": bool(student.leveling_completed),
+                "record": record,
+            }
+        )
+
+    return render(
+        request,
+        "leveling/teacher_dashboard.html",
+        {
+            "students_in_leveling": students_in_leveling,
+        },
+    )

@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Nivelacion docente{% endblock %}
+
+{% block content %}
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <div class="row align-items-end g-4">
+        <div class="col-lg-8">
+            <span class="section-kicker mb-3">Panel docente</span>
+            <h1 class="display-6 fw-bold mb-3 text-white">Seguimiento de nivelacion</h1>
+            <p class="lead mb-0 text-white-50">Revisa que estudiantes requieren nivelacion y monitorea su avance dentro del proceso.</p>
+        </div>
+        <div class="col-lg-4">
+            <div class="metric-card">
+                <div class="soft-label">Estudiantes en nivelacion</div>
+                <div class="metric-value">{{ students_in_leveling|length }}</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="glass-card dashboard-card">
+    <div class="card-header">
+        <div class="soft-label">Listado</div>
+        <h2 class="h4 mb-0">Alumnos con nota menor a 7</h2>
+    </div>
+    <div class="card-body">
+        {% if students_in_leveling %}
+            <div class="table-responsive">
+                <table class="table table-soft align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Estudiante</th>
+                            <th>Test</th>
+                            <th>Nota</th>
+                            <th>Avance</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in students_in_leveling %}
+                            <tr>
+                                <td>{{ item.student.username }}</td>
+                                <td>{{ item.latest_test_name|default:"Sin test" }}</td>
+                                <td>{{ item.latest_score|floatformat:2 }}/10</td>
+                                <td>{{ item.leveling_percentage|floatformat:0 }}%</td>
+                                <td>
+                                    <span class="status-pill {% if item.leveling_completed %}success{% else %}warn{% endif %}">
+                                        {% if item.leveling_completed %}Completada{% else %}En proceso{% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">No hay estudiantes con nota menor a 7 en este momento.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
