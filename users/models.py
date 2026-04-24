@@ -16,6 +16,8 @@ class Usuario(AbstractUser):
     ]
 
     email = models.EmailField(unique=True)
+    cedula = models.CharField(max_length=10, unique=True, blank=True, null=True)
+    carrera = models.CharField(max_length=120, blank=True)
     telefono = models.CharField(max_length=10)
     tipo_usuario = models.CharField(
         max_length=20,

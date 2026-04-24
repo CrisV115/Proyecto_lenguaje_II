@@ -100,6 +100,34 @@ DB_CONN_MAX_AGE=60
 python .\manage.py test
 ```
 
+## Importacion desde archivos planos
+
+Los archivos `C:\estudiantes.csv` y `C:\profesores.csv` pueden estar vacios al inicio. Lo importante es que conserven sus encabezados y el separador `;`.
+
+Encabezados esperados:
+
+- `estudiantes.csv`: `Cedula;Nombre;Apellido;Correo;Carrera`
+- `profesores.csv`: `Cedula;Nombre;Apellido;Carrera;Correo`
+
+Despues de ejecutar las migraciones, puedes importar asi:
+
+```powershell
+python .\manage.py importar_usuarios_csv
+```
+
+Si quieres otra clave temporal para los usuarios cargados:
+
+```powershell
+python .\manage.py importar_usuarios_csv --password-por-defecto "Temporal123!"
+```
+
+Comportamiento de la importacion:
+
+- usa la `cedula` como `username` para facilitar el inicio de sesion
+- clasifica cada registro como `estudiante` o `profesor`
+- actualiza usuarios existentes si ya encuentra la misma `cedula`
+- acepta archivos vacios mientras tengan encabezados validos
+
 ## Accesos principales
 
 - Inicio: `http://127.0.0.1:8000/`

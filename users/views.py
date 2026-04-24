@@ -46,12 +46,19 @@ def login_view(request):
         return redirect_user_dashboard(request.user)
 
     if request.method == "POST":
-        username = request.POST.get("username", "").strip()
+        login_identifier = request.POST.get("username", "").strip()
         password = request.POST.get("password", "")
 
-        if not username or not password:
+        if not login_identifier or not password:
             messages.error(request, "Todos los campos son obligatorios.")
             return redirect("login")
+
+        username = login_identifier
+        usuario = Usuario.objects.filter(email__iexact=login_identifier).first()
+        if usuario is None:
+            usuario = Usuario.objects.filter(cedula=login_identifier).first()
+        if usuario is not None:
+            username = usuario.username
 
         user = authenticate(request, username=username, password=password)
         if user is None:
