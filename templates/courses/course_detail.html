@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{{ course.name }}{% endblock %}
+
+{% block content %}
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
+        <div>
+            <span class="section-kicker mb-3">Curso</span>
+            <h1 class="h2 mb-1 text-white">{{ course.name }}</h1>
+            <p class="text-white-50 mb-0">{{ course.description|default:"Este curso no tiene descripcion por ahora." }}</p>
+        </div>
+        {% if request.user.tipo_usuario == "profesor" %}
+            <a class="btn btn-outline-light" href="{% url 'teacher_courses' %}">Volver a cursos</a>
+        {% else %}
+            <a class="btn btn-outline-light" href="{% url 'student_courses' %}">Volver a cursos</a>
+        {% endif %}
+    </div>
+</section>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="glass-card dashboard-card">
+            <div class="card-header">
+                <div class="soft-label">Contenido inicial</div>
+                <h2 class="h4 mb-0">Bienvenida</h2>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ course.welcome_message }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="glass-card dashboard-card mb-4">
+            <div class="card-header">
+                <div class="soft-label">Docentes</div>
+                <h2 class="h5 mb-0">Profesores asignados</h2>
+            </div>
+            <div class="card-body">
+                {% if teachers %}
+                    <ul class="list-clean mb-0">
+                        {% for teacher in teachers %}
+                            <li>{{ teacher.username }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="empty-state">No hay profesores asignados.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="glass-card dashboard-card">
+            <div class="card-header">
+                <div class="soft-label">Participantes</div>
+                <h2 class="h5 mb-0">Estudiantes asignados</h2>
+            </div>
+            <div class="card-body">
+                {% if students %}
+                    <ul class="list-clean mb-0">
+                        {% for student in students %}
+                            <li>{{ student.username }}</li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="empty-state">No hay estudiantes asignados.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

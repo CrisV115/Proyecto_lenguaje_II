@@ -3,6 +3,7 @@ from django.db.models import Count, Prefetch
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 
+from courses.models import Course
 from tracking.models import Progress
 from users.decorators import role_required
 from users.models import Usuario
@@ -212,8 +213,13 @@ def teacher_result_detail(request, result_id):
 
 @role_required("profesor")
 def teacher_students(request):
+    teacher_courses = Course.objects.filter(teachers=request.user)
     students = (
-        Usuario.objects.filter(tipo_usuario="estudiante")
+        Usuario.objects.filter(
+            tipo_usuario="estudiante",
+            courses_enrolled__in=teacher_courses,
+        )
+        .distinct()
         .annotate(results_count=Count("results", distinct=True))
         .order_by("username")
     )

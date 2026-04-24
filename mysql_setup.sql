@@ -15,3 +15,6 @@ GRANT ALL PRIVILEGES ON proyecto_prog2.* TO 'proyecto_user'@'127.0.0.1';
 GRANT ALL PRIVILEGES ON proyecto_prog2.* TO 'proyecto_user'@'%';
 
 FLUSH PRIVILEGES;
+
+ALTER USER 'tu_usuario'@'localhost' IDENTIFIED WITH mysql_native_password BY 'tu_password';
+FLUSH PRIVILEGES;

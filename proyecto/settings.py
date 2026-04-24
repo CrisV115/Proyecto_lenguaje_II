@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "tracking",
     "certifications",
     "leveling",
+    "courses",
 ]
 
 MIDDLEWARE = [

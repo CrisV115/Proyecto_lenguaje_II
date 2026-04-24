@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
 from certifications.models import Certificate
+from courses.models import Course
 from tests_academic.models import Result, Test
 from tracking.models import Progress
 
@@ -149,6 +150,13 @@ def teacher_dashboard(request):
     if request.user.tipo_usuario != "profesor":
         return redirect_user_dashboard(request.user)
 
+    teacher_courses = Course.objects.filter(teachers=request.user)
+    course_students = (
+        Usuario.objects.filter(courses_enrolled__in=teacher_courses, tipo_usuario="estudiante")
+        .distinct()
+        .order_by("username")
+    )
+
     tests = (
         Test.objects.filter(created_by=request.user)
         .select_related("created_by")
@@ -158,7 +166,7 @@ def teacher_dashboard(request):
         Result.objects.filter(test__created_by=request.user)
         .select_related("student", "test")[:8]
     )
-    students = Usuario.objects.filter(tipo_usuario="estudiante").order_by("username")[:8]
+    students = course_students[:8]
 
     context = {
         "tests_count": Test.objects.filter(created_by=request.user).count(),
@@ -166,7 +174,7 @@ def teacher_dashboard(request):
             created_by=request.user,
             is_active=True,
         ).count(),
-        "students_count": Usuario.objects.filter(tipo_usuario="estudiante").count(),
+        "students_count": course_students.count(),
         "results_count": Result.objects.filter(test__created_by=request.user).count(),
         "tests": tests,
         "recent_results": recent_results,
