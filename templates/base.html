@@ -84,6 +84,24 @@
             font-weight: 600;
         }
 
+        .navbar-brand {
+            min-width: 0;
+        }
+
+        .brand-copy {
+            min-width: 0;
+        }
+
+        .brand-copy > span,
+        .brand-copy > small {
+            white-space: nowrap;
+        }
+
+        .topbar-actions {
+            flex-wrap: nowrap;
+            align-items: center;
+        }
+
         .glass-card, .surface-panel {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -516,12 +534,12 @@
             <div class="container">
                 <a class="navbar-brand fw-bold d-flex align-items-center gap-3 m-0" href="{% url 'home' %}">
                     <span class="brand-mark">IJ</span>
-                    <span>
+                    <span class="brand-copy">
                         <span class="d-block text-dark">Universitario Japon</span>
                         <small class="text-secondary fw-semibold">Sistema academico modular</small>
                     </span>
                 </a>
-                <div class="d-flex gap-2 flex-wrap">
+                <div class="d-flex gap-2 topbar-actions">
                     {% if request.user.is_authenticated %}
                         <span class="nav-user-chip">{{ request.user.username }} · {{ request.user.get_tipo_usuario_display }}</span>
                         {% if request.user.tipo_usuario == "profesor" %}
