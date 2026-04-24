@@ -55,14 +55,14 @@ class UsersImportTests(TestCase):
             "importar_usuarios_csv",
             estudiantes=str(estudiantes),
             profesores=str(profesores),
-            password_por_defecto="Temporal123!",
         )
 
         ana = self.user_model.objects.get(cedula="0102030405")
         self.assertEqual(ana.username, "0102030405")
         self.assertEqual(ana.tipo_usuario, "estudiante")
         self.assertEqual(ana.carrera, "Software")
-        self.assertTrue(ana.check_password("Temporal123!"))
+        self.assertTrue(ana.check_password("0102030405"))
+        self.assertTrue(ana.debe_cambiar_password)
 
         luis = self.user_model.objects.get(cedula="1111111111")
         self.assertEqual(luis.tipo_usuario, "profesor")
@@ -97,3 +97,38 @@ class LoginIdentifierTests(TestCase):
             {"username": "0101010101", "password": "ClaveSegura123"},
         )
         self.assertRedirects(response, reverse("student_dashboard"))
+
+    def test_user_with_pending_password_change_is_redirected(self):
+        self.user.debe_cambiar_password = True
+        self.user.save(update_fields=["debe_cambiar_password"])
+
+        response = self.client.post(
+            reverse("login"),
+            {"username": "0101010101", "password": "ClaveSegura123"},
+        )
+        self.assertRedirects(response, reverse("force_password_change"))
+
+    def test_user_can_change_password_on_first_login(self):
+        self.user.set_password("0101010101")
+        self.user.debe_cambiar_password = True
+        self.user.save(update_fields=["password", "debe_cambiar_password"])
+
+        login_response = self.client.post(
+            reverse("login"),
+            {"username": "0101010101", "password": "0101010101"},
+        )
+        self.assertRedirects(login_response, reverse("force_password_change"))
+
+        response = self.client.post(
+            reverse("force_password_change"),
+            {
+                "old_password": "0101010101",
+                "new_password1": "NuevaClave123!",
+                "new_password2": "NuevaClave123!",
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.debe_cambiar_password)
+        self.assertTrue(self.user.check_password("NuevaClave123!"))

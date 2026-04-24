@@ -1,7 +1,7 @@
 import re
 
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import PasswordChangeForm, UserCreationForm
 from django.core.exceptions import ValidationError
 
 from .models import Usuario
@@ -86,3 +86,18 @@ class RegistroForm(UserCreationForm):
                 widget.attrs["class"] = f"{current_class} form-control".strip()
             if isinstance(widget, forms.Select):
                 widget.attrs["class"] = f"{current_class} form-select".strip()
+
+
+class PrimerIngresoPasswordForm(PasswordChangeForm):
+    old_password = forms.CharField(
+        label="Contrasena actual",
+        widget=forms.PasswordInput(attrs={"class": "form-control"}),
+    )
+    new_password1 = forms.CharField(
+        label="Nueva contrasena",
+        widget=forms.PasswordInput(attrs={"class": "form-control"}),
+    )
+    new_password2 = forms.CharField(
+        label="Confirmar nueva contrasena",
+        widget=forms.PasswordInput(attrs={"class": "form-control"}),
+    )

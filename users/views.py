@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
@@ -8,11 +8,13 @@ from courses.models import Course
 from tests_academic.models import Result, Test
 from tracking.models import Progress
 
-from .forms import RegistroForm
+from .forms import PrimerIngresoPasswordForm, RegistroForm
 from .models import Usuario
 
 
 def redirect_user_dashboard(user):
+    if getattr(user, "debe_cambiar_password", False):
+        return redirect("force_password_change")
     if getattr(user, "tipo_usuario", "") == "profesor":
         return redirect("teacher_dashboard")
     return redirect("student_dashboard")
@@ -75,6 +77,27 @@ def logout_view(request):
     logout(request)
     messages.info(request, "Sesion cerrada correctamente.")
     return redirect("home")
+
+
+@login_required
+def force_password_change(request):
+    if not request.user.debe_cambiar_password:
+        return redirect_user_dashboard(request.user)
+
+    if request.method == "POST":
+        form = PrimerIngresoPasswordForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.debe_cambiar_password = False
+            user.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, "Contrasena actualizada correctamente.")
+            return redirect_user_dashboard(user)
+        messages.error(request, "Corrija los errores del formulario.")
+    else:
+        form = PrimerIngresoPasswordForm(request.user)
+
+    return render(request, "force_password_change.html", {"form": form})
 
 
 def password_reset_security(request):

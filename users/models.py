@@ -19,6 +19,7 @@ class Usuario(AbstractUser):
     cedula = models.CharField(max_length=10, unique=True, blank=True, null=True)
     carrera = models.CharField(max_length=120, blank=True)
     telefono = models.CharField(max_length=10)
+    debe_cambiar_password = models.BooleanField(default=False)
     tipo_usuario = models.CharField(
         max_length=20,
         choices=ROLES,

@@ -102,7 +102,12 @@ python .\manage.py test
 
 ## Importacion desde archivos planos
 
-Los archivos `C:\estudiantes.csv` y `C:\profesores.csv` pueden estar vacios al inicio. Lo importante es que conserven sus encabezados y el separador `;`.
+Los archivos planos del proyecto ahora viven dentro del repositorio:
+
+- [data/csv/estudiantes.csv](C:/Users/herna/Documents/GitHub/Proyecto_lenguaje_II/data/csv/estudiantes.csv)
+- [data/csv/profesores.csv](C:/Users/herna/Documents/GitHub/Proyecto_lenguaje_II/data/csv/profesores.csv)
+
+Pueden estar vacios al inicio. Lo importante es que conserven sus encabezados y el separador `;`.
 
 Encabezados esperados:
 
@@ -117,13 +122,11 @@ python .\manage.py importar_usuarios_csv
 
 Si quieres otra clave temporal para los usuarios cargados:
 
-```powershell
-python .\manage.py importar_usuarios_csv --password-por-defecto "Temporal123!"
-```
-
 Comportamiento de la importacion:
 
 - usa la `cedula` como `username` para facilitar el inicio de sesion
+- usa la misma `cedula` como clave temporal inicial
+- obliga a cambiar la clave en el primer ingreso
 - clasifica cada registro como `estudiante` o `profesor`
 - actualiza usuarios existentes si ya encuentra la misma `cedula`
 - acepta archivos vacios mientras tengan encabezados validos

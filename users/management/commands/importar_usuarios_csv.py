@@ -17,23 +17,17 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             "--estudiantes",
-            default="C:\\estudiantes.csv",
+            default=str(settings.BASE_DIR / "data" / "csv" / "estudiantes.csv"),
             help="Ruta al archivo CSV de estudiantes.",
         )
         parser.add_argument(
             "--profesores",
-            default="C:\\profesores.csv",
+            default=str(settings.BASE_DIR / "data" / "csv" / "profesores.csv"),
             help="Ruta al archivo CSV de profesores.",
-        )
-        parser.add_argument(
-            "--password-por-defecto",
-            default="Cambiar123!",
-            help="Clave temporal que se asignara a los usuarios importados.",
         )
 
     def handle(self, *args, **options):
         user_model = get_user_model()
-        temp_password = options["password_por_defecto"]
 
         summary = []
         with transaction.atomic():
@@ -42,7 +36,6 @@ class Command(BaseCommand):
                     user_model=user_model,
                     csv_path=options["estudiantes"],
                     role="estudiante",
-                    temp_password=temp_password,
                 )
             )
             summary.append(
@@ -50,7 +43,6 @@ class Command(BaseCommand):
                     user_model=user_model,
                     csv_path=options["profesores"],
                     role="profesor",
-                    temp_password=temp_password,
                 )
             )
 
@@ -63,11 +55,11 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.WARNING(
-                "Todos los usuarios importados usan la clave temporal indicada. Cambiala despues de la primera carga."
+                "Todos los usuarios importados usan su numero de cedula como clave temporal y deben cambiarla en el primer ingreso."
             )
         )
 
-    def _import_file(self, *, user_model, csv_path, role, temp_password):
+    def _import_file(self, *, user_model, csv_path, role):
         path = Path(csv_path)
         if not path.exists():
             raise CommandError(f"No existe el archivo: {path}")
@@ -118,6 +110,7 @@ class Command(BaseCommand):
                     "carrera": carrera,
                     "telefono": "",
                     "tipo_usuario": role,
+                    "debe_cambiar_password": True,
                     "pregunta_seguridad": "ciudad",
                     "respuesta_seguridad": cedula,
                     "is_active": True,
@@ -129,13 +122,13 @@ class Command(BaseCommand):
                 )
 
                 if was_created:
-                    user.set_password(temp_password)
+                    user.set_password(cedula)
                     user.save(update_fields=["password"])
                     created += 1
                 else:
-                    if not user.has_usable_password():
-                        user.set_password(temp_password)
-                        user.save(update_fields=["password"])
+                    user.set_password(cedula)
+                    user.debe_cambiar_password = True
+                    user.save(update_fields=["password", "debe_cambiar_password"])
                     updated += 1
 
         return role, created, updated, skipped

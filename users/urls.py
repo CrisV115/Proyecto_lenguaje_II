@@ -9,6 +9,7 @@ urlpatterns = [
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
     path("register/", views.register, name="register"),
+    path("primer-ingreso/cambiar-clave/", views.force_password_change, name="force_password_change"),
     path("password-reset/", views.password_reset_security, name="password_reset"),
     path("meme/", views.meme, name="meme"),
     path("estudiantes/", views.student_dashboard, name="student_dashboard"),
