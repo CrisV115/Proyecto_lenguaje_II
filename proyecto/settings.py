@@ -16,9 +16,13 @@ SECRET_KEY = config(
 )
 
 DEBUG = config("DEBUG", default=True, cast=bool)
+default_allowed_hosts = "127.0.0.1,localhost,testserver"
+if DEBUG:
+    default_allowed_hosts = "*"
+
 ALLOWED_HOSTS = config(
     "ALLOWED_HOSTS",
-    default="127.0.0.1,localhost,testserver",
+    default=default_allowed_hosts,
     cast=Csv(),
 )
 
