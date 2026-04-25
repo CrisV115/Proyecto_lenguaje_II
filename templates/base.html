@@ -62,6 +62,8 @@
             background: rgba(255, 255, 255, 0.78);
             backdrop-filter: blur(18px);
             border-bottom: 1px solid rgba(76, 29, 149, 0.1);
+            position: relative;
+            z-index: 200;
         }
 
         .brand-logo {
@@ -110,6 +112,18 @@
 
         .services-menu {
             position: relative;
+            padding-bottom: 0.75rem;
+            margin-bottom: -0.75rem;
+            z-index: 220;
+        }
+
+        .services-menu::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 100%;
+            width: 100%;
+            height: 0.8rem;
         }
 
         .services-toggle {
@@ -151,11 +165,11 @@
 
         .services-dropdown {
             position: absolute;
-            top: calc(100% + 0.7rem);
+            top: calc(100% + 0.1rem);
             left: 0;
             min-width: 19rem;
             display: none;
-            z-index: 40;
+            z-index: 260;
         }
 
         .services-menu:hover > .services-dropdown,
@@ -166,6 +180,15 @@
 
         .services-submenu-wrap {
             position: relative;
+        }
+
+        .services-submenu-wrap::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 100%;
+            width: 1rem;
+            height: 100%;
         }
 
         .services-submenu-toggle,
@@ -214,11 +237,19 @@
 
         .services-submenu {
             position: absolute;
-            top: 0;
-            left: calc(100% + 0.65rem);
-            min-width: 21rem;
+            top: -0.5rem;
+            left: calc(100% + 0.9rem);
+            min-width: 24rem;
             display: none;
-            z-index: 41;
+            z-index: 261;
+        }
+
+        .services-dropdown {
+            overflow: visible;
+        }
+
+        .services-submenu {
+            overflow: hidden;
         }
 
         .services-submenu-wrap:hover > .services-submenu,
@@ -666,6 +697,7 @@
             .services-submenu {
                 position: static;
                 margin-top: 0.35rem;
+                min-width: 100%;
             }
         }
     </style>
@@ -685,40 +717,6 @@
                 <div class="d-flex gap-2 topbar-actions">
                     {% if request.user.is_authenticated %}
                         <span class="nav-user-chip">{{ request.user.username }} · {{ request.user.get_tipo_usuario_display }}</span>
-                        <div class="services-menu">
-                            <button class="btn btn-outline-secondary btn-sm services-toggle" type="button" aria-haspopup="true" aria-expanded="false">
-                                Servicios
-                            </button>
-                            <ul class="services-dropdown">
-                                <li class="services-submenu-wrap">
-                                    <button class="services-submenu-toggle" type="button" aria-haspopup="true" aria-expanded="false">
-                                        Plataformas tecnologicas
-                                    </button>
-                                    <ul class="services-submenu">
-                                        <li><a href="https://sga2.itsjapon.edu.ec/login?next=/" target="_blank" rel="noopener noreferrer">Sistema de Gestion Academico</a></li>
-                                        <li><a href="https://pao.itsjapon.edu.ec/" target="_blank" rel="noopener noreferrer">Plataforma Virtual Presencial</a></li>
-                                        <li><a href="https://online.itsjapon.edu.ec/" target="_blank" rel="noopener noreferrer">Plataforma Virtual Online</a></li>
-                                        <li><a href="https://online.itsjapon.edu.ec/" target="_blank" rel="noopener noreferrer">Centro de idiomas</a></li>
-                                    </ul>
-                                </li>
-                                <li class="services-submenu-wrap">
-                                    <button class="services-submenu-toggle" type="button" aria-haspopup="true" aria-expanded="false">
-                                        Tutoriales
-                                    </button>
-                                    <ul class="services-submenu">
-                                        <li><a href="https://www.youtube.com/watch?v=Za7Dx9A_q7g" target="_blank" rel="noopener noreferrer">Guia Rapida de Matriculacion en el Sistema de Gestion Academico</a></li>
-                                        <li><a href="https://www.youtube.com/watch?v=13T-5Up11dU" target="_blank" rel="noopener noreferrer">Ingreso a la Plataforma de Aprendizaje Online PAO - ISTJ</a></li>
-                                        <li><a href="https://www.youtube.com/watch?v=P4SJ428eT5s" target="_blank" rel="noopener noreferrer">Actualizacion de Banner en Cursos de PAO - ISTJ</a></li>
-                                        <li><a class="services-link-missing" href="#" aria-disabled="true" tabindex="-1">Restauracion de un curso en PAO - ISTJ</a></li>
-                                        <li><a href="https://www.youtube.com/watch?v=K-BPyk3p0uM" target="_blank" rel="noopener noreferrer">Inicio de Sesion en Office 365 - ISTJ</a></li>
-                                        <li><a href="https://www.youtube.com/watch?v=lfFFRRphS0g" target="_blank" rel="noopener noreferrer">Restablecer Contrasena de Office 365 - ISTJ</a></li>
-                                        <li><a href="https://www.youtube.com/watch?v=PB1gwCU0dHg" target="_blank" rel="noopener noreferrer">Configurar Reunion en Microsoft Teams - ISTJ</a></li>
-                                        <li><a href="https://www.youtube.com/watch?v=y232Fxh_e9w" target="_blank" rel="noopener noreferrer">Guia Rapida - Seguimiento Curricular en el Sistema de Gestion Academico SGA2</a></li>
-                                        <li><a class="services-link-missing" href="#" aria-disabled="true" tabindex="-1">Tutorial para acceder a clases virtuales en PAO - Estudiantes</a></li>
-                                    </ul>
-                                </li>
-                            </ul>
-                        </div>
                         {% if request.user.tipo_usuario == "profesor" %}
                             <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_dashboard' %}">Panel docente</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_courses' %}">Cursos</a>
@@ -727,6 +725,40 @@
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_students' %}">Estudiantes</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_leveling_dashboard' %}">Nivelacion</a>
                         {% else %}
+                            <div class="services-menu">
+                                <button class="btn btn-outline-secondary btn-sm services-toggle" type="button" aria-haspopup="true" aria-expanded="false">
+                                    Servicios
+                                </button>
+                                <ul class="services-dropdown">
+                                    <li class="services-submenu-wrap">
+                                        <button class="services-submenu-toggle" type="button" aria-haspopup="true" aria-expanded="false">
+                                            Plataformas tecnologicas
+                                        </button>
+                                        <ul class="services-submenu">
+                                            <li><a href="https://sga2.itsjapon.edu.ec/login?next=/" target="_blank" rel="noopener noreferrer">Sistema de Gestion Academico</a></li>
+                                            <li><a href="https://pao.itsjapon.edu.ec/" target="_blank" rel="noopener noreferrer">Plataforma Virtual Presencial</a></li>
+                                            <li><a href="https://online.itsjapon.edu.ec/" target="_blank" rel="noopener noreferrer">Plataforma Virtual Online</a></li>
+                                            <li><a href="https://online.itsjapon.edu.ec/" target="_blank" rel="noopener noreferrer">Centro de idiomas</a></li>
+                                        </ul>
+                                    </li>
+                                    <li class="services-submenu-wrap">
+                                        <button class="services-submenu-toggle" type="button" aria-haspopup="true" aria-expanded="false">
+                                            Tutoriales
+                                        </button>
+                                        <ul class="services-submenu">
+                                            <li><a href="https://www.youtube.com/watch?v=Za7Dx9A_q7g" target="_blank" rel="noopener noreferrer">Guia Rapida de Matriculacion en el Sistema de Gestion Academico</a></li>
+                                            <li><a href="https://www.youtube.com/watch?v=13T-5Up11dU" target="_blank" rel="noopener noreferrer">Ingreso a la Plataforma de Aprendizaje Online PAO - ISTJ</a></li>
+                                            <li><a href="https://www.youtube.com/watch?v=P4SJ428eT5s" target="_blank" rel="noopener noreferrer">Actualizacion de Banner en Cursos de PAO - ISTJ</a></li>
+                                            <li><a href="https://www.youtube.com/watch?v=2ijUQ6i9M7o" target="_blank" rel="noopener noreferrer">Restauracion de un curso en PAO - ISTJ</a></li>
+                                            <li><a href="https://www.youtube.com/watch?v=K-BPyk3p0uM" target="_blank" rel="noopener noreferrer">Inicio de Sesion en Office 365 - ISTJ</a></li>
+                                            <li><a href="https://www.youtube.com/watch?v=lfFFRRphS0g" target="_blank" rel="noopener noreferrer">Restablecer Contrasena de Office 365 - ISTJ</a></li>
+                                            <li><a href="https://www.youtube.com/watch?v=PB1gwCU0dHg" target="_blank" rel="noopener noreferrer">Configurar Reunion en Microsoft Teams - ISTJ</a></li>
+                                            <li><a href="https://www.youtube.com/watch?v=y232Fxh_e9w" target="_blank" rel="noopener noreferrer">Guia Rapida - Seguimiento Curricular en el Sistema de Gestion Academico SGA2</a></li>
+                                            <li><a href="https://www.youtube.com/watch?v=7XyJSy6J-YU" target="_blank" rel="noopener noreferrer">Tutorial para acceder a clases virtuales en PAO - Estudiantes</a></li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </div>
                             <a class="btn btn-outline-primary btn-sm" href="{% url 'student_dashboard' %}">Panel</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'student_courses' %}">Cursos</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'tests_index' %}">Tests</a>
