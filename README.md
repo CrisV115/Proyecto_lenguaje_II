@@ -102,10 +102,10 @@ python .\manage.py test
 
 ## Importacion desde archivos planos
 
-Los archivos planos del proyecto ahora viven dentro del repositorio:
+Los archivos planos del proyecto ahora viven en la raiz del repositorio:
 
-- [data/csv/estudiantes.csv](C:/Users/herna/Documents/GitHub/Proyecto_lenguaje_II/data/csv/estudiantes.csv)
-- [data/csv/profesores.csv](C:/Users/herna/Documents/GitHub/Proyecto_lenguaje_II/data/csv/profesores.csv)
+- [estudiantes.csv](C:/Users/herna/Documents/GitHub/Proyecto_lenguaje_II/estudiantes.csv)
+- [profesores.csv](C:/Users/herna/Documents/GitHub/Proyecto_lenguaje_II/profesores.csv)
 
 Pueden estar vacios al inicio. Lo importante es que conserven sus encabezados y el separador `;`.
 

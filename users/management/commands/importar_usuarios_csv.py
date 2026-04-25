@@ -13,16 +13,20 @@ class Command(BaseCommand):
     base_required_columns = {"Cedula", "Correo", "Carrera"}
     first_name_candidates = ("Nombres", "Nombre")
     last_name_candidates = ("Apellidos", "Apellido")
+    default_estudiantes_path = settings.BASE_DIR / "estudiantes.csv"
+    default_profesores_path = settings.BASE_DIR / "profesores.csv"
+    legacy_estudiantes_path = settings.BASE_DIR / "data" / "csv" / "estudiantes.csv"
+    legacy_profesores_path = settings.BASE_DIR / "data" / "csv" / "profesores.csv"
 
     def add_arguments(self, parser):
         parser.add_argument(
             "--estudiantes",
-            default=str(settings.BASE_DIR / "data" / "csv" / "estudiantes.csv"),
+            default=str(self._resolve_default_path("estudiantes")),
             help="Ruta al archivo CSV de estudiantes.",
         )
         parser.add_argument(
             "--profesores",
-            default=str(settings.BASE_DIR / "data" / "csv" / "profesores.csv"),
+            default=str(self._resolve_default_path("profesores")),
             help="Ruta al archivo CSV de profesores.",
         )
 
@@ -138,3 +142,13 @@ class Command(BaseCommand):
             if candidate in fieldnames:
                 return candidate
         return None
+
+    def _resolve_default_path(self, file_type):
+        if file_type == "estudiantes":
+            if self.default_estudiantes_path.exists():
+                return self.default_estudiantes_path
+            return self.legacy_estudiantes_path
+
+        if self.default_profesores_path.exists():
+            return self.default_profesores_path
+        return self.legacy_profesores_path
