@@ -47,19 +47,13 @@ python .\manage.py createsuperuser
 5. Iniciar servidor:
 
 ```powershell
-python .\manage.py runserver 0.0.0.0:8000
+python .\manage.py runserver
 ```
 
 Comando unico (instala, migra y arranca):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\start_server.ps1
-```
-
-Para abrir el sistema desde otro dispositivo conectado a la misma red Wi-Fi, usa la IP local de esta computadora. En este momento es:
-
-```text
-http://192.168.1.8:8000/
 ```
 
 ## Configuracion MySQL (opcional)

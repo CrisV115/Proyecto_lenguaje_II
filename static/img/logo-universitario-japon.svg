@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Logo Universitario Japon</title>
+  <desc id="desc">Isotipo con letra U dorada sobre fondo morado.</desc>
+  <defs>
+    <linearGradient id="gold-left" x1="0%" x2="0%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#fff8dc"/>
+      <stop offset="38%" stop-color="#ffd452"/>
+      <stop offset="100%" stop-color="#e0a100"/>
+    </linearGradient>
+    <linearGradient id="gold-right" x1="0%" x2="0%" y1="0%" y2="100%">
+      <stop offset="0%" stop-color="#fffdf2"/>
+      <stop offset="45%" stop-color="#fff0b7"/>
+      <stop offset="100%" stop-color="#ead395"/>
+    </linearGradient>
+    <linearGradient id="gold-curve" x1="10%" x2="90%" y1="10%" y2="90%">
+      <stop offset="0%" stop-color="#ffcf34"/>
+      <stop offset="55%" stop-color="#f0bd19"/>
+      <stop offset="100%" stop-color="#cf8d00"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="44" fill="#5b10b4"/>
+
+  <rect x="83" y="56" width="38" height="99" rx="8" fill="url(#gold-left)"/>
+  <rect x="135" y="56" width="38" height="121" rx="8" fill="url(#gold-right)"/>
+
+  <path
+    d="M55 123c24 23 47 37 73 45 31 10 57 6 80-10-11 20-27 35-47 43-26 10-58 5-87-15-19-14-34-35-44-63z"
+    fill="url(#gold-curve)"
+  />
+
+  <path
+    d="M117 148c5 16 15 30 31 40-11 1-23-2-35-8-11-7-21-17-31-31z"
+    fill="#ffde73"
+    opacity=".82"
+  />
+</svg>
