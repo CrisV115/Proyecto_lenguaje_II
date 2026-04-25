@@ -21,7 +21,9 @@
                 <thead>
                     <tr>
                         <th>Test</th>
-                        <th>Tipo</th>
+                        <th>Curso</th>
+                        <th>Fecha</th>
+                        <th>Horario</th>
                         <th>Preguntas</th>
                         <th>Resultados</th>
                         <th>Estado</th>
@@ -37,7 +39,15 @@
                                     <div class="text-secondary small mt-1">{{ test.description }}</div>
                                 {% endif %}
                             </td>
-                            <td>{{ test.get_type_display }}</td>
+                            <td>{{ test.course.name|default:"Sin curso" }}</td>
+                            <td>{% if test.available_date %}{{ test.available_date|date:"d/m/Y" }}{% else %}-{% endif %}</td>
+                            <td>
+                                {% if test.opening_time and test.closing_time %}
+                                    {{ test.opening_time|time:"H:i" }} - {{ test.closing_time|time:"H:i" }}
+                                {% else %}
+                                    Sin restriccion
+                                {% endif %}
+                            </td>
                             <td>{{ test.questions_count }}</td>
                             <td>{{ test.results_count }}</td>
                             <td>

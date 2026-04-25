@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.db import models
 
+from courses.models import Course
+
 
 class Test(models.Model):
     TIPO_CHOICES = [
@@ -9,11 +11,25 @@ class Test(models.Model):
     ]
 
     name = models.CharField(max_length=100)
-    type = models.CharField(max_length=50, choices=TIPO_CHOICES)
+    type = models.CharField(
+        max_length=50,
+        choices=TIPO_CHOICES,
+        default="conocimientos",
+    )
     duration = models.PositiveIntegerField(help_text="Duracion en minutos")
     passing_score = models.PositiveIntegerField(default=70)
     is_active = models.BooleanField(default=True)
     description = models.TextField(blank=True)
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name="tests",
+        null=True,
+        blank=True,
+    )
+    available_date = models.DateField(null=True, blank=True)
+    opening_time = models.TimeField(null=True, blank=True)
+    closing_time = models.TimeField(null=True, blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

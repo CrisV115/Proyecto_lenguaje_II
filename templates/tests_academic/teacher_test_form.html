@@ -8,9 +8,13 @@
         <div>
             <span class="section-kicker mb-3">Constructor docente</span>
             <h1 class="h2 mb-1 text-white">{{ page_title }}</h1>
-            <p class="text-white-50 mb-0">Disena tu test como un formulario visual. Tipos permitidos: respuesta corta, respuesta larga, seleccion multiple, casillas de verificacion y lista desplegable.</p>
+            <p class="text-white-50 mb-0">Disena tu test como un formulario visual y programa su disponibilidad por fecha y horario.</p>
         </div>
-        <a class="btn btn-outline-light" href="{% url 'teacher_tests' %}">Volver a tests</a>
+        {% if from_course %}
+            <a class="btn btn-outline-light" href="{% url 'course_detail' from_course.id %}">Volver al curso</a>
+        {% else %}
+            <a class="btn btn-outline-light" href="{% url 'teacher_tests' %}">Volver a tests</a>
+        {% endif %}
     </div>
 </section>
 
@@ -35,9 +39,9 @@
                     {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors }}</div>{% endif %}
                 </div>
                 <div class="col-lg-5">
-                    <label class="form-label">Categoria del test</label>
-                    {{ form.type }}
-                    {% if form.type.errors %}<div class="text-danger small mt-1">{{ form.type.errors }}</div>{% endif %}
+                    <label class="form-label">Curso</label>
+                    {{ form.course }}
+                    {% if form.course.errors %}<div class="text-danger small mt-1">{{ form.course.errors }}</div>{% endif %}
                 </div>
                 <div class="col-12">
                     <label class="form-label">Descripcion</label>
@@ -53,6 +57,21 @@
                     <label class="form-label">Nota minima para aprobar</label>
                     {{ form.passing_score }}
                     {% if form.passing_score.errors %}<div class="text-danger small mt-1">{{ form.passing_score.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Fecha de evaluacion</label>
+                    {{ form.available_date }}
+                    {% if form.available_date.errors %}<div class="text-danger small mt-1">{{ form.available_date.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Hora de apertura</label>
+                    {{ form.opening_time }}
+                    {% if form.opening_time.errors %}<div class="text-danger small mt-1">{{ form.opening_time.errors }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Hora de cierre</label>
+                    {{ form.closing_time }}
+                    {% if form.closing_time.errors %}<div class="text-danger small mt-1">{{ form.closing_time.errors }}</div>{% endif %}
                 </div>
                 <div class="col-md-4 d-flex align-items-end">
                     <div class="form-check mb-2">

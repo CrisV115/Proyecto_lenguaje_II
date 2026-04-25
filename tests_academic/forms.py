@@ -70,19 +70,25 @@ class TeacherTestForm(forms.ModelForm):
         model = Test
         fields = [
             "name",
-            "type",
+            "course",
             "description",
             "duration",
             "passing_score",
+            "available_date",
+            "opening_time",
+            "closing_time",
             "is_active",
         ]
         widgets = {
             "description": forms.Textarea(attrs={"rows": 3}),
+            "available_date": forms.DateInput(attrs={"type": "date"}),
+            "opening_time": forms.TimeInput(attrs={"type": "time", "step": 60}),
+            "closing_time": forms.TimeInput(attrs={"type": "time", "step": 60}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields.values():
+        for field_name, field in self.fields.items():
             widget = field.widget
             current_class = widget.attrs.get("class", "")
             if isinstance(widget, (forms.TextInput, forms.NumberInput, forms.Textarea)):
@@ -91,6 +97,11 @@ class TeacherTestForm(forms.ModelForm):
                 widget.attrs["class"] = f"{current_class} form-select".strip()
             elif isinstance(widget, forms.CheckboxInput):
                 widget.attrs["class"] = f"{current_class} form-check-input".strip()
+            elif isinstance(widget, (forms.DateInput, forms.TimeInput)):
+                widget.attrs["class"] = f"{current_class} form-control".strip()
+
+            if field_name == "course":
+                field.label = "Curso"
 
         if self.instance.pk:
             payload = []
@@ -114,6 +125,19 @@ class TeacherTestForm(forms.ModelForm):
             self.fields["questions_payload"].initial = json.dumps(payload, ensure_ascii=True)
         else:
             self.fields["questions_payload"].initial = "[]"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        opening_time = cleaned_data.get("opening_time")
+        closing_time = cleaned_data.get("closing_time")
+
+        if opening_time and closing_time and opening_time >= closing_time:
+            self.add_error(
+                "closing_time",
+                "La hora de cierre debe ser posterior a la hora de apertura.",
+            )
+
+        return cleaned_data
 
     def clean_questions_payload(self):
         payload = self.cleaned_data.get("questions_payload", "[]")
