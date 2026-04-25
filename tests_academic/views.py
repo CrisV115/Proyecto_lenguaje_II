@@ -1,7 +1,10 @@
+from datetime import datetime
+
 from django.contrib import messages
-from django.db.models import Count, Prefetch
+from django.db.models import Count, Prefetch, Q
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from courses.models import Course
 from tracking.models import Progress
@@ -14,23 +17,49 @@ from .models import Answer, Question, Result, StudentAnswer, Test
 
 @role_required("estudiante")
 def index(request):
-    tests = Test.objects.filter(is_active=True).order_by("name")
+    tests = (
+        Test.objects.filter(
+            is_active=True,
+        )
+        .filter(
+            Q(course__students=request.user) | Q(course__isnull=True)
+        )
+        .select_related("course")
+        .distinct()
+        .order_by("name")
+    )
     completed_test_ids = set(
         Result.objects.filter(student=request.user).values_list("test_id", flat=True)
     )
+    now = timezone.localtime()
+    available_now_ids = {test.id for test in tests if _is_test_open(test, now)}
     return render(
         request,
         "tests_academic/index.html",
         {
             "tests": tests,
             "completed_test_ids": completed_test_ids,
+            "available_now_ids": available_now_ids,
         },
     )
 
 
 @role_required("estudiante")
 def take_test(request, test_id):
-    test = get_object_or_404(Test, id=test_id, is_active=True)
+    test = get_object_or_404(
+        Test,
+        id=test_id,
+        is_active=True,
+    )
+    if test.course and not test.course.students.filter(id=request.user.id).exists():
+        return redirect("tests_index")
+
+    if not _is_test_open(test, timezone.localtime()):
+        messages.warning(
+            request,
+            "Este test no esta disponible en este momento segun su fecha y horario.",
+        )
+        return redirect("tests_index")
 
     if Result.objects.filter(student=request.user, test=test).exists():
         messages.warning(
@@ -130,6 +159,7 @@ def test_result(request, test_id):
 
 @role_required("profesor")
 def teacher_tests(request):
+    course_id = request.GET.get("course")
     tests = (
         Test.objects.filter(created_by=request.user)
         .select_related("created_by")
@@ -139,24 +169,35 @@ def teacher_tests(request):
         )
         .order_by("-created_at")
     )
-    return render(request, "tests_academic/teacher_tests.html", {"tests": tests})
+    if course_id:
+        tests = tests.filter(course_id=course_id)
+    return render(
+        request,
+        "tests_academic/teacher_tests.html",
+        {"tests": tests, "course_id": course_id},
+    )
 
 
 @role_required("profesor")
 def teacher_test_create(request):
+    initial_course = _resolve_course_for_teacher(request, request.GET.get("course"))
     if request.method == "POST":
         form = TeacherTestForm(request.POST)
-        if form.is_valid():
+        form.fields["course"].queryset = _teacher_courses_queryset(request.user)
+        if form.is_valid() and _validate_teacher_course(form, request.user):
             _save_test_with_questions(form, request.user)
             messages.success(request, "Test creado correctamente.")
+            if form.cleaned_data.get("course"):
+                return redirect("course_detail", course_id=form.cleaned_data["course"].id)
             return redirect("teacher_tests")
     else:
-        form = TeacherTestForm()
+        form = TeacherTestForm(initial={"course": initial_course} if initial_course else None)
+        form.fields["course"].queryset = _teacher_courses_queryset(request.user)
 
     return render(
         request,
         "tests_academic/teacher_test_form.html",
-        {"form": form, "page_title": "Crear test diagnostico"},
+        {"form": form, "page_title": "Crear test diagnostico", "from_course": initial_course},
     )
 
 
@@ -166,12 +207,16 @@ def teacher_test_edit(request, test_id):
 
     if request.method == "POST":
         form = TeacherTestForm(request.POST, instance=test)
-        if form.is_valid():
+        form.fields["course"].queryset = _teacher_courses_queryset(request.user)
+        if form.is_valid() and _validate_teacher_course(form, request.user):
             _save_test_with_questions(form, request.user)
             messages.success(request, "Test actualizado correctamente.")
+            if form.cleaned_data.get("course"):
+                return redirect("course_detail", course_id=form.cleaned_data["course"].id)
             return redirect("teacher_tests")
     else:
         form = TeacherTestForm(instance=test)
+        form.fields["course"].queryset = _teacher_courses_queryset(request.user)
 
     return render(
         request,
@@ -231,6 +276,8 @@ def _save_test_with_questions(form, user):
         test = form.save(commit=False)
         if not test.created_by:
             test.created_by = user
+        if not test.type:
+            test.type = "conocimientos"
         test.save()
 
         test.questions.all().delete()
@@ -286,3 +333,42 @@ def _build_student_answer(question, value):
         "text_response": normalized_value,
         "selected_answer_ids": [],
     }, normalized_value.lower() == expected_text.lower()
+
+
+def _is_test_open(test, now):
+    if not test.available_date or not test.opening_time or not test.closing_time:
+        return True
+    if now.date() != test.available_date:
+        return False
+
+    opening_dt = timezone.make_aware(
+        datetime.combine(test.available_date, test.opening_time),
+        timezone.get_current_timezone(),
+    )
+    closing_dt = timezone.make_aware(
+        datetime.combine(test.available_date, test.closing_time),
+        timezone.get_current_timezone(),
+    )
+    return opening_dt <= now <= closing_dt
+
+
+def _teacher_courses_queryset(user):
+    return Course.objects.filter(teachers=user).order_by("name")
+
+
+def _resolve_course_for_teacher(request, course_id):
+    if not course_id:
+        return None
+    return (
+        Course.objects.filter(id=course_id, teachers=request.user)
+        .order_by("name")
+        .first()
+    )
+
+
+def _validate_teacher_course(form, user):
+    course = form.cleaned_data.get("course")
+    if course and not course.teachers.filter(id=user.id).exists():
+        form.add_error("course", "Solo puedes asignar tests a cursos donde eres docente.")
+        return False
+    return True

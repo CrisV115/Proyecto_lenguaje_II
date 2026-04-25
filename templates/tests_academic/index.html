@@ -17,7 +17,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <div class="soft-label mb-2">Listado activo</div>
-        <p class="text-secondary mb-0">Cada test muestra su tipo, duracion y nota minima para aprobar.</p>
+        <p class="text-secondary mb-0">Cada test muestra su curso, horario y nota minima para aprobar.</p>
     </div>
 </div>
 
@@ -25,9 +25,16 @@
     <div class="glass-card rounded-4 p-4 mb-3">
         <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
             <div>
-                <div class="soft-label mb-2">{{ test.get_type_display }}</div>
+                <div class="soft-label mb-2">{{ test.course.name|default:"Sin curso" }}</div>
                 <h2 class="h4">{{ test.name }}</h2>
-                <p class="text-secondary mb-3">Duracion: {{ test.duration }} minutos | Nota minima: {{ test.passing_score }}%</p>
+                <p class="text-secondary mb-1">Duracion: {{ test.duration }} minutos | Nota minima: {{ test.passing_score }}%</p>
+                <p class="text-secondary mb-3">
+                    {% if test.available_date and test.opening_time and test.closing_time %}
+                        Fecha: {{ test.available_date|date:"d/m/Y" }} | Apertura: {{ test.opening_time|time:"H:i" }} | Cierre: {{ test.closing_time|time:"H:i" }}
+                    {% else %}
+                        Disponible sin restriccion horaria.
+                    {% endif %}
+                </p>
             </div>
             <div class="status-pill {% if test.id in completed_test_ids %}success{% else %}warn{% endif %}">
                 {% if test.id in completed_test_ids %}Completado{% else %}Pendiente{% endif %}
@@ -36,6 +43,9 @@
         {% if test.id in completed_test_ids %}
             <p class="text-success fw-semibold">Ya rendiste este test.</p>
             <a class="btn btn-primary" href="{% url 'test_result' test.id %}">Ver resultado</a>
+        {% elif test.id not in available_now_ids %}
+            <p class="text-warning fw-semibold">Este test aun no esta disponible o ya cerro segun su horario.</p>
+            <button class="btn btn-secondary" disabled>No disponible</button>
         {% else %}
             <a class="btn btn-primary" href="{% url 'take_test' test.id %}">Rendir test</a>
         {% endif %}

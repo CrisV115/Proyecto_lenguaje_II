@@ -1,7 +1,9 @@
-from django.shortcuts import get_object_or_404, render
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect, render
 
 from users.decorators import role_required
 
+from .forms import CourseActivityForm
 from .models import Course
 
 
@@ -26,6 +28,10 @@ def course_detail(request, course_id):
 
     students = course.students.order_by("username")
     teachers = course.teachers.order_by("username")
+    activities = course.activities.select_related("created_by").order_by("due_date", "opening_time")
+    tests = course.tests.order_by("available_date", "opening_time", "name")
+    if request.user.tipo_usuario == "estudiante":
+        tests = tests.filter(is_active=True)
 
     return render(
         request,
@@ -34,5 +40,29 @@ def course_detail(request, course_id):
             "course": course,
             "students": students,
             "teachers": teachers,
+            "activities": activities,
+            "tests": tests,
+            "activity_form": CourseActivityForm(),
         },
     )
+
+
+@role_required("profesor")
+def create_course_activity(request, course_id):
+    course = get_object_or_404(Course, id=course_id, teachers=request.user)
+    if request.method != "POST":
+        return redirect("course_detail", course_id=course.id)
+
+    form = CourseActivityForm(request.POST, request.FILES)
+    if form.is_valid():
+        activity = form.save(commit=False)
+        activity.course = course
+        activity.created_by = request.user
+        activity.save()
+        messages.success(request, "Actividad creada correctamente.")
+    else:
+        for error_list in form.errors.values():
+            for error in error_list:
+                messages.error(request, error)
+
+    return redirect("course_detail", course_id=course.id)

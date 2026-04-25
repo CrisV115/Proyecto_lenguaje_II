@@ -29,6 +29,49 @@
     </div>
 </section>
 
+<div class="glass-card dashboard-card mb-4">
+    <div class="card-header">
+        <div class="soft-label">Calendario</div>
+        <h2 class="h4 mb-0">Actividades y tests proximos</h2>
+    </div>
+    <div class="card-body">
+        {% if calendar_events %}
+            <div class="table-responsive">
+                <table class="table table-soft align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Curso</th>
+                            <th>Titulo</th>
+                            <th>Fecha</th>
+                            <th>Horario</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for event in calendar_events %}
+                            <tr>
+                                <td>{{ event.kind }}</td>
+                                <td>{{ event.course_name }}</td>
+                                <td>{{ event.title }}</td>
+                                <td>{{ event.date|date:"d/m/Y" }}</td>
+                                <td>{{ event.opening_time|time:"H:i" }} - {{ event.closing_time|time:"H:i" }}</td>
+                                <td>
+                                    {% if event.url %}
+                                        <a class="btn btn-outline-primary btn-sm" href="{{ event.url }}">Abrir</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">Aun no tienes actividades ni tests programados en tus cursos.</div>
+        {% endif %}
+    </div>
+</div>
+
 <div class="row g-4">
     <div class="col-lg-4">
         <div class="glass-card dashboard-card">

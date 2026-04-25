@@ -18,9 +18,9 @@
     </div>
 </section>
 
-<div class="row g-4">
+<div class="row g-4 mb-4">
     <div class="col-lg-7">
-        <div class="glass-card dashboard-card">
+        <div class="glass-card dashboard-card h-100">
             <div class="card-header">
                 <div class="soft-label">Contenido inicial</div>
                 <h2 class="h4 mb-0">Bienvenida</h2>
@@ -63,6 +63,144 @@
                     </ul>
                 {% else %}
                     <div class="empty-state">No hay estudiantes asignados.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-6">
+        <div class="glass-card dashboard-card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                <div>
+                    <div class="soft-label">Actividades</div>
+                    <h2 class="h4 mb-0">Calendario de asignaciones</h2>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if activities %}
+                    <div class="table-responsive mb-3">
+                        <table class="table table-soft align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Titulo</th>
+                                    <th>Fecha entrega</th>
+                                    <th>Horario</th>
+                                    <th>Recursos</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activity in activities %}
+                                    <tr id="activity-{{ activity.id }}">
+                                        <td>
+                                            <strong>{{ activity.title }}</strong>
+                                            <div class="text-secondary small">{{ activity.description }}</div>
+                                        </td>
+                                        <td>{{ activity.due_date|date:"d/m/Y" }}</td>
+                                        <td>{{ activity.opening_time|time:"H:i" }} - {{ activity.closing_time|time:"H:i" }}</td>
+                                        <td>
+                                            {% if activity.url %}
+                                                <a class="btn btn-outline-primary btn-sm mb-1" target="_blank" href="{{ activity.url }}">URL</a>
+                                            {% endif %}
+                                            {% if activity.attachment %}
+                                                <a class="btn btn-outline-secondary btn-sm" href="{{ activity.attachment.url }}">Archivo</a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state mb-3">No hay actividades registradas para este curso.</div>
+                {% endif %}
+
+                {% if request.user.tipo_usuario == "profesor" %}
+                    <hr>
+                    <h3 class="h5 mb-3">Nueva actividad</h3>
+                    <form method="post" enctype="multipart/form-data" action="{% url 'create_course_activity' course.id %}">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Titulo de la asignacion</label>
+                                {{ activity_form.title }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Descripcion de la asignacion</label>
+                                {{ activity_form.description }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">URL (opcional)</label>
+                                {{ activity_form.url }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Archivo (.pdf, .docx, .pptx)</label>
+                                {{ activity_form.attachment }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Fecha de entrega</label>
+                                {{ activity_form.due_date }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Hora y minuto de apertura</label>
+                                {{ activity_form.opening_time }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Hora y minuto de cierre</label>
+                                {{ activity_form.closing_time }}
+                            </div>
+                            <div class="col-12">
+                                <button class="btn btn-primary" type="submit">Guardar actividad</button>
+                            </div>
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-6">
+        <div class="glass-card dashboard-card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center gap-3 flex-wrap">
+                <div>
+                    <div class="soft-label">Tests</div>
+                    <h2 class="h4 mb-0">Tests asignados al curso</h2>
+                </div>
+                {% if request.user.tipo_usuario == "profesor" %}
+                    <a class="btn btn-primary btn-sm" href="{% url 'teacher_test_create' %}?course={{ course.id }}">Agregar test</a>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if tests %}
+                    <ul class="status-list mb-0">
+                        {% for test in tests %}
+                            <li>
+                                <div class="w-100">
+                                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                                        <strong>{{ test.name }}</strong>
+                                        <span class="status-pill {% if test.is_active %}success{% else %}warn{% endif %}">{% if test.is_active %}Activo{% else %}Inactivo{% endif %}</span>
+                                    </div>
+                                    <div class="text-secondary small mb-2">
+                                        {% if test.available_date and test.opening_time and test.closing_time %}
+                                            {{ test.available_date|date:"d/m/Y" }} | {{ test.opening_time|time:"H:i" }} - {{ test.closing_time|time:"H:i" }}
+                                        {% else %}
+                                            Sin restriccion de calendario.
+                                        {% endif %}
+                                    </div>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        {% if request.user.tipo_usuario == "profesor" %}
+                                            <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_test_edit' test.id %}">Editar</a>
+                                        {% else %}
+                                            <a class="btn btn-outline-primary btn-sm" href="{% url 'take_test' test.id %}">Rendir test</a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <div class="empty-state">Este curso no tiene tests asignados por ahora.</div>
                 {% endif %}
             </div>
         </div>

@@ -1,10 +1,15 @@
+from datetime import datetime
+
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from django.urls import reverse
 from django.shortcuts import redirect, render
+from django.utils import timezone
 
 from certifications.models import Certificate
-from courses.models import Course
+from courses.models import Course, CourseActivity
 from tests_academic.models import Result, Test
 from tracking.models import Progress
 
@@ -160,8 +165,17 @@ def student_dashboard(request):
 
     latest_result = Result.objects.filter(student=request.user).select_related("test").first()
     progress_entries = Progress.objects.filter(student=request.user).order_by("phase")
-    active_test = Test.objects.filter(is_active=True).order_by("name").first()
+    student_tests = (
+        Test.objects.filter(is_active=True)
+        .filter(Q(course__students=request.user) | Q(course__isnull=True))
+        .select_related("course")
+        .distinct()
+        .order_by("available_date", "opening_time", "name")
+    )
+    now = timezone.localtime()
+    active_test = next((test for test in student_tests if _is_test_open_now(test, now)), None)
     certificate = Certificate.objects.filter(student=request.user, valid=True).first()
+    calendar_events = _build_student_calendar_events(request.user)
 
     return render(
         request,
@@ -171,6 +185,7 @@ def student_dashboard(request):
             "progress_entries": progress_entries,
             "active_test": active_test,
             "certificate": certificate,
+            "calendar_events": calendar_events,
         },
     )
 
@@ -211,3 +226,71 @@ def teacher_dashboard(request):
         "students": students,
     }
     return render(request, "teachers/dashboard.html", context)
+
+
+def _build_student_calendar_events(student):
+    now_date = timezone.localdate()
+
+    activities = (
+        CourseActivity.objects.filter(course__students=student, due_date__gte=now_date)
+        .select_related("course")
+        .distinct()
+        .order_by("due_date", "opening_time")[:12]
+    )
+    tests = (
+        Test.objects.filter(available_date__gte=now_date)
+        .filter(Q(course__students=student) | Q(course__isnull=True))
+        .select_related("course")
+        .distinct()
+        .order_by("available_date", "opening_time", "name")[:12]
+    )
+
+    events = []
+    for activity in activities:
+        events.append(
+            {
+                "kind": "Actividad",
+                "course_name": activity.course.name,
+                "title": activity.title,
+                "date": activity.due_date,
+                "opening_time": activity.opening_time,
+                "closing_time": activity.closing_time,
+                "url": f"{reverse('course_detail', args=[activity.course.id])}#activity-{activity.id}",
+            }
+        )
+    for test in tests:
+        events.append(
+            {
+                "kind": "Test",
+                "course_name": test.course.name if test.course else "Sin curso",
+                "title": test.name,
+                "date": test.available_date,
+                "opening_time": test.opening_time,
+                "closing_time": test.closing_time,
+                "url": "",
+            }
+        )
+
+    events.sort(
+        key=lambda event: (
+            event["date"] or now_date,
+            event["opening_time"] or datetime.min.time(),
+        )
+    )
+    return events[:15]
+
+
+def _is_test_open_now(test, now):
+    if not test.available_date or not test.opening_time or not test.closing_time:
+        return True
+    if now.date() != test.available_date:
+        return False
+    opening_dt = timezone.make_aware(
+        datetime.combine(test.available_date, test.opening_time),
+        timezone.get_current_timezone(),
+    )
+    closing_dt = timezone.make_aware(
+        datetime.combine(test.available_date, test.closing_time),
+        timezone.get_current_timezone(),
+    )
+    return opening_dt <= now <= closing_dt
