@@ -109,6 +109,131 @@
             align-items: center;
         }
 
+        .services-menu {
+            position: relative;
+        }
+
+        .services-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .services-toggle::after,
+        .services-submenu-toggle::after {
+            content: "";
+            width: 0.55rem;
+            height: 0.55rem;
+            border-right: 2px solid currentColor;
+            border-bottom: 2px solid currentColor;
+            opacity: 0.75;
+            transition: transform 0.2s ease;
+        }
+
+        .services-toggle::after {
+            transform: rotate(45deg);
+        }
+
+        .services-menu.is-open .services-toggle::after {
+            transform: rotate(-135deg) translateY(-1px);
+        }
+
+        .services-dropdown,
+        .services-submenu {
+            list-style: none;
+            margin: 0;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(76, 29, 149, 0.12);
+            border-radius: 1.2rem;
+            box-shadow: 0 24px 52px rgba(76, 29, 149, 0.18);
+            backdrop-filter: blur(18px);
+        }
+
+        .services-dropdown {
+            position: absolute;
+            top: calc(100% + 0.7rem);
+            left: 0;
+            min-width: 19rem;
+            display: none;
+            z-index: 40;
+        }
+
+        .services-menu:hover > .services-dropdown,
+        .services-menu:focus-within > .services-dropdown,
+        .services-menu.is-open > .services-dropdown {
+            display: block;
+        }
+
+        .services-submenu-wrap {
+            position: relative;
+        }
+
+        .services-submenu-toggle,
+        .services-dropdown a,
+        .services-submenu a {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.8rem 0.95rem;
+            border: 0;
+            border-radius: 0.95rem;
+            background: transparent;
+            color: var(--text);
+            text-decoration: none;
+            text-align: left;
+            font-size: 0.93rem;
+            font-weight: 600;
+            transition: background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+        }
+
+        .services-submenu-toggle {
+            cursor: pointer;
+        }
+
+        .services-submenu-toggle::after {
+            transform: rotate(-45deg);
+        }
+
+        .services-submenu-wrap.is-open > .services-submenu-toggle::after {
+            transform: rotate(45deg);
+        }
+
+        .services-submenu-toggle:hover,
+        .services-submenu-toggle:focus,
+        .services-dropdown a:hover,
+        .services-dropdown a:focus,
+        .services-submenu a:hover,
+        .services-submenu a:focus {
+            background: rgba(124, 58, 237, 0.1);
+            color: var(--primary-deep);
+            outline: none;
+            transform: translateX(2px);
+        }
+
+        .services-submenu {
+            position: absolute;
+            top: 0;
+            left: calc(100% + 0.65rem);
+            min-width: 21rem;
+            display: none;
+            z-index: 41;
+        }
+
+        .services-submenu-wrap:hover > .services-submenu,
+        .services-submenu-wrap:focus-within > .services-submenu,
+        .services-submenu-wrap.is-open > .services-submenu {
+            display: block;
+        }
+
+        .services-link-missing {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
         .glass-card, .surface-panel {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -534,6 +659,15 @@
             .brand-logo { height: 2.45rem; }
             .brand-title { font-size: 1.2rem; }
             .brand-subtitle { font-size: 0.82rem; }
+            .topbar-actions { flex-wrap: wrap; }
+            .services-dropdown,
+            .services-submenu {
+                min-width: min(22rem, calc(100vw - 2rem));
+            }
+            .services-submenu {
+                position: static;
+                margin-top: 0.35rem;
+            }
         }
     </style>
     {% block extra_css %}{% endblock %}
@@ -552,6 +686,40 @@
                 <div class="d-flex gap-2 topbar-actions">
                     {% if request.user.is_authenticated %}
                         <span class="nav-user-chip">{{ request.user.username }} · {{ request.user.get_tipo_usuario_display }}</span>
+                        <div class="services-menu">
+                            <button class="btn btn-outline-secondary btn-sm services-toggle" type="button" aria-haspopup="true" aria-expanded="false">
+                                Servicios
+                            </button>
+                            <ul class="services-dropdown">
+                                <li class="services-submenu-wrap">
+                                    <button class="services-submenu-toggle" type="button" aria-haspopup="true" aria-expanded="false">
+                                        Plataformas tecnologicas
+                                    </button>
+                                    <ul class="services-submenu">
+                                        <li><a href="https://sga2.itsjapon.edu.ec/login?next=/" target="_blank" rel="noopener noreferrer">Sistema de Gestion Academico</a></li>
+                                        <li><a href="https://pao.itsjapon.edu.ec/" target="_blank" rel="noopener noreferrer">Plataforma Virtual Presencial</a></li>
+                                        <li><a href="https://online.itsjapon.edu.ec/" target="_blank" rel="noopener noreferrer">Plataforma Virtual Online</a></li>
+                                        <li><a href="https://online.itsjapon.edu.ec/" target="_blank" rel="noopener noreferrer">Centro de idiomas</a></li>
+                                    </ul>
+                                </li>
+                                <li class="services-submenu-wrap">
+                                    <button class="services-submenu-toggle" type="button" aria-haspopup="true" aria-expanded="false">
+                                        Tutoriales
+                                    </button>
+                                    <ul class="services-submenu">
+                                        <li><a href="https://www.youtube.com/watch?v=Za7Dx9A_q7g" target="_blank" rel="noopener noreferrer">Guia Rapida de Matriculacion en el Sistema de Gestion Academico</a></li>
+                                        <li><a href="https://www.youtube.com/watch?v=13T-5Up11dU" target="_blank" rel="noopener noreferrer">Ingreso a la Plataforma de Aprendizaje Online PAO - ISTJ</a></li>
+                                        <li><a href="https://www.youtube.com/watch?v=P4SJ428eT5s" target="_blank" rel="noopener noreferrer">Actualizacion de Banner en Cursos de PAO - ISTJ</a></li>
+                                        <li><a class="services-link-missing" href="#" aria-disabled="true" tabindex="-1">Restauracion de un curso en PAO - ISTJ</a></li>
+                                        <li><a href="https://www.youtube.com/watch?v=K-BPyk3p0uM" target="_blank" rel="noopener noreferrer">Inicio de Sesion en Office 365 - ISTJ</a></li>
+                                        <li><a href="https://www.youtube.com/watch?v=lfFFRRphS0g" target="_blank" rel="noopener noreferrer">Restablecer Contrasena de Office 365 - ISTJ</a></li>
+                                        <li><a href="https://www.youtube.com/watch?v=PB1gwCU0dHg" target="_blank" rel="noopener noreferrer">Configurar Reunion en Microsoft Teams - ISTJ</a></li>
+                                        <li><a href="https://www.youtube.com/watch?v=y232Fxh_e9w" target="_blank" rel="noopener noreferrer">Guia Rapida - Seguimiento Curricular en el Sistema de Gestion Academico SGA2</a></li>
+                                        <li><a class="services-link-missing" href="#" aria-disabled="true" tabindex="-1">Tutorial para acceder a clases virtuales en PAO - Estudiantes</a></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
                         {% if request.user.tipo_usuario == "profesor" %}
                             <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_dashboard' %}">Panel docente</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_courses' %}">Cursos</a>
@@ -593,6 +761,64 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const servicesMenu = document.querySelector(".services-menu");
+            if (!servicesMenu) return;
+
+            const servicesToggle = servicesMenu.querySelector(".services-toggle");
+            const submenuWraps = servicesMenu.querySelectorAll(".services-submenu-wrap");
+
+            function closeSubmenus() {
+                submenuWraps.forEach(function (wrap) {
+                    wrap.classList.remove("is-open");
+                    const toggle = wrap.querySelector(".services-submenu-toggle");
+                    if (toggle) {
+                        toggle.setAttribute("aria-expanded", "false");
+                    }
+                });
+            }
+
+            function closeMenu() {
+                servicesMenu.classList.remove("is-open");
+                servicesToggle.setAttribute("aria-expanded", "false");
+                closeSubmenus();
+            }
+
+            servicesToggle.addEventListener("click", function (event) {
+                event.preventDefault();
+                const shouldOpen = !servicesMenu.classList.contains("is-open");
+                closeMenu();
+                if (shouldOpen) {
+                    servicesMenu.classList.add("is-open");
+                    servicesToggle.setAttribute("aria-expanded", "true");
+                }
+            });
+
+            submenuWraps.forEach(function (wrap) {
+                const toggle = wrap.querySelector(".services-submenu-toggle");
+                if (!toggle) return;
+
+                toggle.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    const shouldOpen = !wrap.classList.contains("is-open");
+                    closeSubmenus();
+                    if (shouldOpen) {
+                        servicesMenu.classList.add("is-open");
+                        servicesToggle.setAttribute("aria-expanded", "true");
+                        wrap.classList.add("is-open");
+                        toggle.setAttribute("aria-expanded", "true");
+                    }
+                });
+            });
+
+            document.addEventListener("click", function (event) {
+                if (!servicesMenu.contains(event.target)) {
+                    closeMenu();
+                }
+            });
+        });
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
