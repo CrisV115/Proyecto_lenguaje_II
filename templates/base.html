@@ -726,15 +726,11 @@
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_tests' %}">Gestionar tests</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_results' %}">Resultados</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_students' %}">Estudiantes</a>
-                            <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_leveling_dashboard' %}">Nivelacion</a>
                         {% else %}
                             <a class="btn btn-outline-primary btn-sm" href="{% url 'student_dashboard' %}">Panel</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'student_courses' %}">Cursos</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'tests_index' %}">Tests</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'tracking_overview' %}">Seguimiento</a>
-                            {% if show_student_leveling_menu %}
-                                <a class="btn btn-outline-secondary btn-sm" href="{% url 'leveling_dashboard' %}">Nivelacion</a>
-                            {% endif %}
                         {% endif %}
                         <a class="btn btn-primary btn-sm" href="{% url 'logout' %}">Salir</a>
                     {% else %}
