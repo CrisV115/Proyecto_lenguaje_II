@@ -551,6 +551,42 @@
                 <div class="d-flex gap-2 topbar-actions">
                     {% if request.user.is_authenticated %}
                         <span class="nav-user-chip">{{ request.user.username }} · {{ request.user.get_tipo_usuario_display }}</span>
+                        <div class="services-menu">
+                            <button class="btn btn-outline-secondary btn-sm services-toggle" type="button" aria-haspopup="true" aria-expanded="false">
+                                Servicios
+                            </button>
+                            <ul class="services-dropdown">
+                                <li class="services-submenu-wrap">
+                                    <span class="services-submenu-toggle" tabindex="0">
+                                        Plataformas tecnologicas
+                                        <span>&rsaquo;</span>
+                                    </span>
+                                    <ul class="services-submenu">
+                                        <li><a href="https://sga2.itsjapon.edu.ec/login?next=/" target="_blank" rel="noopener noreferrer">Sistema de Gestion Academico</a></li>
+                                        <li><a href="https://pao.itsjapon.edu.ec/" target="_blank" rel="noopener noreferrer">Plataforma Virtual Presencial</a></li>
+                                        <li><a href="https://online.itsjapon.edu.ec/" target="_blank" rel="noopener noreferrer">Plataforma Virtual Online</a></li>
+                                        <li><a href="https://online.itsjapon.edu.ec/" target="_blank" rel="noopener noreferrer">Centro de idiomas</a></li>
+                                    </ul>
+                                </li>
+                                <li class="services-submenu-wrap">
+                                    <span class="services-submenu-toggle" tabindex="0">
+                                        Tutoriales
+                                        <span>&rsaquo;</span>
+                                    </span>
+                                    <ul class="services-submenu">
+                                        <li><a href="https://www.youtube.com/watch?v=Za7Dx9A_q7g" target="_blank" rel="noopener noreferrer">Guia Rapida de Matriculacion en el Sistema de Gestion Academico</a></li>
+                                        <li><a href="https://www.youtube.com/watch?v=13T-5Up11dU" target="_blank" rel="noopener noreferrer">Ingreso a la Plataforma de Aprendizaje Online PAO - ISTJ</a></li>
+                                        <li><a href="https://www.youtube.com/watch?v=P4SJ428eT5s" target="_blank" rel="noopener noreferrer">Actualizacion de Banner en Cursos de PAO - ISTJ</a></li>
+                                        <li><a class="services-link-missing" href="#" aria-disabled="true" tabindex="-1">Restauracion de un curso en PAO - ISTJ</a></li>
+                                        <li><a href="https://www.youtube.com/watch?v=K-BPyk3p0uM" target="_blank" rel="noopener noreferrer">Inicio de Sesion en Office 365 - ISTJ</a></li>
+                                        <li><a href="https://www.youtube.com/watch?v=lfFFRRphS0g" target="_blank" rel="noopener noreferrer">Restablecer Contrasena de Office 365 - ISTJ</a></li>
+                                        <li><a href="https://www.youtube.com/watch?v=PB1gwCU0dHg" target="_blank" rel="noopener noreferrer">Configurar Reunion en Microsoft Teams - ISTJ</a></li>
+                                        <li><a href="https://www.youtube.com/watch?v=y232Fxh_e9w" target="_blank" rel="noopener noreferrer">Guia Rapida - Seguimiento Curricular en el Sistema de Gestion Academico SGA2</a></li>
+                                        <li><a class="services-link-missing" href="#" aria-disabled="true" tabindex="-1">Tutorial para acceder a clases virtuales en PAO - Estudiantes</a></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
                         {% if request.user.tipo_usuario == "profesor" %}
                             <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_dashboard' %}">Panel docente</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_courses' %}">Cursos</a>
