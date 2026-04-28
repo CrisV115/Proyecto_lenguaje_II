@@ -76,6 +76,8 @@ class LoginIdentifierTests(TestCase):
             username="alumno_demo",
             password="ClaveSegura123",
             email="alumno@example.com",
+            first_name="Karen Adriana",
+            last_name="Garcia Hernandez",
             cedula="0101010101",
             carrera="Software",
             telefono="0991234567",
@@ -83,6 +85,24 @@ class LoginIdentifierTests(TestCase):
             pregunta_seguridad="mascota",
             respuesta_seguridad="luna",
         )
+
+    def test_display_name_uses_first_name_and_first_last_name(self):
+        self.assertEqual(self.user.display_name, "Karen Garcia")
+
+    def test_display_name_falls_back_to_username(self):
+        user = self.user_model.objects.create_user(
+            username="sin_nombre",
+            password="ClaveSegura123",
+            email="sin_nombre@example.com",
+            cedula="0202020202",
+            carrera="Software",
+            telefono="0997654321",
+            tipo_usuario="estudiante",
+            pregunta_seguridad="madre",
+            respuesta_seguridad="maria",
+        )
+
+        self.assertEqual(user.display_name, "sin_nombre")
 
     def test_login_accepts_email_or_cedula(self):
         response = self.client.post(

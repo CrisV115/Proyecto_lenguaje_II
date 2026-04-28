@@ -110,7 +110,7 @@
                             <tbody>
                                 {% for result in recent_results %}
                                     <tr>
-                                        <td>{{ result.student.username }}</td>
+                                        <td>{{ result.student.display_name }}</td>
                                         <td>{{ result.test.name }}</td>
                                         <td>{{ result.score|floatformat:2 }}%</td>
                                         <td>
@@ -145,7 +145,7 @@
     {% if students %}
         <div class="d-flex flex-wrap gap-2">
             {% for student in students %}
-                <span class="badge-soft">{{ student.username }}</span>
+                <span class="badge-soft">{{ student.display_name }}</span>
             {% endfor %}
         </div>
     {% else %}

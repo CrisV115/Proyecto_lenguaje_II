@@ -7,7 +7,7 @@
     <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
         <div>
             <span class="section-kicker mb-3">Resultado individual</span>
-            <h1 class="h2 mb-1 text-white">{{ result.student.username }} · {{ result.test.name }}</h1>
+            <h1 class="h2 mb-1 text-white">{{ result.student.display_name }} &middot; {{ result.test.name }}</h1>
             <p class="text-white-50 mb-0">Revision completa del intento del estudiante, incluyendo respuestas seleccionadas.</p>
         </div>
         <a class="btn btn-outline-light" href="{% url 'teacher_results' %}">Volver a resultados</a>
@@ -78,7 +78,7 @@
                 </div>
             </div>
         {% empty %}
-            <div class="empty-state">No se encontraron respuestas asociadas a este resultado.</div>
+            <div class="empty-state">No se registraron respuestas para este intento.</div>
         {% endfor %}
     </div>
 </div>

@@ -40,7 +40,7 @@
                     <tbody>
                         {% for item in students_in_leveling %}
                             <tr>
-                                <td>{{ item.student.username }}</td>
+                                <td>{{ item.student.display_name }}</td>
                                 <td>{{ item.latest_test_name|default:"Sin test" }}</td>
                                 <td>{{ item.latest_score|floatformat:2 }}/10</td>
                                 <td>{{ item.leveling_percentage|floatformat:0 }}%</td>
