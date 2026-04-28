@@ -25,9 +25,18 @@
                 <form method="post">
                     {% csrf_token %}
                     <div class="mb-3">
-                        <label class="form-label" for="{{ session_form.class_dates.id_for_label }}">Fechas de clase</label>
+                        <label class="form-label" for="calendar_date">Selecciona fecha en calendario</label>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <input type="date" id="calendar_date" class="form-control" style="max-width: 220px;">
+                            <button class="btn btn-outline-primary" type="button" id="add_class_date">Agregar fecha</button>
+                        </div>
+                        <div class="form-text">Agrega todas las fechas programadas y luego guarda.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Fechas seleccionadas</label>
+                        <div id="selected_dates_list" class="d-flex flex-wrap gap-2 mb-2"></div>
                         {{ session_form.class_dates }}
-                        <div class="form-text">{{ session_form.class_dates.help_text }}</div>
                     </div>
                     <button class="btn btn-primary" type="submit">Guardar fechas</button>
                 </form>
@@ -77,4 +86,65 @@
         </div>
     </div>
 </div>
+<script>
+    (function () {
+        const rawInput = document.getElementById("id_class_dates");
+        const calendarInput = document.getElementById("calendar_date");
+        const addBtn = document.getElementById("add_class_date");
+        const list = document.getElementById("selected_dates_list");
+        if (!rawInput || !calendarInput || !addBtn || !list) return;
+
+        rawInput.style.display = "none";
+        const selectedDates = new Set(
+            (rawInput.value || "")
+                .replace(/\n/g, ",")
+                .split(",")
+                .map(v => v.trim())
+                .filter(Boolean)
+        );
+
+        const syncHiddenField = () => {
+            rawInput.value = Array.from(selectedDates).sort().join(", ");
+        };
+
+        const renderDates = () => {
+            list.innerHTML = "";
+            const sorted = Array.from(selectedDates).sort();
+            if (!sorted.length) {
+                list.innerHTML = '<span class="text-secondary small">No has agregado fechas.</span>';
+                return;
+            }
+            sorted.forEach((dateValue) => {
+                const wrapper = document.createElement("div");
+                wrapper.className = "badge-soft d-inline-flex align-items-center gap-2 px-3 py-2";
+                const label = document.createElement("span");
+                label.textContent = dateValue;
+                const removeBtn = document.createElement("button");
+                removeBtn.type = "button";
+                removeBtn.className = "btn btn-sm btn-outline-light py-0 px-2";
+                removeBtn.textContent = "x";
+                removeBtn.addEventListener("click", () => {
+                    selectedDates.delete(dateValue);
+                    syncHiddenField();
+                    renderDates();
+                });
+                wrapper.appendChild(label);
+                wrapper.appendChild(removeBtn);
+                list.appendChild(wrapper);
+            });
+        };
+
+        addBtn.addEventListener("click", () => {
+            const value = calendarInput.value;
+            if (!value) return;
+            selectedDates.add(value);
+            syncHiddenField();
+            renderDates();
+            calendarInput.value = "";
+        });
+
+        syncHiddenField();
+        renderDates();
+    })();
+</script>
 {% endblock %}
