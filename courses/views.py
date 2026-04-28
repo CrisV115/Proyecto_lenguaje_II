@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.contrib import messages
 from django.db.models import Count
 from django.http import Http404
@@ -9,8 +11,19 @@ from tests_academic.utils import get_student_visible_courses, student_has_approv
 from users.decorators import role_required
 from users.models import Usuario
 
-from .forms import CourseActivityForm, CourseActivityGradeForm, CourseActivitySubmissionForm
-from .models import Course, CourseActivity, CourseActivitySubmission
+from .forms import (
+    CourseActivityForm,
+    CourseActivityGradeForm,
+    CourseActivitySubmissionForm,
+    CourseClassSessionForm,
+)
+from .models import (
+    Course,
+    CourseActivity,
+    CourseActivitySubmission,
+    CourseClassAttendance,
+    CourseClassSession,
+)
 
 
 @role_required("estudiante")
@@ -301,6 +314,140 @@ def grade_course_activity_submission(request, course_id, activity_id, submission
         "course_activity_submission_module",
         course_id=course_id,
         activity_id=activity_id,
+    )
+
+
+@role_required("profesor")
+def course_attendance_module(request, course_id):
+    course = get_object_or_404(Course, id=course_id, teachers=request.user)
+    students = list(course.students.order_by("last_name", "first_name", "username"))
+    sessions = list(course.class_sessions.order_by("session_number", "class_date", "id"))
+
+    if request.method == "POST":
+        form = CourseClassSessionForm(request.POST)
+        if form.is_valid():
+            raw_dates = form.cleaned_data["class_dates"]
+            tokens = [item.strip() for item in raw_dates.replace("\n", ",").split(",") if item.strip()]
+            if not tokens:
+                messages.error(request, "Debes ingresar al menos una fecha de clase.")
+                return redirect("course_attendance_module", course_id=course.id)
+
+            parsed_dates = []
+            for token in tokens:
+                try:
+                    parsed_date = datetime.strptime(token, "%Y-%m-%d").date()
+                except ValueError:
+                    messages.error(request, f"La fecha '{token}' no tiene el formato YYYY-MM-DD.")
+                    return redirect("course_attendance_module", course_id=course.id)
+                parsed_dates.append(parsed_date)
+
+            existing_dates = set(
+                course.class_sessions.filter(class_date__in=parsed_dates).values_list("class_date", flat=True)
+            )
+            new_dates = sorted(set(parsed_dates) - existing_dates)
+            if not new_dates:
+                messages.info(request, "No se agregaron clases nuevas. Esas fechas ya estaban registradas.")
+                return redirect("course_attendance_module", course_id=course.id)
+
+            next_session_number = (
+                course.class_sessions.order_by("-session_number").values_list("session_number", flat=True).first() or 0
+            ) + 1
+            for class_date in new_dates:
+                class_session = CourseClassSession.objects.create(
+                    course=course,
+                    session_number=next_session_number,
+                    class_date=class_date,
+                    created_by=request.user,
+                )
+                attendances = [
+                    CourseClassAttendance(
+                        class_session=class_session,
+                        student=student,
+                    )
+                    for student in students
+                ]
+                CourseClassAttendance.objects.bulk_create(attendances)
+                next_session_number += 1
+
+            messages.success(request, f"Se registraron {len(new_dates)} clases correctamente.")
+            return redirect("course_attendance_module", course_id=course.id)
+    else:
+        form = CourseClassSessionForm()
+
+    for session in sessions:
+        present_count = session.attendances.filter(present=True).count()
+        total_students = len(students)
+        session.present_count = present_count
+        session.total_students = total_students
+        session.attendance_percentage = round((present_count * 100 / total_students), 2) if total_students else 0
+
+    return render(
+        request,
+        "courses/course_attendance_module.html",
+        {
+            "course": course,
+            "session_form": form,
+            "sessions": sessions,
+        },
+    )
+
+
+@role_required("profesor")
+def course_attendance_session_detail(request, course_id, session_id):
+    course = get_object_or_404(Course, id=course_id, teachers=request.user)
+    session = get_object_or_404(
+        CourseClassSession.objects.select_related("course"),
+        id=session_id,
+        course=course,
+    )
+    attendances = list(
+        session.attendances.select_related("student").order_by("student__last_name", "student__first_name", "student__username")
+    )
+
+    if request.method == "POST":
+        selected_ids = {
+            int(value)
+            for value in request.POST.getlist("present_students")
+            if value.isdigit()
+        }
+        changed = 0
+        now = timezone.now()
+        for attendance in attendances:
+            new_value = attendance.student_id in selected_ids
+            if attendance.present != new_value:
+                changed += 1
+            attendance.present = new_value
+            attendance.marked_by = request.user
+            attendance.marked_at = now
+        CourseClassAttendance.objects.bulk_update(
+            attendances,
+            ["present", "marked_by", "marked_at"],
+        )
+        messages.success(
+            request,
+            f"Asistencia guardada correctamente. Registros actualizados: {changed}.",
+        )
+        return redirect(
+            "course_attendance_session_detail",
+            course_id=course.id,
+            session_id=session.id,
+        )
+
+    present_count = sum(1 for attendance in attendances if attendance.present)
+    total_students = len(attendances)
+    attendance_percentage = round((present_count * 100 / total_students), 2) if total_students else 0
+
+    return render(
+        request,
+        "courses/course_attendance_session_detail.html",
+        {
+            "course": course,
+            "session": session,
+            "attendances": attendances,
+            "present_count": present_count,
+            "total_students": total_students,
+            "attendance_percentage": attendance_percentage,
+        },
     )
 
 

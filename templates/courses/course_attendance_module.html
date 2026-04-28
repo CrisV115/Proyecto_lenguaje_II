@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Asistencias - {{ course.name }}{% endblock %}
+
+{% block content %}
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
+        <div>
+            <span class="section-kicker mb-3">Asistencia</span>
+            <h1 class="h2 mb-1 text-white">Modulo de asistencias</h1>
+            <p class="text-white-50 mb-0">Programa las fechas de clase y registra asistencia por sesion.</p>
+        </div>
+        <a class="btn btn-outline-light" href="{% url 'course_detail' course.id %}">Volver al curso</a>
+    </div>
+</section>
+
+<div class="row g-4">
+    <div class="col-xl-5">
+        <div class="glass-card dashboard-card h-100">
+            <div class="card-header">
+                <div class="soft-label">Calendario</div>
+                <h2 class="h4 mb-0">Registrar clases programadas</h2>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ session_form.class_dates.id_for_label }}">Fechas de clase</label>
+                        {{ session_form.class_dates }}
+                        <div class="form-text">{{ session_form.class_dates.help_text }}</div>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Guardar fechas</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        <div class="glass-card dashboard-card h-100">
+            <div class="card-header">
+                <div class="soft-label">Listado</div>
+                <h2 class="h4 mb-0">Clases registradas</h2>
+            </div>
+            <div class="card-body">
+                {% if sessions %}
+                    <div class="table-responsive">
+                        <table class="table table-soft align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th># Clase</th>
+                                    <th>Fecha</th>
+                                    <th>Asistencia</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in sessions %}
+                                    <tr>
+                                        <td><strong>Clase {{ session.session_number }}</strong></td>
+                                        <td>{{ session.class_date|date:"d/m/Y" }}</td>
+                                        <td>
+                                            {{ session.present_count }}/{{ session.total_students }}
+                                            <div class="small text-secondary">{{ session.attendance_percentage|floatformat:0 }}%</div>
+                                        </td>
+                                        <td class="text-end">
+                                            <a class="btn btn-outline-primary btn-sm" href="{% url 'course_attendance_session_detail' course.id session.id %}">Tomar asistencia</a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">No hay clases programadas todavia.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

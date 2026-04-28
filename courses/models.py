@@ -144,3 +144,77 @@ class CourseActivitySubmission(models.Model):
 
     def __str__(self):
         return f"{self.activity.title} - {self.student.username}"
+
+
+class CourseClassSession(models.Model):
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name="class_sessions",
+    )
+    session_number = models.PositiveIntegerField()
+    class_date = models.DateField()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="created_class_sessions",
+        limit_choices_to={"tipo_usuario": "profesor"},
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["class_date", "session_number", "id"]
+        verbose_name = "Clase programada"
+        verbose_name_plural = "Clases programadas"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["course", "class_date"],
+                name="unique_class_date_per_course",
+            ),
+            models.UniqueConstraint(
+                fields=["course", "session_number"],
+                name="unique_session_number_per_course",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.course.name} - Clase {self.session_number} ({self.class_date})"
+
+
+class CourseClassAttendance(models.Model):
+    class_session = models.ForeignKey(
+        CourseClassSession,
+        on_delete=models.CASCADE,
+        related_name="attendances",
+    )
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="course_class_attendances",
+        limit_choices_to={"tipo_usuario": "estudiante"},
+    )
+    present = models.BooleanField(default=False)
+    marked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="marked_course_class_attendances",
+        limit_choices_to={"tipo_usuario": "profesor"},
+    )
+    marked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["student__last_name", "student__first_name", "student__username"]
+        verbose_name = "Asistencia de clase"
+        verbose_name_plural = "Asistencias de clases"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["class_session", "student"],
+                name="unique_attendance_per_student_and_class",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.class_session} - {self.student.username} ({'Asiste' if self.present else 'Falta'})"
