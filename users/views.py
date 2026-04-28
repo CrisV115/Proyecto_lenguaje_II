@@ -11,7 +11,13 @@ from django.utils import timezone
 from certifications.models import Certificate
 from courses.models import Course, CourseActivity
 from tests_academic.models import Result, Test
-from tests_academic.utils import get_student_visible_courses, student_has_approved_diagnostic
+from tests_academic.utils import (
+    get_student_managed_results_queryset,
+    get_student_managed_tests_queryset,
+    get_student_visible_courses,
+    get_teacher_managed_tests_queryset,
+    student_has_approved_diagnostic,
+)
 from tracking.models import Progress
 
 from .forms import PrimerIngresoPasswordForm, RegistroForm
@@ -169,11 +175,11 @@ def student_dashboard(request):
         request.user,
         diagnostic_approved=diagnostic_approved,
     )
-    latest_result = Result.objects.filter(student=request.user).select_related("test").first()
+    latest_result = get_student_managed_results_queryset(request.user).select_related("test").first()
     progress_entries = Progress.objects.filter(student=request.user).order_by("phase")
     student_tests = (
-        Test.objects.filter(is_active=True)
-        .filter(Q(course__in=visible_courses) | Q(course__isnull=True))
+        get_student_managed_tests_queryset()
+        .filter(is_active=True)
         .select_related("course")
         .distinct()
         .order_by("available_date", "opening_time", "name")
@@ -212,25 +218,19 @@ def teacher_dashboard(request):
         .order_by("username")
     )
 
-    tests = (
-        Test.objects.filter(created_by=request.user)
-        .select_related("created_by")
-        .prefetch_related("questions")[:5]
-    )
+    managed_tests = get_teacher_managed_tests_queryset(request.user)
+    tests = managed_tests.select_related("created_by").prefetch_related("questions")[:5]
     recent_results = (
-        Result.objects.filter(test__created_by=request.user)
+        Result.objects.filter(test__in=managed_tests)
         .select_related("student", "test")[:8]
     )
     students = course_students[:8]
 
     context = {
-        "tests_count": Test.objects.filter(created_by=request.user).count(),
-        "active_tests_count": Test.objects.filter(
-            created_by=request.user,
-            is_active=True,
-        ).count(),
+        "tests_count": managed_tests.count(),
+        "active_tests_count": managed_tests.filter(is_active=True).count(),
         "students_count": course_students.count(),
-        "results_count": Result.objects.filter(test__created_by=request.user).count(),
+        "results_count": Result.objects.filter(test__in=managed_tests).count(),
         "tests": tests,
         "recent_results": recent_results,
         "students": students,

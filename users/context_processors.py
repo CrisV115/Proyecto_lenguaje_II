@@ -1,4 +1,4 @@
-from tests_academic.models import Result
+from tests_academic.utils import get_student_managed_results_queryset
 
 
 def leveling_navigation(request):
@@ -6,7 +6,7 @@ def leveling_navigation(request):
 
     user = getattr(request, "user", None)
     if getattr(user, "is_authenticated", False) and getattr(user, "tipo_usuario", "") == "estudiante":
-        latest_result = Result.objects.filter(student=user).only("score").first()
+        latest_result = get_student_managed_results_queryset(user).only("score").first()
         show_student_leveling_menu = bool(latest_result and latest_result.score < 70)
 
     return {

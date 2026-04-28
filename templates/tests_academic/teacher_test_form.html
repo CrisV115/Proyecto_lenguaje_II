@@ -8,10 +8,16 @@
         <div>
             <span class="section-kicker mb-3">Constructor docente</span>
             <h1 class="h2 mb-1 text-white">{{ page_title }}</h1>
-            <p class="text-white-50 mb-0">Disena tu test como un formulario visual y programa su disponibilidad por fecha y horario.</p>
+            <p class="text-white-50 mb-0">
+                {% if course_form_context %}
+                    Disena tu test del curso y programa su disponibilidad por fecha y horario.
+                {% else %}
+                    Disena tu test de diagnostico o vocacional como un formulario visual y programa su disponibilidad por fecha y horario.
+                {% endif %}
+            </p>
         </div>
-        {% if from_course %}
-            <a class="btn btn-outline-light" href="{% url 'course_detail' from_course.id %}">Volver al curso</a>
+        {% if back_course %}
+            <a class="btn btn-outline-light" href="{% url 'course_detail' back_course.id %}">Volver al curso</a>
         {% else %}
             <a class="btn btn-outline-light" href="{% url 'teacher_tests' %}">Volver a tests</a>
         {% endif %}
@@ -33,16 +39,25 @@
         <div class="builder-card__accent"></div>
         <div class="builder-card__body">
             <div class="row g-4">
-                <div class="col-lg-7">
+                <div class="{% if course_form_context %}col-lg-7{% else %}col-lg-8{% endif %}">
                     <label class="form-label">Titulo del formulario</label>
                     {{ form.name }}
                     {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors }}</div>{% endif %}
                 </div>
-                <div class="col-lg-5">
-                    <label class="form-label">Curso</label>
-                    {{ form.course }}
-                    {% if form.course.errors %}<div class="text-danger small mt-1">{{ form.course.errors }}</div>{% endif %}
-                </div>
+                {% if form.type %}
+                    <div class="col-lg-4">
+                        <label class="form-label">Tipo de test</label>
+                        {{ form.type }}
+                        {% if form.type.errors %}<div class="text-danger small mt-1">{{ form.type.errors }}</div>{% endif %}
+                    </div>
+                {% endif %}
+                {% if form.course %}
+                    <div class="col-lg-5">
+                        <label class="form-label">Curso</label>
+                        {{ form.course }}
+                        {% if form.course.errors %}<div class="text-danger small mt-1">{{ form.course.errors }}</div>{% endif %}
+                    </div>
+                {% endif %}
                 <div class="col-12">
                     <label class="form-label">Descripcion</label>
                     {{ form.description }}

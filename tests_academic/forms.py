@@ -3,6 +3,8 @@ import json
 from django import forms
 from django.core.exceptions import ValidationError
 
+from courses.models import Course
+
 from .models import Question, Test
 
 
@@ -64,12 +66,14 @@ class TestForm(forms.Form):
 
 
 class TeacherTestForm(forms.ModelForm):
+    course = forms.ModelChoiceField(queryset=Course.objects.none(), required=False)
     questions_payload = forms.CharField(widget=forms.HiddenInput())
 
     class Meta:
         model = Test
         fields = [
             "name",
+            "type",
             "course",
             "description",
             "duration",
@@ -87,6 +91,9 @@ class TeacherTestForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.course_context = kwargs.pop("course_context", False)
+        course_queryset = kwargs.pop("course_queryset", None)
+        initial_course = kwargs.pop("initial_course", None)
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
             widget = field.widget
@@ -100,8 +107,22 @@ class TeacherTestForm(forms.ModelForm):
             elif isinstance(widget, (forms.DateInput, forms.TimeInput)):
                 widget.attrs["class"] = f"{current_class} form-control".strip()
 
-            if field_name == "course":
-                field.label = "Curso"
+        self.fields["type"].choices = [
+            ("conocimientos", "Diagnostico"),
+            ("vocacional", "Vocacional"),
+        ]
+
+        if self.course_context:
+            self.fields["course"].label = "Curso"
+            self.fields["course"].required = True
+            if course_queryset is not None:
+                self.fields["course"].queryset = course_queryset
+            if initial_course and not self.instance.pk:
+                self.fields["course"].initial = initial_course
+            self.fields.pop("type")
+        else:
+            self.fields["type"].label = "Tipo de test"
+            self.fields.pop("course")
 
         if self.instance.pk:
             payload = []
@@ -182,6 +203,14 @@ class TeacherTestForm(forms.ModelForm):
 
         self.parsed_questions = normalized_questions
         return payload
+
+    def save(self, commit=True):
+        test = super().save(commit=False)
+        if self.course_context:
+            test.type = "curso"
+        if commit:
+            test.save()
+        return test
 
     def _clean_option_question(self, index, question_type, raw_options):
         if not isinstance(raw_options, list):

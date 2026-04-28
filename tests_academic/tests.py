@@ -253,7 +253,7 @@ class AcademicFlowTests(TestCase):
 
         dashboard_response = self.client.get(reverse("teacher_dashboard"))
         self.assertEqual(dashboard_response.status_code, 200)
-        self.assertContains(dashboard_response, "Gestion del diagnostico academico")
+        self.assertContains(dashboard_response, "Gestion de tests diagnosticos y vocacionales")
 
         tests_response = self.client.get(reverse("teacher_tests"))
         self.assertEqual(tests_response.status_code, 200)
@@ -326,11 +326,10 @@ class AcademicFlowTests(TestCase):
             type="conocimientos",
             duration=20,
             created_by=self.professor,
-            course=course,
         )
         follow_up_test = Test.objects.create(
             name="Test de refuerzo",
-            type="conocimientos",
+            type="curso",
             duration=20,
             created_by=self.professor,
             course=course,
@@ -374,11 +373,8 @@ class AcademicFlowTests(TestCase):
 
         tests_response = self.client.get(reverse("tests_index"))
         self.assertEqual(tests_response.status_code, 200)
-        self.assertContains(
-            tests_response,
-            "Ya aprobaste el diagnostico y no tienes una nivelacion asignada.",
-        )
         self.assertNotContains(tests_response, follow_up_test.name)
+        self.assertContains(tests_response, diagnostic_test.name)
 
         course_detail_response = self.client.get(reverse("course_detail", args=[course.id]))
         self.assertEqual(course_detail_response.status_code, 404)
@@ -394,3 +390,108 @@ class AcademicFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Nivelaciones asignadas")
         self.assertContains(response, "Entrar a la nivelacion")
+
+    def test_teacher_management_only_lists_diagnostic_and_vocational_tests(self):
+        unsupported_test = Test.objects.create(
+            name="Test libre",
+            type="libre",
+            duration=10,
+            created_by=self.professor,
+        )
+        vocational_test = Test.objects.create(
+            name="Test vocacional",
+            type="vocacional",
+            duration=15,
+            created_by=self.professor,
+        )
+
+        self.client.logout()
+        self.client.login(username="profesor_demo", password="ClaveSegura123")
+
+        response = self.client.get(reverse("teacher_tests"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.test.name)
+        self.assertContains(response, vocational_test.name)
+        self.assertContains(response, "Diagnostico")
+        self.assertContains(response, "Vocacional")
+        self.assertNotContains(response, unsupported_test.name)
+
+    def test_teacher_test_form_allows_selecting_diagnostic_or_vocational_type(self):
+        self.client.logout()
+        self.client.login(username="profesor_demo", password="ClaveSegura123")
+
+        response = self.client.get(reverse("teacher_test_create"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Tipo de test")
+        self.assertContains(response, "Diagnostico")
+        self.assertContains(response, "Vocacional")
+        self.assertNotContains(response, 'id="id_course"', html=False)
+
+    def test_teacher_cannot_edit_test_outside_managed_types(self):
+        unsupported_test = Test.objects.create(
+            name="Test libre",
+            type="libre",
+            duration=10,
+            created_by=self.professor,
+        )
+
+        self.client.logout()
+        self.client.login(username="profesor_demo", password="ClaveSegura123")
+
+        response = self.client.get(reverse("teacher_test_edit", args=[unsupported_test.id]))
+        self.assertEqual(response.status_code, 404)
+
+    def test_course_test_form_shows_course_and_hides_management_type(self):
+        course = Course.objects.create(
+            name="Nivelacion Base",
+            description="Refuerzo",
+        )
+        course.teachers.add(self.professor)
+
+        self.client.logout()
+        self.client.login(username="profesor_demo", password="ClaveSegura123")
+
+        response = self.client.get(reverse("teacher_test_create") + f"?course={course.id}")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Crear test del curso")
+        self.assertContains(response, 'id="id_course"', html=False)
+        self.assertContains(response, str(course.id))
+        self.assertNotContains(response, 'id="id_type"', html=False)
+
+    def test_course_test_submission_does_not_update_diagnostic_progress(self):
+        course = Course.objects.create(
+            name="Nivelacion Logica",
+            description="Refuerzo",
+        )
+        course.students.add(self.user)
+        course.teachers.add(self.professor)
+        course_test = Test.objects.create(
+            name="Evaluacion de nivelacion",
+            type="curso",
+            duration=20,
+            created_by=self.professor,
+            course=course,
+        )
+        question = Question.objects.create(
+            test=course_test,
+            text="5 + 5 = ?",
+            order=1,
+        )
+        correct_answer = Answer.objects.create(
+            question=question,
+            text="10",
+            is_correct=True,
+        )
+
+        response = self.client.post(
+            reverse("take_test", args=[course_test.id]),
+            {
+                f"question_{question.id}": str(correct_answer.id),
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Aprobado en el test del curso.")
+        self.assertContains(response, reverse("course_detail", args=[course.id]))
+        self.assertEqual(Progress.objects.filter(student=self.user).count(), 0)

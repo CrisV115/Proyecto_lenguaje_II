@@ -8,6 +8,7 @@ class Test(models.Model):
     TIPO_CHOICES = [
         ("conocimientos", "Conocimientos"),
         ("vocacional", "Vocacional"),
+        ("curso", "Curso"),
     ]
 
     name = models.CharField(max_length=100)
@@ -44,6 +45,30 @@ class Test(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def is_course_test(self):
+        return bool(self.course_id) or self.type == "curso"
+
+    @property
+    def is_managed_test(self):
+        return not self.course_id and self.type in {"conocimientos", "vocacional"}
+
+    @property
+    def management_type_label(self):
+        if self.is_course_test:
+            return "Curso"
+        if self.type == "conocimientos":
+            return "Diagnostico"
+        if self.type == "vocacional":
+            return "Vocacional"
+        return self.get_type_display() or self.type
+
+    @property
+    def student_type_label(self):
+        if self.is_course_test:
+            return "Curso"
+        return self.get_type_display() or self.type
 
 
 class Question(models.Model):

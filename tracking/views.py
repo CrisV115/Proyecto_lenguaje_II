@@ -6,6 +6,7 @@ from django.utils import timezone
 from certifications.models import Certificate
 from leveling.models import LevelingRecord
 from tests_academic.models import Result
+from tests_academic.utils import MANAGED_TEST_TYPES
 from users.decorators import role_required
 from users.models import Usuario
 
@@ -148,7 +149,12 @@ def teacher_report(request):
         Usuario.objects.filter(tipo_usuario="estudiante")
         .order_by("username")
         .prefetch_related(
-            Prefetch("results", queryset=Result.objects.select_related("test").order_by("-submitted_at")),
+            Prefetch(
+                "results",
+                queryset=Result.objects.select_related("test")
+                .filter(test__type__in=MANAGED_TEST_TYPES, test__course__isnull=True)
+                .order_by("-submitted_at"),
+            ),
             Prefetch("progress_entries", queryset=Progress.objects.order_by("phase")),
             Prefetch(
                 "induction_participations",
