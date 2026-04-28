@@ -15,24 +15,32 @@
 </section>
 
 <div class="glass-card rounded-4 p-4">
-    {% if students %}
+    {% if rows %}
         <div class="table-responsive">
             <table class="table table-soft align-middle mb-0">
                 <thead>
                     <tr>
+                        <th>Materia</th>
                         <th>Usuario</th>
                         <th>Correo</th>
-                        <th>Telefono</th>
-                        <th>Resultados</th>
+                        <th>Completado</th>
+                        <th>Detalle</th>
+                        <th>Porcentaje</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for student in students %}
+                    {% for row in rows %}
                         <tr>
-                            <td>{{ student.username }}</td>
-                            <td>{{ student.email }}</td>
-                            <td>{{ student.telefono }}</td>
-                            <td>{{ student.results_count }}</td>
+                            <td>{{ row.course.name }}</td>
+                            <td>{{ row.student.username }}</td>
+                            <td>{{ row.student.email }}</td>
+                            <td>{{ row.completed_items }}/{{ row.total_items }}</td>
+                            <td class="small text-secondary">Tareas {{ row.completed_activities }} - Tests {{ row.completed_tests }}</td>
+                            <td><strong>{{ row.percentage|floatformat:0 }}%</strong></td>
+                            <td class="text-end">
+                                <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_student_course_detail' row.course.id row.student.id %}">Ver detalle</a>
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>

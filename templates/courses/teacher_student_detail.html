@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Seguimiento de {{ student.username }}{% endblock %}
+
+{% block content %}
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
+        <div>
+            <span class="section-kicker mb-3">Seguimiento individual</span>
+            <h1 class="h2 mb-1 text-white">{{ student.username }} - {{ course.name }}</h1>
+            <p class="text-white-50 mb-0">Historial completo de tareas entregadas y tests realizados en esta materia.</p>
+        </div>
+        <a class="btn btn-outline-light" href="{% url 'course_detail' course.id %}">Volver al curso</a>
+    </div>
+</section>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="metric-card h-100">
+            <div class="soft-label">Completado</div>
+            <div class="metric-value">{{ progress.percentage|floatformat:0 }}%</div>
+            <div class="text-secondary mt-2">{{ progress.completed_items }}/{{ progress.total_items }} items completados</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="metric-card h-100">
+            <div class="soft-label">Tareas</div>
+            <div class="metric-value">{{ progress.completed_activities }}/{{ progress.total_activities }}</div>
+            <div class="text-secondary mt-2">Entregas registradas</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="metric-card h-100">
+            <div class="soft-label">Tests</div>
+            <div class="metric-value">{{ progress.completed_tests }}/{{ progress.total_tests }}</div>
+            <div class="text-secondary mt-2">Resultados registrados</div>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card dashboard-card mb-4">
+    <div class="card-header">
+        <div class="soft-label">Tareas</div>
+        <h2 class="h4 mb-0">Historial de entregas</h2>
+    </div>
+    <div class="card-body">
+        {% if activity_rows %}
+            <div class="table-responsive">
+                <table class="table table-soft align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Actividad</th>
+                            <th>Fecha limite</th>
+                            <th>Estado</th>
+                            <th>Enviado</th>
+                            <th>Detalle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in activity_rows %}
+                            <tr>
+                                <td>
+                                    <strong>{{ row.activity.title }}</strong>
+                                    <div class="small text-secondary">{{ row.activity.description }}</div>
+                                </td>
+                                <td>{{ row.activity.due_date|date:"d/m/Y" }} {{ row.activity.closing_time|time:"H:i" }}</td>
+                                <td>
+                                    {% if row.submission %}
+                                        <span class="status-pill success">Entregada</span>
+                                    {% else %}
+                                        <span class="status-pill warn">Pendiente</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if row.submission %}
+                                        {{ row.submission.submitted_at|date:"d/m/Y H:i" }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if row.submission %}
+                                        {% if row.submission.submission_url %}
+                                            <a class="btn btn-outline-primary btn-sm mb-1" target="_blank" href="{{ row.submission.submission_url }}">URL</a>
+                                        {% endif %}
+                                        {% if row.submission.attachment %}
+                                            <a class="btn btn-outline-secondary btn-sm mb-1" target="_blank" href="{{ row.submission.attachment.url }}">Archivo</a>
+                                        {% endif %}
+                                        {% if row.submission.submission_text %}
+                                            <div class="small text-secondary">{{ row.submission.submission_text }}</div>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-secondary small">Sin entrega</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">Esta materia no tiene tareas registradas.</div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="glass-card dashboard-card">
+    <div class="card-header">
+        <div class="soft-label">Tests</div>
+        <h2 class="h4 mb-0">Historial de resultados</h2>
+    </div>
+    <div class="card-body">
+        {% if test_rows %}
+            <div class="table-responsive">
+                <table class="table table-soft align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Test</th>
+                            <th>Estado</th>
+                            <th>Resultado</th>
+                            <th>Puntaje</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in test_rows %}
+                            <tr>
+                                <td>
+                                    <strong>{{ row.test.name }}</strong>
+                                    <div class="small text-secondary">{{ row.test.available_date|date:"d/m/Y"|default:"Sin fecha" }}</div>
+                                </td>
+                                <td>
+                                    <span class="status-pill {% if row.test.is_active %}success{% else %}warn{% endif %}">
+                                        {% if row.test.is_active %}Activo{% else %}Inactivo{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if row.result %}
+                                        <span class="status-pill {% if row.result.passed %}success{% else %}warn{% endif %}">
+                                            {% if row.result.passed %}Aprobado{% else %}No aprobado{% endif %}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-secondary small">No rendido</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if row.result %}
+                                        {{ row.result.score|floatformat:2 }}%
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if row.result %}
+                                        {{ row.result.submitted_at|date:"d/m/Y H:i" }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">Esta materia no tiene tests registrados.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,15 +1,15 @@
 from datetime import datetime
 
 from django.contrib import messages
-from django.db.models import Count, Prefetch, Q
+from django.db.models import Count, F, Prefetch, Q
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from courses.models import Course
+from courses.models import CourseActivitySubmission
 from tracking.models import Progress
 from users.decorators import role_required
-from users.models import Usuario
 
 from .forms import TeacherTestForm, TestForm
 from .models import Answer, Question, Result, StudentAnswer, Test
@@ -258,17 +258,91 @@ def teacher_result_detail(request, result_id):
 
 @role_required("profesor")
 def teacher_students(request):
-    teacher_courses = Course.objects.filter(teachers=request.user)
-    students = (
-        Usuario.objects.filter(
-            tipo_usuario="estudiante",
-            courses_enrolled__in=teacher_courses,
-        )
-        .distinct()
-        .annotate(results_count=Count("results", distinct=True))
-        .order_by("username")
+    teacher_courses = list(
+        Course.objects.filter(teachers=request.user)
+        .prefetch_related("students")
+        .order_by("name")
     )
-    return render(request, "tests_academic/teacher_students.html", {"students": students})
+    if not teacher_courses:
+        return render(request, "tests_academic/teacher_students.html", {"rows": []})
+
+    all_students = {
+        student.id: student
+        for course in teacher_courses
+        for student in course.students.all()
+    }
+    all_student_ids = list(all_students.keys())
+    course_ids = [course.id for course in teacher_courses]
+
+    activity_completion = {
+        (item["activity__course_id"], item["student_id"]): item["total"]
+        for item in CourseActivitySubmission.objects.filter(
+            activity__course_id__in=course_ids,
+            student_id__in=all_student_ids,
+        )
+        .values("activity__course_id", "student_id")
+        .annotate(total=Count("id"))
+    }
+    test_completion = {
+        (item["test__course_id"], item["student_id"]): item["total"]
+        for item in Result.objects.filter(
+            test__course_id__in=course_ids,
+            test__is_active=True,
+            student_id__in=all_student_ids,
+        )
+        .values("test__course_id", "student_id")
+        .annotate(total=Count("id"))
+    }
+
+    total_activities = {
+        item["course_id"]: item["total"]
+        for item in course_activity_totals(course_ids)
+    }
+    total_tests = {
+        item["course_id"]: item["total"]
+        for item in course_test_totals(course_ids)
+    }
+
+    rows = []
+    for course in teacher_courses:
+        total_items = total_activities.get(course.id, 0) + total_tests.get(course.id, 0)
+        for student in course.students.all():
+            completed_activities = activity_completion.get((course.id, student.id), 0)
+            completed_tests = test_completion.get((course.id, student.id), 0)
+            completed_items = completed_activities + completed_tests
+            percentage = round((completed_items * 100 / total_items), 2) if total_items else 0
+            rows.append(
+                {
+                    "course": course,
+                    "student": student,
+                    "completed_items": completed_items,
+                    "total_items": total_items,
+                    "completed_activities": completed_activities,
+                    "completed_tests": completed_tests,
+                    "percentage": percentage,
+                }
+            )
+    rows.sort(key=lambda row: (row["course"].name.lower(), row["student"].username.lower()))
+    return render(request, "tests_academic/teacher_students.html", {"rows": rows})
+
+
+def course_activity_totals(course_ids):
+    return (
+        Course.objects.filter(id__in=course_ids)
+        .annotate(course_id=F("id"), total=Count("activities", distinct=True))
+        .values("course_id", "total")
+    )
+
+
+def course_test_totals(course_ids):
+    return (
+        Course.objects.filter(id__in=course_ids)
+        .annotate(
+            course_id=F("id"),
+            total=Count("tests", filter=Q(tests__is_active=True), distinct=True),
+        )
+        .values("course_id", "total")
+    )
 
 
 def _save_test_with_questions(form, user):

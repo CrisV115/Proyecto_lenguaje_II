@@ -78,3 +78,50 @@ class CourseActivity(models.Model):
 
     def __str__(self):
         return f"{self.course.name} - {self.title}"
+
+
+class CourseActivitySubmission(models.Model):
+    activity = models.ForeignKey(
+        CourseActivity,
+        on_delete=models.CASCADE,
+        related_name="submissions",
+    )
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="activity_submissions",
+    )
+    submission_text = models.TextField(blank=True)
+    submission_url = models.URLField(blank=True)
+    attachment = models.FileField(
+        upload_to="course_submissions/",
+        blank=True,
+        validators=[
+            FileExtensionValidator(
+                ["pdf", "doc", "docx", "ppt", "pptx", "zip", "rar", "txt", "jpg", "png"]
+            )
+        ],
+    )
+    submitted_at = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-submitted_at"]
+        verbose_name = "Entrega de actividad"
+        verbose_name_plural = "Entregas de actividades"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["activity", "student"],
+                name="unique_activity_submission_per_student",
+            )
+        ]
+
+    def clean(self):
+        super().clean()
+        if not self.submission_text and not self.submission_url and not self.attachment:
+            raise ValidationError(
+                "Debes cargar un archivo, URL o comentario para registrar la entrega."
+            )
+
+    def __str__(self):
+        return f"{self.activity.title} - {self.student.username}"

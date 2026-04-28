@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Asignacion - {{ activity.title }}{% endblock %}
+
+{% block content %}
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
+        <div>
+            <span class="section-kicker mb-3">Asignacion</span>
+            <h1 class="h2 mb-1 text-white">{{ activity.title }}</h1>
+            <p class="text-white-50 mb-0">{{ course.name }}</p>
+        </div>
+        <a class="btn btn-outline-light" href="{% url 'course_activities_module' course.id %}">Volver a asignaciones</a>
+    </div>
+</section>
+
+<div class="glass-card dashboard-card mb-4">
+    <div class="card-header">
+        <div class="soft-label">Detalle</div>
+        <h2 class="h4 mb-0">Informacion de la asignacion</h2>
+    </div>
+    <div class="card-body">
+        <p class="mb-3">{{ activity.description }}</p>
+        <div class="row g-3">
+            <div class="col-md-4"><strong>Fecha limite:</strong> {{ activity.due_date|date:"d/m/Y" }}</div>
+            <div class="col-md-4"><strong>Horario:</strong> {{ activity.opening_time|time:"H:i" }} - {{ activity.closing_time|time:"H:i" }}</div>
+            <div class="col-md-4">
+                <strong>Recursos:</strong>
+                {% if activity.url %}
+                    <a class="btn btn-outline-primary btn-sm ms-2" target="_blank" href="{{ activity.url }}">URL</a>
+                {% endif %}
+                {% if activity.attachment %}
+                    <a class="btn btn-outline-secondary btn-sm ms-2" target="_blank" href="{{ activity.attachment.url }}">Archivo</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if request.user.tipo_usuario == "estudiante" %}
+    <div class="row g-4">
+        <div class="col-xl-7">
+            <div class="glass-card dashboard-card h-100">
+                <div class="card-header">
+                    <div class="soft-label">Entrega</div>
+                    <h2 class="h4 mb-0">Enviar asignacion</h2>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" action="{% url 'submit_course_activity' course.id activity.id %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">URL (opcional)</label>
+                            {{ submission_form.submission_url }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Archivo</label>
+                            {{ submission_form.attachment }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Comentario</label>
+                            {{ submission_form.submission_text }}
+                        </div>
+                        <button class="btn btn-primary" type="submit">
+                            {% if submission %}Actualizar entrega{% else %}Add submission{% endif %}
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-5">
+            <div class="glass-card dashboard-card h-100">
+                <div class="card-header">
+                    <div class="soft-label">Estado</div>
+                    <h2 class="h4 mb-0">Submission status</h2>
+                </div>
+                <div class="card-body">
+                    <table class="table table-soft align-middle mb-0">
+                        <tbody>
+                            <tr>
+                                <th style="width:40%">Estado de entrega</th>
+                                <td>
+                                    {% if submission %}Entregado{% else %}No submissions have been made yet{% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Fecha de envio</th>
+                                <td>{% if submission %}{{ submission.submitted_at|date:"d/m/Y H:i" }}{% else %}-{% endif %}</td>
+                            </tr>
+                            <tr>
+                                <th>Tiempo restante</th>
+                                <td>{{ activity.due_date|date:"d/m/Y" }} {{ activity.closing_time|time:"H:i" }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="glass-card dashboard-card">
+        <div class="card-header">
+            <div class="soft-label">Docente</div>
+            <h2 class="h4 mb-0">Entregas de estudiantes</h2>
+        </div>
+        <div class="card-body">
+            {% if submissions %}
+                <div class="table-responsive">
+                    <table class="table table-soft align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Estudiante</th>
+                                <th>Fecha</th>
+                                <th>Evidencias</th>
+                                <th>Comentario</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in submissions %}
+                                <tr>
+                                    <td>{{ item.student.username }}</td>
+                                    <td>{{ item.submitted_at|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        {% if item.submission_url %}
+                                            <a class="btn btn-outline-primary btn-sm mb-1" target="_blank" href="{{ item.submission_url }}">URL</a>
+                                        {% endif %}
+                                        {% if item.attachment %}
+                                            <a class="btn btn-outline-secondary btn-sm mb-1" target="_blank" href="{{ item.attachment.url }}">Archivo</a>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.submission_text|default:"-" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">Aun no hay entregas para esta asignacion.</div>
+            {% endif %}
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

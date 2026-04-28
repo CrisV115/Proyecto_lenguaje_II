@@ -255,7 +255,10 @@ def _build_student_calendar_events(student):
                 "date": activity.due_date,
                 "opening_time": activity.opening_time,
                 "closing_time": activity.closing_time,
-                "url": f"{reverse('course_detail', args=[activity.course.id])}#activity-{activity.id}",
+                "url": reverse(
+                    "course_activity_submission_module",
+                    args=[activity.course.id, activity.id],
+                ),
             }
         )
     for test in tests:

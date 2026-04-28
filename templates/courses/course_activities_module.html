@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Asignaciones - {{ course.name }}{% endblock %}
+
+{% block content %}
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
+        <div>
+            <span class="section-kicker mb-3">Actividades</span>
+            <h1 class="h2 mb-1 text-white">Modulo de asignaciones</h1>
+            <p class="text-white-50 mb-0">{{ course.name }}</p>
+        </div>
+        <a class="btn btn-outline-light" href="{% url 'course_detail' course.id %}">Volver al curso</a>
+    </div>
+</section>
+
+<div class="row g-4">
+    <div class="{% if request.user.tipo_usuario == 'profesor' %}col-xl-7{% else %}col-12{% endif %}">
+        <div class="glass-card dashboard-card h-100">
+            <div class="card-header">
+                <div class="soft-label">Listado</div>
+                <h2 class="h4 mb-0">Calendario de asignaciones</h2>
+            </div>
+            <div class="card-body">
+                {% if activities %}
+                    <div class="table-responsive">
+                        <table class="table table-soft align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Titulo</th>
+                                    <th>Fecha entrega</th>
+                                    <th>Horario</th>
+                                    <th>Estado</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activity in activities %}
+                                    <tr>
+                                        <td>
+                                            <strong>
+                                                <a class="link-light text-decoration-none" href="{% url 'course_activity_submission_module' course.id activity.id %}">
+                                                    {{ activity.title }}
+                                                </a>
+                                            </strong>
+                                            <div class="small text-secondary">{{ activity.description }}</div>
+                                        </td>
+                                        <td>{{ activity.due_date|date:"d/m/Y" }}</td>
+                                        <td>{{ activity.opening_time|time:"H:i" }} - {{ activity.closing_time|time:"H:i" }}</td>
+                                        <td>
+                                            {% if request.user.tipo_usuario == "estudiante" %}
+                                                {% if activity.student_submission %}
+                                                    <span class="status-pill success">Entregada</span>
+                                                {% else %}
+                                                    <span class="status-pill warn">Pendiente</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge-soft">{{ activity.submissions.count }} entregas</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">
+                                            <a class="btn btn-outline-primary btn-sm" href="{% url 'course_activity_submission_module' course.id activity.id %}">
+                                                {% if request.user.tipo_usuario == "estudiante" %}Entrar{% else %}Ver detalle{% endif %}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">No hay asignaciones creadas para este curso.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if request.user.tipo_usuario == "profesor" %}
+        <div class="col-xl-5">
+            <div class="glass-card dashboard-card h-100">
+                <div class="card-header">
+                    <div class="soft-label">Gestion</div>
+                    <h2 class="h4 mb-0">Nueva actividad</h2>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" action="{% url 'create_course_activity' course.id %}">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Titulo de la asignacion</label>
+                                {{ activity_form.title }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Descripcion de la asignacion</label>
+                                {{ activity_form.description }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">URL (opcional)</label>
+                                {{ activity_form.url }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Archivo (.pdf, .docx, .pptx)</label>
+                                {{ activity_form.attachment }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Fecha de entrega</label>
+                                {{ activity_form.due_date }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Hora y minuto de apertura</label>
+                                {{ activity_form.opening_time }}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Hora y minuto de cierre</label>
+                                {{ activity_form.closing_time }}
+                            </div>
+                            <div class="col-12">
+                                <button class="btn btn-primary" type="submit">Guardar actividad</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
