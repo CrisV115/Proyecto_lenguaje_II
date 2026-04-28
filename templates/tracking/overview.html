@@ -53,4 +53,141 @@
         <div class="empty-state">No hay fases registradas todavia.</div>
     {% endif %}
 </div>
+
+<div class="row g-4 mt-1">
+    <div class="col-xl-4">
+        <div class="metric-card h-100">
+            <div class="soft-label">Certificacion</div>
+            {% if certificate_status.eligible %}
+                <div class="metric-value">Lista</div>
+                <div class="text-secondary mt-2">
+                    {% if certificate_status.qualifying_path == "diagnostico" %}
+                        El test diagnostico aprobo tu ruta y el certificado ya esta habilitado.
+                    {% else %}
+                        La nivelacion aprobo tu ruta y el certificado ya esta habilitado.
+                    {% endif %}
+                </div>
+                <span class="status-pill success mt-3">Descarga disponible</span>
+            {% else %}
+                <div class="metric-value">Pendiente</div>
+                <div class="text-secondary mt-2">
+                    {% if not certificate_status.diagnostic_attempted %}
+                        Primero debes rendir el test diagnostico.
+                    {% elif certificate_status.needs_leveling and not certificate_status.leveling_attempted %}
+                        Debes continuar con la nivelacion.
+                    {% else %}
+                        La certificacion aun no cumple las condiciones de cierre.
+                    {% endif %}
+                </div>
+                <span class="status-pill warn mt-3">Aun no disponible</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-xl-8">
+        <div class="glass-card rounded-4 p-4 p-lg-5">
+            <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap mb-3">
+                <div>
+                    <div class="soft-label mb-2">Cierre academico</div>
+                    <h2 class="h4 mb-0">Estado del certificado final</h2>
+                </div>
+                {% if certificate_status.eligible %}
+                    <span class="status-pill success">Disponible</span>
+                {% else %}
+                    <span class="status-pill warn">En espera</span>
+                {% endif %}
+            </div>
+
+            <p class="text-secondary mb-4">
+                {% if certificate_status.eligible %}
+                    {% if certificate_status.qualifying_path == "diagnostico" %}
+                        Tu certificado se habilito porque aprobaste el test diagnostico.
+                    {% else %}
+                        Tu certificado se habilito porque completaste y aprobaste la nivelacion.
+                    {% endif %}
+                {% elif not certificate_status.diagnostic_attempted %}
+                    Tu siguiente paso es rendir el test diagnostico para que el sistema determine si necesitas nivelacion.
+                {% elif certificate_status.needs_leveling and not certificate_status.leveling_attempted %}
+                    Como no aprobaste el test diagnostico, ahora debes completar la nivelacion.
+                {% else %}
+                    Como no aprobaste el test diagnostico, necesitas aprobar la nivelacion para habilitar el certificado.
+                {% endif %}
+            </p>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="surface-panel p-4 h-100">
+                        <div class="soft-label mb-2">Test diagnostico</div>
+                        <h3 class="h5 mb-2">Resultado actual</h3>
+                        {% if certificate_status.diagnostic_attempted %}
+                            <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                                <span class="status-pill {% if certificate_status.diagnostic_passed %}success{% else %}warn{% endif %}">
+                                    {% if certificate_status.diagnostic_passed %}Aprobado{% else %}No aprobado{% endif %}
+                                </span>
+                                <span class="fw-semibold">{{ certificate_status.diagnostic_result.score|floatformat:2 }}%</span>
+                            </div>
+                            <p class="text-secondary mb-0">
+                                {% if certificate_status.diagnostic_passed %}
+                                    Este resultado habilita directamente tu certificado.
+                                {% else %}
+                                    Este resultado te envia a la fase de nivelacion.
+                                {% endif %}
+                            </p>
+                        {% else %}
+                            <span class="status-pill warn mb-2">Pendiente</span>
+                            <p class="text-secondary mb-0">Todavia no has rendido el test diagnostico.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="surface-panel p-4 h-100">
+                        <div class="soft-label mb-2">Nivelacion</div>
+                        <h3 class="h5 mb-2">Estado actual</h3>
+                        {% if certificate_status.qualifying_path == "diagnostico" %}
+                            <span class="status-pill success mb-2">No requerida</span>
+                            <p class="text-secondary mb-0">No necesitas nivelacion porque aprobaste el diagnostico.</p>
+                        {% elif certificate_status.leveling_attempted %}
+                            <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                                <span class="status-pill {% if certificate_status.leveling_passed %}success{% else %}warn{% endif %}">
+                                    {% if certificate_status.leveling_passed %}Aprobada{% else %}En proceso{% endif %}
+                                </span>
+                                <span class="fw-semibold">
+                                    {% if certificate_status.leveling_record %}
+                                        {{ certificate_status.leveling_record.participation_percentage }}%
+                                    {% elif certificate_status.leveling_progress %}
+                                        {{ certificate_status.leveling_progress.percentage }}%
+                                    {% else %}
+                                        Sin porcentaje
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <p class="text-secondary mb-0">
+                                {% if certificate_status.leveling_passed %}
+                                    La nivelacion ya cumple los requisitos de cierre.
+                                {% else %}
+                                    La nivelacion todavia no cumple los requisitos de aprobacion.
+                                {% endif %}
+                            </p>
+                        {% else %}
+                            <span class="status-pill warn mb-2">Pendiente</span>
+                            <p class="text-secondary mb-0">Se habilita cuando no apruebas el test diagnostico.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap">
+                {% if certificate_status.eligible %}
+                    <a class="btn btn-primary" href="{% url 'download_certificate_pdf' %}">Descargar certificado PDF</a>
+                    <a class="btn btn-outline-primary" href="{% url 'generate_certificate' %}">Ver detalle</a>
+                {% else %}
+                    <button class="btn btn-primary" type="button" disabled>Descargar certificado PDF</button>
+                {% endif %}
+                <a class="btn btn-outline-primary" href="{% url 'tests_index' %}">Ir a tests</a>
+                <a class="btn btn-outline-primary" href="{% url 'student_courses' %}">Ir a nivelacion</a>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

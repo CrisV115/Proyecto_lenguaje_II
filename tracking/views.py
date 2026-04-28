@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from certifications.models import Certificate
+from certifications.services import get_student_certificate_status
 from leveling.models import LevelingRecord
 from tests_academic.models import Result
 from tests_academic.utils import MANAGED_TEST_TYPES
@@ -21,10 +22,14 @@ from .models import (
 @role_required("estudiante")
 def overview(request):
     progress_entries = Progress.objects.filter(student=request.user).order_by("phase")
+    certificate_status = get_student_certificate_status(request.user)
     return render(
         request,
         "tracking/overview.html",
-        {"progress_entries": progress_entries},
+        {
+            "progress_entries": progress_entries,
+            "certificate_status": certificate_status,
+        },
     )
 
 
@@ -117,7 +122,14 @@ def complete_induction(request):
 
 @role_required("estudiante")
 def current_certificate(request):
-    certificate = Certificate.objects.filter(student=request.user, valid=True).first()
+    certificate = (
+        Certificate.objects.filter(
+            student=request.user,
+            valid=True,
+            source_phase="completion",
+        ).first()
+        or Certificate.objects.filter(student=request.user, valid=True).first()
+    )
     if certificate is None:
         messages.info(
             request,
