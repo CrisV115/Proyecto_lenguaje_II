@@ -7,8 +7,8 @@
     <div class="row align-items-end g-4">
         <div class="col-lg-8">
             <span class="section-kicker mb-3">Panel docente</span>
-            <h1 class="display-6 fw-bold mb-3 text-white">Gestion del diagnostico academico</h1>
-            <p class="lead mb-0 text-white-50">Crea tests, revisa respuestas enviadas por estudiantes y monitorea el rendimiento general desde un solo lugar.</p>
+            <h1 class="display-6 fw-bold mb-3 text-white">Gestion de tests diagnosticos y vocacionales</h1>
+            <p class="lead mb-0 text-white-50">Crea tests de diagnostico y vocacional, revisa respuestas enviadas por estudiantes y monitorea el rendimiento general desde un solo lugar.</p>
         </div>
         <div class="col-lg-4">
             <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
@@ -56,7 +56,7 @@
         <div class="glass-card dashboard-card">
             <div class="card-header">
                 <div class="soft-label">Tests recientes</div>
-                <h2 class="h4 mb-0">Diagnosticos publicados</h2>
+                <h2 class="h4 mb-0">Tests publicados</h2>
             </div>
             <div class="card-body">
                 {% if tests %}
@@ -67,7 +67,7 @@
                                     <div class="d-flex justify-content-between gap-3 flex-wrap mb-2">
                                         <div>
                                             <strong>{{ test.name }}</strong>
-                                            <div class="text-secondary small">{{ test.get_type_display }} · {{ test.questions.count }} preguntas</div>
+                                            <div class="text-secondary small">{{ test.management_type_label }} · {{ test.questions.count }} preguntas</div>
                                         </div>
                                         <span class="status-pill {% if test.is_active %}success{% else %}warn{% endif %}">
                                             {% if test.is_active %}Activo{% else %}Inactivo{% endif %}
@@ -79,7 +79,7 @@
                         {% endfor %}
                     </ul>
                 {% else %}
-                    <div class="empty-state">Todavia no has creado tests. Empieza publicando un diagnostico para tus estudiantes.</div>
+                    <div class="empty-state">Todavia no has creado tests de diagnostico o vocacional. Empieza publicando el primero para tus estudiantes.</div>
                 {% endif %}
             </div>
         </div>

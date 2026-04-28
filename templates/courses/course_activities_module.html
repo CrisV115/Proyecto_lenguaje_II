@@ -10,7 +10,9 @@
             <h1 class="h2 mb-1 text-white">Modulo de asignaciones</h1>
             <p class="text-white-50 mb-0">{{ course.name }}</p>
         </div>
-        <a class="btn btn-outline-light" href="{% url 'course_detail' course.id %}">Volver al curso</a>
+        <a class="btn btn-outline-light" href="{% url 'course_detail' course.id %}">
+            {% if request.user.tipo_usuario == "estudiante" %}Volver a la nivelacion{% else %}Volver al curso{% endif %}
+        </a>
     </div>
 </section>
 
@@ -73,7 +75,13 @@
                         </table>
                     </div>
                 {% else %}
-                    <div class="empty-state">No hay asignaciones creadas para este curso.</div>
+                    <div class="empty-state">
+                        {% if request.user.tipo_usuario == "estudiante" %}
+                            No hay asignaciones creadas para esta nivelacion.
+                        {% else %}
+                            No hay asignaciones creadas para este curso.
+                        {% endif %}
+                    </div>
                 {% endif %}
             </div>
         </div>

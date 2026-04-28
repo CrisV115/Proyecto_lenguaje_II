@@ -7,19 +7,31 @@
     <h1 class="h2 mb-3">Resultado de {{ test.name }}</h1>
     <p class="fs-5">Nota obtenida: <strong>{{ result.score|floatformat:2 }}%</strong></p>
     <p class="fw-semibold">
-        {% if result.passed %}
-            Aprobado. Debes completar la induccion para cerrar tu ruta.
+        {% if test.is_course_test %}
+            {% if result.passed %}
+                Aprobado en el test del curso.
+            {% else %}
+                No aprobado en el test del curso.
+            {% endif %}
         {% else %}
-            No aprobado. Debes pasar por nivelacion.
+            {% if result.passed %}
+                Aprobado. Debes completar la induccion para cerrar tu ruta.
+            {% else %}
+                No aprobado. Debes pasar por nivelacion.
+            {% endif %}
         {% endif %}
     </p>
 
     <div class="d-flex gap-2 flex-wrap">
-        <a class="btn btn-outline-primary" href="{% url 'student_dashboard' %}">Volver al panel</a>
-        {% if result.passed %}
-            <a class="btn btn-primary" href="{% url 'induction_dashboard' %}">Ir a induccion</a>
+        {% if test.is_course_test and test.course %}
+            <a class="btn btn-outline-primary" href="{% url 'course_detail' test.course.id %}">Volver al curso</a>
         {% else %}
-            <a class="btn btn-primary" href="{% url 'leveling_dashboard' %}">Ir a nivelacion</a>
+            <a class="btn btn-outline-primary" href="{% url 'student_dashboard' %}">Volver al panel</a>
+            {% if result.passed %}
+                <a class="btn btn-primary" href="{% url 'induction_dashboard' %}">Ir a induccion</a>
+            {% else %}
+                <a class="btn btn-primary" href="{% url 'leveling_dashboard' %}">Ir a nivelacion</a>
+            {% endif %}
         {% endif %}
     </div>
 </div>

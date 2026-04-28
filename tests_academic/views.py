@@ -13,16 +13,27 @@ from users.decorators import role_required
 
 from .forms import TeacherTestForm, TestForm
 from .models import Answer, Question, Result, StudentAnswer, Test
+from .utils import (
+    get_student_visible_courses,
+    get_teacher_editable_tests_queryset,
+    get_teacher_managed_tests_queryset,
+    student_has_approved_diagnostic,
+)
 
 
 @role_required("estudiante")
 def index(request):
+    diagnostic_approved = student_has_approved_diagnostic(request.user)
+    visible_courses = get_student_visible_courses(
+        request.user,
+        diagnostic_approved=diagnostic_approved,
+    )
     tests = (
         Test.objects.filter(
             is_active=True,
         )
         .filter(
-            Q(course__students=request.user) | Q(course__isnull=True)
+            Q(course__in=visible_courses) | Q(course__isnull=True)
         )
         .select_related("course")
         .distinct()
@@ -40,6 +51,7 @@ def index(request):
             "tests": tests,
             "completed_test_ids": completed_test_ids,
             "available_now_ids": available_now_ids,
+            "diagnostic_approved": diagnostic_approved,
         },
     )
 
@@ -51,7 +63,8 @@ def take_test(request, test_id):
         id=test_id,
         is_active=True,
     )
-    if test.course and not test.course.students.filter(id=request.user.id).exists():
+    if test.course and not get_student_visible_courses(request.user).filter(id=test.course_id).exists():
+        messages.warning(request, "No tienes ninguna nivelacion asignada para este test.")
         return redirect("tests_index")
 
     if not _is_test_open(test, timezone.localtime()):
@@ -109,24 +122,25 @@ def take_test(request, test_id):
                     student_answer.result = result
                 StudentAnswer.objects.bulk_create(student_answers)
 
-                Progress.objects.update_or_create(
-                    student=request.user,
-                    phase=Progress.Phases.TEST,
-                    defaults={"completed": True, "percentage": 100},
-                )
+                if not test.is_course_test:
+                    Progress.objects.update_or_create(
+                        student=request.user,
+                        phase=Progress.Phases.TEST,
+                        defaults={"completed": True, "percentage": 100},
+                    )
 
-                if passed:
-                    Progress.objects.update_or_create(
-                        student=request.user,
-                        phase=Progress.Phases.INDUCTION,
-                        defaults={"completed": False, "percentage": 0},
-                    )
-                else:
-                    Progress.objects.update_or_create(
-                        student=request.user,
-                        phase=Progress.Phases.LEVELING,
-                        defaults={"completed": False, "percentage": 0},
-                    )
+                    if passed:
+                        Progress.objects.update_or_create(
+                            student=request.user,
+                            phase=Progress.Phases.INDUCTION,
+                            defaults={"completed": False, "percentage": 0},
+                        )
+                    else:
+                        Progress.objects.update_or_create(
+                            student=request.user,
+                            phase=Progress.Phases.LEVELING,
+                            defaults={"completed": False, "percentage": 0},
+                        )
 
             messages.success(request, "Test enviado y calificado correctamente.")
             return redirect("test_result", test_id=test.id)
@@ -161,7 +175,7 @@ def test_result(request, test_id):
 def teacher_tests(request):
     course_id = request.GET.get("course")
     tests = (
-        Test.objects.filter(created_by=request.user)
+        get_teacher_managed_tests_queryset(request.user)
         .select_related("created_by")
         .annotate(
             questions_count=Count("questions", distinct=True),
@@ -181,54 +195,83 @@ def teacher_tests(request):
 @role_required("profesor")
 def teacher_test_create(request):
     initial_course = _resolve_course_for_teacher(request, request.GET.get("course"))
+    course_context = initial_course is not None
     if request.method == "POST":
-        form = TeacherTestForm(request.POST)
-        form.fields["course"].queryset = _teacher_courses_queryset(request.user)
-        if form.is_valid() and _validate_teacher_course(form, request.user):
+        form = TeacherTestForm(
+            request.POST,
+            course_context=course_context,
+            course_queryset=_teacher_courses_queryset(request.user),
+            initial_course=initial_course,
+        )
+        if form.is_valid() and (not course_context or _validate_teacher_course(form, request.user)):
             _save_test_with_questions(form, request.user)
             messages.success(request, "Test creado correctamente.")
-            if form.cleaned_data.get("course"):
+            if course_context:
                 return redirect("course_detail", course_id=form.cleaned_data["course"].id)
             return redirect("teacher_tests")
     else:
-        form = TeacherTestForm(initial={"course": initial_course} if initial_course else None)
-        form.fields["course"].queryset = _teacher_courses_queryset(request.user)
+        form = TeacherTestForm(
+            course_context=course_context,
+            course_queryset=_teacher_courses_queryset(request.user),
+            initial_course=initial_course,
+        )
 
     return render(
         request,
         "tests_academic/teacher_test_form.html",
-        {"form": form, "page_title": "Crear test diagnostico", "from_course": initial_course},
+        {
+            "form": form,
+            "page_title": "Crear test del curso" if course_context else "Crear test diagnostico o vocacional",
+            "back_course": initial_course,
+            "course_form_context": course_context,
+        },
     )
 
 
 @role_required("profesor")
 def teacher_test_edit(request, test_id):
-    test = get_object_or_404(Test, id=test_id, created_by=request.user)
+    test = get_object_or_404(get_teacher_editable_tests_queryset(request.user), id=test_id)
+    course_context = test.is_course_test
 
     if request.method == "POST":
-        form = TeacherTestForm(request.POST, instance=test)
-        form.fields["course"].queryset = _teacher_courses_queryset(request.user)
-        if form.is_valid() and _validate_teacher_course(form, request.user):
+        form = TeacherTestForm(
+            request.POST,
+            instance=test,
+            course_context=course_context,
+            course_queryset=_teacher_courses_queryset(request.user),
+        )
+        if form.is_valid() and (not course_context or _validate_teacher_course(form, request.user)):
             _save_test_with_questions(form, request.user)
             messages.success(request, "Test actualizado correctamente.")
-            if form.cleaned_data.get("course"):
-                return redirect("course_detail", course_id=form.cleaned_data["course"].id)
+            if course_context and test.course_id:
+                return redirect("course_detail", course_id=test.course_id)
             return redirect("teacher_tests")
     else:
-        form = TeacherTestForm(instance=test)
-        form.fields["course"].queryset = _teacher_courses_queryset(request.user)
+        form = TeacherTestForm(
+            instance=test,
+            course_context=course_context,
+            course_queryset=_teacher_courses_queryset(request.user),
+        )
 
     return render(
         request,
         "tests_academic/teacher_test_form.html",
-        {"form": form, "page_title": "Editar test diagnostico", "test": test},
+        {
+            "form": form,
+            "page_title": "Editar test del curso" if course_context else "Editar test diagnostico o vocacional",
+            "test": test,
+            "back_course": test.course if course_context else None,
+            "course_form_context": course_context,
+        },
     )
 
 
 @role_required("profesor")
 def teacher_results(request):
     results = (
-        Result.objects.filter(test__created_by=request.user)
+        Result.objects.filter(
+            test__in=get_teacher_managed_tests_queryset(request.user),
+        )
         .select_related("student", "test")
         .order_by("-submitted_at")
     )
@@ -247,7 +290,7 @@ def teacher_result_detail(request, result_id):
             )
         ),
         id=result_id,
-        test__created_by=request.user,
+        test__in=get_teacher_managed_tests_queryset(request.user),
     )
     return render(
         request,

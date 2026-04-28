@@ -6,11 +6,15 @@
 <section class="hero-strip p-4 p-lg-5 mb-4">
     <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
         <div>
-            <span class="section-kicker mb-3">Test diagnostico</span>
+            <span class="section-kicker mb-3">{% if test.is_course_test %}Test del curso{% else %}Test diagnostico{% endif %}</span>
             <h1 class="h2 mb-1 text-white">{{ test.name }}</h1>
-            <p class="text-white-50 mb-0">Tipo: {{ test.get_type_display }} · Duracion estimada: {{ test.duration }} minutos</p>
+            <p class="text-white-50 mb-0">Tipo: {{ test.student_type_label }} · Duracion estimada: {{ test.duration }} minutos</p>
         </div>
-        <a class="btn btn-outline-light" href="{% url 'tests_index' %}">Volver a tests</a>
+        {% if test.is_course_test and test.course %}
+            <a class="btn btn-outline-light" href="{% url 'course_detail' test.course.id %}">Volver al curso</a>
+        {% else %}
+            <a class="btn btn-outline-light" href="{% url 'tests_index' %}">Volver a tests</a>
+        {% endif %}
     </div>
 </section>
 
