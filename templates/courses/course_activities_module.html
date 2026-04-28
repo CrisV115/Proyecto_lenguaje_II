@@ -50,7 +50,11 @@
                                         <td>
                                             {% if request.user.tipo_usuario == "estudiante" %}
                                                 {% if activity.student_submission %}
-                                                    <span class="status-pill success">Entregada</span>
+                                                    {% if activity.student_submission.grade is not None %}
+                                                        <span class="status-pill success">Calificada</span>
+                                                    {% else %}
+                                                        <span class="status-pill success">Entregada</span>
+                                                    {% endif %}
                                                 {% else %}
                                                     <span class="status-pill warn">Pendiente</span>
                                                 {% endif %}

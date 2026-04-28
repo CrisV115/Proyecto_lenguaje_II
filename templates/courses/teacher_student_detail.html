@@ -53,6 +53,8 @@
                             <th>Fecha limite</th>
                             <th>Estado</th>
                             <th>Enviado</th>
+                            <th>Calificacion</th>
+                            <th>Comentario</th>
                             <th>Detalle</th>
                         </tr>
                     </thead>
@@ -74,6 +76,20 @@
                                 <td>
                                     {% if row.submission %}
                                         {{ row.submission.submitted_at|date:"d/m/Y H:i" }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if row.submission and row.submission.grade is not None %}
+                                        {{ row.submission.grade|floatformat:2 }}/100
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if row.submission and row.submission.teacher_comment %}
+                                        {{ row.submission.teacher_comment }}
                                     {% else %}
                                         -
                                     {% endif %}

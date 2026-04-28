@@ -81,3 +81,42 @@ class CourseActivitySubmissionForm(forms.ModelForm):
                 "Debes cargar un archivo, URL o comentario para registrar la entrega."
             )
         return cleaned_data
+
+
+class CourseActivityGradeForm(forms.ModelForm):
+    class Meta:
+        model = CourseActivitySubmission
+        fields = [
+            "grade",
+            "teacher_comment",
+        ]
+        widgets = {
+            "grade": forms.NumberInput(
+                attrs={
+                    "step": "0.01",
+                    "min": "0",
+                    "max": "100",
+                    "placeholder": "0 - 100",
+                }
+            ),
+            "teacher_comment": forms.Textarea(attrs={"rows": 2}),
+        }
+        labels = {
+            "grade": "Calificacion",
+            "teacher_comment": "Comentario del profesor",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            widget = field.widget
+            current_class = widget.attrs.get("class", "")
+            if isinstance(
+                widget,
+                (
+                    forms.NumberInput,
+                    forms.TextInput,
+                    forms.Textarea,
+                ),
+            ):
+                widget.attrs["class"] = f"{current_class} form-control".strip()

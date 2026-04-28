@@ -2,12 +2,13 @@ from django.contrib import messages
 from django.db.models import Count
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from tests_academic.models import Result
 from users.decorators import role_required
 from users.models import Usuario
 
-from .forms import CourseActivityForm, CourseActivitySubmissionForm
+from .forms import CourseActivityForm, CourseActivityGradeForm, CourseActivitySubmissionForm
 from .models import Course, CourseActivity, CourseActivitySubmission
 
 
@@ -153,7 +154,14 @@ def course_activity_submission_module(request, course_id, activity_id):
             },
         )
 
-    submissions = activity.submissions.select_related("student").order_by("-submitted_at")
+    submissions = list(
+        activity.submissions.select_related("student", "graded_by").order_by("-submitted_at")
+    )
+    for submission in submissions:
+        submission.grade_form = CourseActivityGradeForm(
+            prefix=f"submission-{submission.id}",
+            instance=submission,
+        )
     return render(
         request,
         "courses/course_activity_detail.html",
@@ -236,6 +244,53 @@ def submit_course_activity(request, course_id, activity_id):
         request,
         "Entrega registrada correctamente." if created else "Entrega actualizada correctamente.",
     )
+    return redirect(
+        "course_activity_submission_module",
+        course_id=course_id,
+        activity_id=activity_id,
+    )
+
+
+@role_required("profesor")
+def grade_course_activity_submission(request, course_id, activity_id, submission_id):
+    if request.method != "POST":
+        return redirect(
+            "course_activity_submission_module",
+            course_id=course_id,
+            activity_id=activity_id,
+        )
+
+    submission = get_object_or_404(
+        CourseActivitySubmission.objects.select_related("activity__course", "student"),
+        id=submission_id,
+        activity_id=activity_id,
+        activity__course_id=course_id,
+        activity__course__teachers=request.user,
+    )
+    form = CourseActivityGradeForm(
+        request.POST,
+        instance=submission,
+        prefix=f"submission-{submission.id}",
+    )
+    if not form.is_valid():
+        for error_list in form.errors.values():
+            for error in error_list:
+                messages.error(request, error)
+        return redirect(
+            "course_activity_submission_module",
+            course_id=course_id,
+            activity_id=activity_id,
+        )
+
+    graded_submission = form.save(commit=False)
+    if graded_submission.grade is not None or graded_submission.teacher_comment:
+        graded_submission.graded_by = request.user
+        graded_submission.graded_at = timezone.now()
+    else:
+        graded_submission.graded_by = None
+        graded_submission.graded_at = None
+    graded_submission.save()
+    messages.success(request, f"Calificacion guardada para {submission.student.username}.")
     return redirect(
         "course_activity_submission_module",
         course_id=course_id,

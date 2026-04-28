@@ -90,6 +90,26 @@
                                 <th>Tiempo restante</th>
                                 <td>{{ activity.due_date|date:"d/m/Y" }} {{ activity.closing_time|time:"H:i" }}</td>
                             </tr>
+                            <tr>
+                                <th>Calificacion</th>
+                                <td>
+                                    {% if submission and submission.grade is not None %}
+                                        {{ submission.grade|floatformat:2 }}/100
+                                    {% else %}
+                                        Pendiente de revision
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Comentario del profesor</th>
+                                <td>
+                                    {% if submission and submission.teacher_comment %}
+                                        {{ submission.teacher_comment }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -112,6 +132,8 @@
                                 <th>Fecha</th>
                                 <th>Evidencias</th>
                                 <th>Comentario</th>
+                                <th>Calificacion</th>
+                                <th>Revision</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -128,6 +150,30 @@
                                         {% endif %}
                                     </td>
                                     <td>{{ item.submission_text|default:"-" }}</td>
+                                    <td style="min-width: 210px;">
+                                        <form method="post" action="{% url 'grade_course_activity_submission' course.id activity.id item.id %}">
+                                            {% csrf_token %}
+                                            <div class="mb-2">
+                                                <label class="form-label mb-1">Calificacion</label>
+                                                {{ item.grade_form.grade }}
+                                            </div>
+                                            <div class="mb-2">
+                                                <label class="form-label mb-1">Comentario</label>
+                                                {{ item.grade_form.teacher_comment }}
+                                            </div>
+                                            <button class="btn btn-primary btn-sm" type="submit">Guardar</button>
+                                        </form>
+                                    </td>
+                                    <td>
+                                        {% if item.graded_at %}
+                                            {{ item.graded_at|date:"d/m/Y H:i" }}
+                                            {% if item.graded_by %}
+                                                <div class="small text-secondary">{{ item.graded_by.username }}</div>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-secondary small">Sin revision</span>
+                                        {% endif %}
+                                    </td>
                                 </tr>
                             {% endfor %}
                         </tbody>

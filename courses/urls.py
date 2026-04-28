@@ -24,6 +24,11 @@ urlpatterns = [
         name="submit_course_activity",
     ),
     path(
+        "<int:course_id>/actividades/<int:activity_id>/entregas/<int:submission_id>/calificar/",
+        views.grade_course_activity_submission,
+        name="grade_course_activity_submission",
+    ),
+    path(
         "<int:course_id>/estudiantes/<int:student_id>/",
         views.teacher_student_course_detail,
         name="teacher_student_course_detail",

@@ -48,7 +48,7 @@ class CourseActivityAdmin(admin.ModelAdmin):
 
 @admin.register(CourseActivitySubmission)
 class CourseActivitySubmissionAdmin(admin.ModelAdmin):
-    list_display = ("activity", "student", "submitted_at")
+    list_display = ("activity", "student", "grade", "graded_by", "submitted_at")
     list_filter = ("activity__course", "submitted_at")
     search_fields = ("activity__title", "student__username", "student__email")
-    autocomplete_fields = ("activity", "student")
+    autocomplete_fields = ("activity", "student", "graded_by")

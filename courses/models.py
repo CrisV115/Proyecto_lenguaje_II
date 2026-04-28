@@ -1,4 +1,6 @@
 from django.core.validators import FileExtensionValidator
+from django.core.validators import MaxValueValidator
+from django.core.validators import MinValueValidator
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -102,6 +104,23 @@ class CourseActivitySubmission(models.Model):
             )
         ],
     )
+    grade = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+    )
+    teacher_comment = models.TextField(blank=True)
+    graded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="graded_activity_submissions",
+        limit_choices_to={"tipo_usuario": "profesor"},
+    )
+    graded_at = models.DateTimeField(null=True, blank=True)
     submitted_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
