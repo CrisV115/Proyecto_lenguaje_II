@@ -1,0 +1,44 @@
+{% extends 'asignaciones/base_asignaciones.html' %}
+
+{% block title %}Calificar Entrega{% endblock %}
+
+{% block content %}
+<h1>✏️ Calificar Entrega</h1>
+
+<div class="card">
+    <h3>Información de la Entrega</h3>
+    <p><strong>Estudiante:</strong> {{ entrega.estudiante.username }}</p>
+    <p><strong>Asignación:</strong> {{ entrega.asignacion.titulo }}</p>
+    <p><strong>Fecha de entrega:</strong> {{ entrega.fecha_entrega|date:"d/m/Y H:i" }}</p>
+    
+    {% if entrega.archivo %}
+        <p><strong>Archivo:</strong> <a href="{{ entrega.archivo.url }}" style="color: #85c1e9;" target="_blank">Descargar archivo</a></p>
+    {% endif %}
+    
+    {% if entrega.comentario_estudiante %}
+        <p><strong>Comentario del estudiante:</strong></p>
+        <p style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 10px;">{{ entrega.comentario_estudiante }}</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3>Calificación</h3>
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="{{ form.calificacion.id_for_label }}">Calificación (0-100)</label>
+            {{ form.calificacion }}
+        </div>
+        
+        <div class="form-group">
+            <label for="{{ form.comentario_profesor.id_for_label }}">Comentario para el estudiante</label>
+            {{ form.comentario_profesor }}
+            <small style="color: rgba(255, 255, 255, 0.7);">Deja retroalimentación constructiva para el estudiante.</small>
+        </div>
+        
+        <button type="submit" class="btn btn-success">Guardar Calificación</button>
+        <a href="{% url 'detalle_asignacion' entrega.asignacion.id %}" class="btn">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

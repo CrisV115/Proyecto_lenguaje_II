@@ -1,0 +1,95 @@
+{% extends 'asignaciones/base_asignaciones.html' %}
+
+{% block title %}{{ asignacion.titulo }}{% endblock %}
+
+{% block content %}
+<h1>{{ asignacion.titulo }}</h1>
+
+<div class="card">
+    <h3>Descripción</h3>
+    <p>{{ asignacion.descripcion }}</p>
+    <p><strong>Fecha límite:</strong> {{ asignacion.fecha_limite|date:"d/m/Y H:i" }}</p>
+    <p><strong>Profesor:</strong> {{ asignacion.profesor.username }}</p>
+</div>
+
+{% if user.tipo_usuario == 'estudiante' %}
+    <div class="card">
+        <h3>Tu Entrega</h3>
+        {% if entrega %}
+            {% if entrega.archivo %}
+                <p><strong>Archivo subido:</strong> <a href="{{ entrega.archivo.url }}" style="color: #85c1e9;" target="_blank">{{ entrega.archivo.name }}</a></p>
+            {% endif %}
+            {% if entrega.comentario_estudiante %}
+                <p><strong>Tu comentario:</strong> {{ entrega.comentario_estudiante }}</p>
+            {% endif %}
+            <p><strong>Fecha de entrega:</strong> {{ entrega.fecha_entrega|date:"d/m/Y H:i" }}</p>
+            
+            {% if entrega.calificacion is not None %}
+                <div style="margin-top: 20px; padding: 15px; background: rgba(46, 204, 113, 0.2); border-radius: 10px;">
+                    <p class="grade-display">Calificación: {{ entrega.calificacion }}/100</p>
+                    {% if entrega.comentario_profesor %}
+                        <p><strong>Comentario del profesor:</strong></p>
+                        <p>{{ entrega.comentario_profesor }}</p>
+                    {% endif %}
+                    {% if entrega.fecha_calificacion %}
+                        <p><small>Calificado el: {{ entrega.fecha_calificacion|date:"d/m/Y H:i" }}</small></p>
+                    {% endif %}
+                </div>
+            {% else %}
+                <p><span class="badge badge-pendiente">Pendiente de calificación</span></p>
+            {% endif %}
+            
+            <a href="{% url 'subir_entrega' asignacion.id %}" class="btn btn-primary" style="margin-top: 15px;">Editar Entrega</a>
+        {% else %}
+            <p>Aún no has entregado esta asignación.</p>
+            <a href="{% url 'subir_entrega' asignacion.id %}" class="btn btn-success">Subir Entrega</a>
+        {% endif %}
+    </div>
+{% endif %}
+
+{% if user.tipo_usuario == 'profesor' and entregas %}
+    <div class="card">
+        <h3>Entregas de Estudiantes</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Estudiante</th>
+                    <th>Fecha Entrega</th>
+                    <th>Archivo</th>
+                    <th>Calificación</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entrega in entregas %}
+                <tr>
+                    <td>{{ entrega.estudiante.username }}</td>
+                    <td>{{ entrega.fecha_entrega|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        {% if entrega.archivo %}
+                            <a href="{{ entrega.archivo.url }}" style="color: #85c1e9;" target="_blank">Descargar</a>
+                        {% else %}
+                            Sin archivo
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if entrega.calificacion is not None %}
+                            <span class="badge badge-calificado">{{ entrega.calificacion }}/100</span>
+                        {% else %}
+                            <span class="badge badge-pendiente">Pendiente</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'calificar_entrega' entrega.id %}" class="btn btn-warning">
+                            {% if entrega.calificacion is not None %}Editar{% else %}Calificar{% endif %}
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+
+<a href="{% url 'listar_asignaciones' %}" class="btn">← Volver a la lista</a>
+{% endblock %}

@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import Usuario
+from .models import Usuario, Asignacion, EntregaAsignacion
 from django.core.exceptions import ValidationError
 import re
 
@@ -67,3 +67,41 @@ class RegistroForm(UserCreationForm):
             )
 
         return cleaned_data
+
+
+# =========================
+# 📚 FORMS PARA ASIGNACIONES
+# =========================
+
+class AsignacionForm(forms.ModelForm):
+    """Formulario para crear/editar asignaciones"""
+    class Meta:
+        model = Asignacion
+        fields = ['titulo', 'descripcion', 'fecha_limite']
+        widgets = {
+            'titulo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Título de la asignación'}),
+            'descripcion': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Descripción detallada de la tarea'}),
+            'fecha_limite': forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+        }
+
+
+class EntregaAsignacionForm(forms.ModelForm):
+    """Formulario para que los estudiantes suban sus entregas"""
+    class Meta:
+        model = EntregaAsignacion
+        fields = ['archivo', 'comentario_estudiante']
+        widgets = {
+            'archivo': forms.FileInput(attrs={'class': 'form-control'}),
+            'comentario_estudiante': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Comentarios adicionales (opcional)'}),
+        }
+
+
+class CalificacionForm(forms.ModelForm):
+    """Formulario para que los profesores califiquen las entregas"""
+    class Meta:
+        model = EntregaAsignacion
+        fields = ['calificacion', 'comentario_profesor']
+        widgets = {
+            'calificacion': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'max': '100', 'step': '0.01'}),
+            'comentario_profesor': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Comentarios y retroalimentación para el estudiante'}),
+        }

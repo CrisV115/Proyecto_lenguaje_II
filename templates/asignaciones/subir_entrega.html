@@ -1,0 +1,29 @@
+{% extends 'asignaciones/base_asignaciones.html' %}
+
+{% block title %}Subir Entrega{% endblock %}
+
+{% block content %}
+<h1>📤 Subir Entrega - {{ asignacion.titulo }}</h1>
+
+<div class="card">
+    <p><strong>Fecha límite:</strong> {{ asignacion.fecha_limite|date:"d/m/Y H:i" }}</p>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    
+    <div class="form-group">
+        <label for="{{ form.archivo.id_for_label }}">Archivo</label>
+        {{ form.archivo }}
+        <small style="color: rgba(255, 255, 255, 0.7);">Sube tu archivo de entrega (PDF, DOC, DOCX, etc.)</small>
+    </div>
+    
+    <div class="form-group">
+        <label for="{{ form.comentario_estudiante.id_for_label }}">Comentario (opcional)</label>
+        {{ form.comentario_estudiante }}
+    </div>
+    
+    <button type="submit" class="btn btn-success">Guardar Entrega</button>
+    <a href="{% url 'detalle_asignacion' asignacion.id %}" class="btn">Cancelar</a>
+</form>
+{% endblock %}
