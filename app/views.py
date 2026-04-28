@@ -1,8 +1,10 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .forms import RegistroForm
-from .models import Usuario
+from .forms import RegistroForm, AsignacionForm, EntregaAsignacionForm, CalificacionForm
+from .models import Usuario, Asignacion, EntregaAsignacion
+from django.utils import timezone
 
 
 # =========================
@@ -129,3 +131,115 @@ def password_reset(request):
 
 def meme(request):
     return render(request, 'meme.html')
+
+
+# =========================
+# 📚 VISTAS PARA ASIGNACIONES
+# =========================
+
+@login_required
+def listar_asignaciones(request):
+    """Lista todas las asignaciones disponibles"""
+    if request.user.tipo_usuario == 'profesor':
+        asignaciones = Asignacion.objects.filter(profesor=request.user)
+    else:
+        asignaciones = Asignacion.objects.all()
+    
+    return render(request, 'asignaciones/listar_asignaciones.html', {'asignaciones': asignaciones})
+
+
+@login_required
+def crear_asignacion(request):
+    """Solo profesores pueden crear asignaciones"""
+    if request.user.tipo_usuario != 'profesor':
+        messages.error(request, "Solo los profesores pueden crear asignaciones.")
+        return redirect('listar_asignaciones')
+    
+    if request.method == 'POST':
+        form = AsignacionForm(request.POST)
+        if form.is_valid():
+            asignacion = form.save(commit=False)
+            asignacion.profesor = request.user
+            asignacion.save()
+            messages.success(request, "Asignación creada correctamente.")
+            return redirect('listar_asignaciones')
+    else:
+        form = AsignacionForm()
+    
+    return render(request, 'asignaciones/crear_asignacion.html', {'form': form})
+
+
+@login_required
+def detalle_asignacion(request, asignacion_id):
+    """Muestra el detalle de una asignación y permite subir entrega o calificar"""
+    asignacion = get_object_or_404(Asignacion, pk=asignacion_id)
+    
+    # Verificar si el estudiante ya entregó
+    entrega = None
+    if request.user.tipo_usuario == 'estudiante':
+        entrega = EntregaAsignacion.objects.filter(asignacion=asignacion, estudiante=request.user).first()
+    
+    # Obtener todas las entregas (para profesores)
+    entregas = None
+    if request.user.tipo_usuario == 'profesor' and asignacion.profesor == request.user:
+        entregas = EntregaAsignacion.objects.filter(asignacion=asignacion)
+    
+    return render(request, 'asignaciones/detalle_asignacion.html', {
+        'asignacion': asignacion,
+        'entrega': entrega,
+        'entregas': entregas
+    })
+
+
+@login_required
+def subir_entrega(request, asignacion_id):
+    """Los estudiantes suben sus entregas"""
+    asignacion = get_object_or_404(Asignacion, pk=asignacion_id)
+    
+    if request.user.tipo_usuario != 'estudiante':
+        messages.error(request, "Solo los estudiantes pueden subir entregas.")
+        return redirect('detalle_asignacion', asignacion_id=asignacion_id)
+    
+    # Verificar si ya existe una entrega
+    entrega, created = EntregaAsignacion.objects.get_or_create(
+        asignacion=asignacion,
+        estudiante=request.user
+    )
+    
+    if request.method == 'POST':
+        form = EntregaAsignacionForm(request.POST, request.FILES, instance=entrega)
+        if form.is_valid():
+            entrega = form.save(commit=False)
+            entrega.estudiante = request.user
+            entrega.asignacion = asignacion
+            entrega.save()
+            messages.success(request, "Entrega subida correctamente.")
+            return redirect('detalle_asignacion', asignacion_id=asignacion_id)
+    else:
+        form = EntregaAsignacionForm(instance=entrega)
+    
+    return render(request, 'asignaciones/subir_entrega.html', {'form': form, 'asignacion': asignacion})
+
+
+@login_required
+def calificar_entrega(request, entrega_id):
+    """Los profesores califican las entregas de los estudiantes"""
+    entrega = get_object_or_404(EntregaAsignacion, pk=entrega_id)
+    
+    # Verificar que el profesor es el dueño de la asignación
+    if request.user.tipo_usuario != 'profesor' or entrega.asignacion.profesor != request.user:
+        messages.error(request, "No tienes permiso para calificar esta entrega.")
+        return redirect('listar_asignaciones')
+    
+    if request.method == 'POST':
+        form = CalificacionForm(request.POST, instance=entrega)
+        if form.is_valid():
+            entrega = form.save(commit=False)
+            entrega.fecha_calificacion = timezone.now()
+            entrega.save()
+            messages.success(request, f"Entrega calificada con {entrega.calificacion}/100")
+            return redirect('detalle_asignacion', asignacion_id=entrega.asignacion.id)
+    else:
+        form = CalificacionForm(instance=entrega)
+    
+    return render(request, 'asignaciones/calificar_entrega.html', {'form': form, 'entrega': entrega})
