@@ -717,10 +717,10 @@
                 </a>
                 <div class="d-flex gap-2 topbar-actions">
                     {% if request.user.is_authenticated %}
-                        <span class="nav-user-chip">{{ request.user.username }} · {{ request.user.get_tipo_usuario_display }}</span>
+                        <span class="nav-user-chip">{{ request.user.display_name }} &middot; {{ request.user.get_tipo_usuario_display }}</span>
                         {% if request.user.tipo_usuario == "profesor" %}
                             <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_dashboard' %}">Panel docente</a>
-                            <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_courses' %}">Cursos</a>
+                            <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_courses' %}">Nivelaci&oacute;n</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_tests' %}">Gestionar tests</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_results' %}">Resultados</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_students' %}">Estudiantes</a>

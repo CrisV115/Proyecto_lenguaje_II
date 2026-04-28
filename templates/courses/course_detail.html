@@ -62,7 +62,7 @@
                 {% if teachers %}
                     <ul class="list-clean mb-0">
                         {% for teacher in teachers %}
-                            <li>{{ teacher.username }}</li>
+                            <li>{{ teacher.display_name }}</li>
                         {% endfor %}
                     </ul>
                 {% else %}
@@ -80,7 +80,7 @@
                 {% if students %}
                     <ul class="list-clean mb-0">
                         {% for student in students %}
-                            <li>{{ student.username }}</li>
+                            <li>{{ student.display_name }}</li>
                         {% endfor %}
                     </ul>
                 {% else %}

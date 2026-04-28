@@ -39,5 +39,12 @@ class Usuario(AbstractUser):
     def is_professor(self):
         return self.tipo_usuario == "profesor"
 
+    @property
+    def display_name(self):
+        first_name = (self.first_name or "").strip().split()
+        last_name = (self.last_name or "").strip().split()
+        short_name = " ".join(part for part in [first_name[0] if first_name else "", last_name[0] if last_name else ""] if part)
+        return short_name or self.username
+
     def __str__(self):
         return self.username

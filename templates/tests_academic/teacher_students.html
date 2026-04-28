@@ -32,6 +32,7 @@
                 <tbody>
                     {% for row in rows %}
                         <tr>
+<<<<<<< HEAD
                             <td>{{ row.course.name }}</td>
                             <td>{{ row.student.username }}</td>
                             <td>{{ row.student.email }}</td>
@@ -41,6 +42,12 @@
                             <td class="text-end">
                                 <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_student_course_detail' row.course.id row.student.id %}">Ver detalle</a>
                             </td>
+=======
+                            <td>{{ student.display_name }}</td>
+                            <td>{{ student.email }}</td>
+                            <td>{{ student.telefono }}</td>
+                            <td>{{ student.results_count }}</td>
+>>>>>>> 5fb10494317007ec87c9063901df59d07d548623
                         </tr>
                     {% endfor %}
                 </tbody>
