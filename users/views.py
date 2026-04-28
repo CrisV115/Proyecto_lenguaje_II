@@ -11,6 +11,7 @@ from django.utils import timezone
 from certifications.models import Certificate
 from courses.models import Course, CourseActivity
 from tests_academic.models import Result, Test
+from tests_academic.utils import get_student_visible_courses, student_has_approved_diagnostic
 from tracking.models import Progress
 
 from .forms import PrimerIngresoPasswordForm, RegistroForm
@@ -163,11 +164,16 @@ def student_dashboard(request):
     if request.user.tipo_usuario != "estudiante":
         return redirect_user_dashboard(request.user)
 
+    diagnostic_approved = student_has_approved_diagnostic(request.user)
+    visible_courses = get_student_visible_courses(
+        request.user,
+        diagnostic_approved=diagnostic_approved,
+    )
     latest_result = Result.objects.filter(student=request.user).select_related("test").first()
     progress_entries = Progress.objects.filter(student=request.user).order_by("phase")
     student_tests = (
         Test.objects.filter(is_active=True)
-        .filter(Q(course__students=request.user) | Q(course__isnull=True))
+        .filter(Q(course__in=visible_courses) | Q(course__isnull=True))
         .select_related("course")
         .distinct()
         .order_by("available_date", "opening_time", "name")
@@ -175,7 +181,10 @@ def student_dashboard(request):
     now = timezone.localtime()
     active_test = next((test for test in student_tests if _is_test_open_now(test, now)), None)
     certificate = Certificate.objects.filter(student=request.user, valid=True).first()
-    calendar_events = _build_student_calendar_events(request.user)
+    calendar_events = _build_student_calendar_events(
+        request.user,
+        diagnostic_approved=diagnostic_approved,
+    )
 
     return render(
         request,
@@ -186,6 +195,7 @@ def student_dashboard(request):
             "active_test": active_test,
             "certificate": certificate,
             "calendar_events": calendar_events,
+            "diagnostic_approved": diagnostic_approved,
         },
     )
 
@@ -228,18 +238,22 @@ def teacher_dashboard(request):
     return render(request, "teachers/dashboard.html", context)
 
 
-def _build_student_calendar_events(student):
+def _build_student_calendar_events(student, diagnostic_approved=None):
     now_date = timezone.localdate()
+    visible_courses = get_student_visible_courses(
+        student,
+        diagnostic_approved=diagnostic_approved,
+    )
 
     activities = (
-        CourseActivity.objects.filter(course__students=student, due_date__gte=now_date)
+        CourseActivity.objects.filter(course__in=visible_courses, due_date__gte=now_date)
         .select_related("course")
         .distinct()
         .order_by("due_date", "opening_time")[:12]
     )
     tests = (
         Test.objects.filter(available_date__gte=now_date)
-        .filter(Q(course__students=student) | Q(course__isnull=True))
+        .filter(Q(course__in=visible_courses) | Q(course__isnull=True))
         .select_related("course")
         .distinct()
         .order_by("available_date", "opening_time", "name")[:12]
@@ -265,7 +279,7 @@ def _build_student_calendar_events(student):
         events.append(
             {
                 "kind": "Test",
-                "course_name": test.course.name if test.course else "Sin curso",
+                "course_name": test.course.name if test.course else "Sin nivelacion",
                 "title": test.name,
                 "date": test.available_date,
                 "opening_time": test.opening_time,

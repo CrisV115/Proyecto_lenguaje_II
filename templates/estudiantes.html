@@ -41,7 +41,7 @@
                     <thead>
                         <tr>
                             <th>Tipo</th>
-                            <th>Curso</th>
+                            <th>Nivelacion</th>
                             <th>Titulo</th>
                             <th>Fecha</th>
                             <th>Horario</th>
@@ -67,7 +67,13 @@
                 </table>
             </div>
         {% else %}
-            <div class="empty-state">Aun no tienes actividades ni tests programados en tus cursos.</div>
+            <div class="empty-state">
+                {% if diagnostic_approved %}
+                    No tienes actividades ni tests pendientes porque aprobaste el diagnostico.
+                {% else %}
+                    Aun no tienes actividades ni tests programados en tu nivelacion.
+                {% endif %}
+            </div>
         {% endif %}
     </div>
 </div>

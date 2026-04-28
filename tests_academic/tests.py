@@ -1,8 +1,12 @@
+from datetime import time, timedelta
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from certifications.models import Certificate
+from courses.models import Course, CourseActivity
 from leveling.models import LevelingRecord
 from tracking.models import Progress
 
@@ -269,7 +273,7 @@ class AcademicFlowTests(TestCase):
 
         response = self.client.get(reverse("student_dashboard"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, reverse("leveling_dashboard"))
+        self.assertContains(response, "Requiere nivelacion")
 
         Result.objects.filter(student=self.user, test=self.test).delete()
         Result.objects.create(
@@ -281,7 +285,7 @@ class AcademicFlowTests(TestCase):
 
         response = self.client.get(reverse("student_dashboard"))
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, reverse("leveling_dashboard"))
+        self.assertNotContains(response, "Requiere nivelacion")
 
     def test_teacher_can_open_leveling_dashboard(self):
         Result.objects.create(
@@ -307,3 +311,86 @@ class AcademicFlowTests(TestCase):
         tests_response = self.client.get(reverse("tests_index"))
         self.assertEqual(tests_response.status_code, 200)
         self.assertContains(tests_response, self.test.name)
+
+    def test_approved_student_no_longer_sees_assigned_leveling(self):
+        self.test.delete()
+        course = Course.objects.create(
+            name="Nivelacion Algebra",
+            description="Refuerzo base",
+        )
+        course.students.add(self.user)
+        course.teachers.add(self.professor)
+
+        diagnostic_test = Test.objects.create(
+            name="Diagnostico Algebra",
+            type="conocimientos",
+            duration=20,
+            created_by=self.professor,
+            course=course,
+        )
+        follow_up_test = Test.objects.create(
+            name="Test de refuerzo",
+            type="conocimientos",
+            duration=20,
+            created_by=self.professor,
+            course=course,
+        )
+        CourseActivity.objects.create(
+            course=course,
+            title="Guia 1",
+            description="Resolver ejercicios",
+            due_date=timezone.localdate() + timedelta(days=1),
+            opening_time=time(8, 0),
+            closing_time=time(10, 0),
+            created_by=self.professor,
+        )
+        Result.objects.create(
+            student=self.user,
+            test=diagnostic_test,
+            score=80,
+            passed=True,
+        )
+
+        dashboard_response = self.client.get(reverse("student_dashboard"))
+        self.assertEqual(dashboard_response.status_code, 200)
+        self.assertContains(
+            dashboard_response,
+            "No tienes actividades ni tests pendientes porque aprobaste el diagnostico.",
+        )
+        self.assertNotContains(dashboard_response, course.name)
+        self.assertNotContains(dashboard_response, "Guia 1")
+        self.assertNotContains(
+            dashboard_response,
+            reverse("take_test", args=[follow_up_test.id]),
+        )
+
+        student_courses_response = self.client.get(reverse("student_courses"))
+        self.assertEqual(student_courses_response.status_code, 200)
+        self.assertContains(
+            student_courses_response,
+            "No tienes ninguna nivelacion asignada porque aprobaste el test diagnostico.",
+        )
+        self.assertNotContains(student_courses_response, course.name)
+
+        tests_response = self.client.get(reverse("tests_index"))
+        self.assertEqual(tests_response.status_code, 200)
+        self.assertContains(
+            tests_response,
+            "Ya aprobaste el diagnostico y no tienes una nivelacion asignada.",
+        )
+        self.assertNotContains(tests_response, follow_up_test.name)
+
+        course_detail_response = self.client.get(reverse("course_detail", args=[course.id]))
+        self.assertEqual(course_detail_response.status_code, 404)
+
+    def test_student_leveling_views_use_nivelacion_labels(self):
+        course = Course.objects.create(
+            name="Nivelacion Programacion",
+            description="Fundamentos",
+        )
+        course.students.add(self.user)
+
+        response = self.client.get(reverse("student_courses"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Nivelaciones asignadas")
+        self.assertContains(response, "Entrar a la nivelacion")

@@ -4,6 +4,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
 from tests_academic.models import Result
+from tests_academic.utils import get_student_visible_courses, student_has_approved_diagnostic
 from users.decorators import role_required
 from users.models import Usuario
 
@@ -13,7 +14,11 @@ from .models import Course, CourseActivity, CourseActivitySubmission
 
 @role_required("estudiante")
 def student_courses(request):
-    courses = request.user.courses_enrolled.order_by("name")
+    diagnostic_approved = student_has_approved_diagnostic(request.user)
+    courses = get_student_visible_courses(
+        request.user,
+        diagnostic_approved=diagnostic_approved,
+    )
     course_cards = []
     for course in courses:
         progress = _calculate_course_completion(course, request.user)
@@ -28,6 +33,7 @@ def student_courses(request):
         "courses/student_courses.html",
         {
             "course_cards": course_cards,
+            "diagnostic_approved": diagnostic_approved,
         },
     )
 
@@ -199,7 +205,7 @@ def submit_course_activity(request, course_id, activity_id):
         CourseActivity.objects.select_related("course"),
         id=activity_id,
         course_id=course_id,
-        course__students=request.user,
+        course__in=get_student_visible_courses(request.user),
     )
     form = CourseActivitySubmissionForm(request.POST, request.FILES)
     if not form.is_valid():
@@ -385,7 +391,8 @@ def _build_teacher_progress_rows(course, students_queryset):
 
 def _get_course_for_user(user, course_id):
     if user.tipo_usuario == "estudiante":
-        return get_object_or_404(Course, id=course_id, students=user)
+        visible_courses = get_student_visible_courses(user)
+        return get_object_or_404(visible_courses, id=course_id)
     if user.tipo_usuario == "profesor":
         return get_object_or_404(Course, id=course_id, teachers=user)
     raise Http404("No tienes permisos para este curso.")

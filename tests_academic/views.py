@@ -13,16 +13,22 @@ from users.decorators import role_required
 
 from .forms import TeacherTestForm, TestForm
 from .models import Answer, Question, Result, StudentAnswer, Test
+from .utils import get_student_visible_courses, student_has_approved_diagnostic
 
 
 @role_required("estudiante")
 def index(request):
+    diagnostic_approved = student_has_approved_diagnostic(request.user)
+    visible_courses = get_student_visible_courses(
+        request.user,
+        diagnostic_approved=diagnostic_approved,
+    )
     tests = (
         Test.objects.filter(
             is_active=True,
         )
         .filter(
-            Q(course__students=request.user) | Q(course__isnull=True)
+            Q(course__in=visible_courses) | Q(course__isnull=True)
         )
         .select_related("course")
         .distinct()
@@ -40,6 +46,7 @@ def index(request):
             "tests": tests,
             "completed_test_ids": completed_test_ids,
             "available_now_ids": available_now_ids,
+            "diagnostic_approved": diagnostic_approved,
         },
     )
 
@@ -51,7 +58,8 @@ def take_test(request, test_id):
         id=test_id,
         is_active=True,
     )
-    if test.course and not test.course.students.filter(id=request.user.id).exists():
+    if test.course and not get_student_visible_courses(request.user).filter(id=test.course_id).exists():
+        messages.warning(request, "No tienes ninguna nivelacion asignada para este test.")
         return redirect("tests_index")
 
     if not _is_test_open(test, timezone.localtime()):
