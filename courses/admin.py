@@ -1,6 +1,12 @@
 from django.contrib import admin
 
-from .models import Course, CourseActivity, CourseActivitySubmission
+from .models import (
+    Course,
+    CourseActivity,
+    CourseActivitySubmission,
+    CourseClassAttendance,
+    CourseClassSession,
+)
 
 
 @admin.register(Course)
@@ -52,3 +58,24 @@ class CourseActivitySubmissionAdmin(admin.ModelAdmin):
     list_filter = ("activity__course", "submitted_at")
     search_fields = ("activity__title", "student__username", "student__email")
     autocomplete_fields = ("activity", "student", "graded_by")
+
+
+@admin.register(CourseClassSession)
+class CourseClassSessionAdmin(admin.ModelAdmin):
+    list_display = ("course", "session_number", "class_date", "created_by")
+    list_filter = ("course", "class_date")
+    search_fields = ("course__name",)
+    autocomplete_fields = ("course", "created_by")
+
+
+@admin.register(CourseClassAttendance)
+class CourseClassAttendanceAdmin(admin.ModelAdmin):
+    list_display = ("class_session", "student", "present", "marked_by", "marked_at")
+    list_filter = ("class_session__course", "present", "marked_at")
+    search_fields = (
+        "class_session__course__name",
+        "student__username",
+        "student__first_name",
+        "student__last_name",
+    )
+    autocomplete_fields = ("class_session", "student", "marked_by")

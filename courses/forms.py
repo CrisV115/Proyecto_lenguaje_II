@@ -120,3 +120,20 @@ class CourseActivityGradeForm(forms.ModelForm):
                 ),
             ):
                 widget.attrs["class"] = f"{current_class} form-control".strip()
+
+
+class CourseClassSessionForm(forms.Form):
+    class_dates = forms.CharField(
+        widget=forms.Textarea(
+            attrs={
+                "rows": 3,
+                "placeholder": "2026-05-01, 2026-05-08, 2026-05-15",
+            }
+        ),
+        label="Fechas de clase",
+        help_text="Ingresa fechas separadas por comas en formato YYYY-MM-DD.",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["class_dates"].widget.attrs["class"] = "form-control"

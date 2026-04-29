@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Asistencias - {{ course.name }}{% endblock %}
+
+{% block content %}
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
+        <div>
+            <span class="section-kicker mb-3">Asistencia</span>
+            <h1 class="h2 mb-1 text-white">Modulo de asistencias</h1>
+            <p class="text-white-50 mb-0">Programa las fechas de clase y registra asistencia por sesion.</p>
+        </div>
+        <a class="btn btn-outline-light" href="{% url 'course_detail' course.id %}">Volver al curso</a>
+    </div>
+</section>
+
+<div class="row g-4">
+    <div class="col-xl-5">
+        <div class="glass-card dashboard-card h-100">
+            <div class="card-header">
+                <div class="soft-label">Calendario</div>
+                <h2 class="h4 mb-0">Registrar clases programadas</h2>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label" for="calendar_date">Selecciona fecha en calendario</label>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <input type="date" id="calendar_date" class="form-control" style="max-width: 220px;">
+                            <button class="btn btn-outline-primary" type="button" id="add_class_date">Agregar fecha</button>
+                        </div>
+                        <div class="form-text">Agrega todas las fechas programadas y luego guarda.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Fechas seleccionadas</label>
+                        <div id="selected_dates_list" class="d-flex flex-wrap gap-2 mb-2"></div>
+                        {{ session_form.class_dates }}
+                    </div>
+                    <button class="btn btn-primary" type="submit">Guardar fechas</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-7">
+        <div class="glass-card dashboard-card h-100">
+            <div class="card-header">
+                <div class="soft-label">Listado</div>
+                <h2 class="h4 mb-0">Clases registradas</h2>
+            </div>
+            <div class="card-body">
+                {% if sessions %}
+                    <div class="table-responsive">
+                        <table class="table table-soft align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th># Clase</th>
+                                    <th>Fecha</th>
+                                    <th>Asistencia</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for session in sessions %}
+                                    <tr>
+                                        <td><strong>Clase {{ session.session_number }}</strong></td>
+                                        <td>{{ session.class_date|date:"d/m/Y" }}</td>
+                                        <td>
+                                            {{ session.present_count }}/{{ session.total_students }}
+                                            <div class="small text-secondary">{{ session.attendance_percentage|floatformat:0 }}%</div>
+                                        </td>
+                                        <td class="text-end">
+                                            <a class="btn btn-outline-primary btn-sm" href="{% url 'course_attendance_session_detail' course.id session.id %}">Tomar asistencia</a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">No hay clases programadas todavia.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    (function () {
+        const rawInput = document.getElementById("id_class_dates");
+        const calendarInput = document.getElementById("calendar_date");
+        const addBtn = document.getElementById("add_class_date");
+        const list = document.getElementById("selected_dates_list");
+        if (!rawInput || !calendarInput || !addBtn || !list) return;
+
+        rawInput.style.display = "none";
+        const selectedDates = new Set(
+            (rawInput.value || "")
+                .replace(/\n/g, ",")
+                .split(",")
+                .map(v => v.trim())
+                .filter(Boolean)
+        );
+
+        const syncHiddenField = () => {
+            rawInput.value = Array.from(selectedDates).sort().join(", ");
+        };
+
+        const renderDates = () => {
+            list.innerHTML = "";
+            const sorted = Array.from(selectedDates).sort();
+            if (!sorted.length) {
+                list.innerHTML = '<span class="text-secondary small">No has agregado fechas.</span>';
+                return;
+            }
+            sorted.forEach((dateValue) => {
+                const wrapper = document.createElement("div");
+                wrapper.className = "badge-soft d-inline-flex align-items-center gap-2 px-3 py-2";
+                const label = document.createElement("span");
+                label.textContent = dateValue;
+                const removeBtn = document.createElement("button");
+                removeBtn.type = "button";
+                removeBtn.className = "btn btn-sm btn-outline-light py-0 px-2";
+                removeBtn.textContent = "x";
+                removeBtn.addEventListener("click", () => {
+                    selectedDates.delete(dateValue);
+                    syncHiddenField();
+                    renderDates();
+                });
+                wrapper.appendChild(label);
+                wrapper.appendChild(removeBtn);
+                list.appendChild(wrapper);
+            });
+        };
+
+        addBtn.addEventListener("click", () => {
+            const value = calendarInput.value;
+            if (!value) return;
+            selectedDates.add(value);
+            syncHiddenField();
+            renderDates();
+            calendarInput.value = "";
+        });
+
+        syncHiddenField();
+        renderDates();
+    })();
+</script>
+{% endblock %}

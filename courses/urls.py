@@ -7,6 +7,12 @@ urlpatterns = [
     path("estudiante/", views.student_courses, name="student_courses"),
     path("profesor/", views.teacher_courses, name="teacher_courses"),
     path("<int:course_id>/actividades/", views.course_activities_module, name="course_activities_module"),
+    path("<int:course_id>/asistencias/", views.course_attendance_module, name="course_attendance_module"),
+    path(
+        "<int:course_id>/asistencias/clase/<int:session_id>/",
+        views.course_attendance_session_detail,
+        name="course_attendance_session_detail",
+    ),
     path("<int:course_id>/actividades/crear/", views.create_course_activity, name="create_course_activity"),
     path(
         "<int:course_id>/actividades/<int:activity_id>/",
