@@ -129,13 +129,7 @@ def take_test(request, test_id):
                         defaults={"completed": True, "percentage": 100},
                     )
 
-                    if passed:
-                        Progress.objects.update_or_create(
-                            student=request.user,
-                            phase=Progress.Phases.INDUCTION,
-                            defaults={"completed": False, "percentage": 0},
-                        )
-                    else:
+                    if not passed:
                         Progress.objects.update_or_create(
                             student=request.user,
                             phase=Progress.Phases.LEVELING,

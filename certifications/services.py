@@ -1,17 +1,9 @@
 from io import BytesIO
 from pathlib import Path
 
-import qrcode
 from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import mm
-from reportlab.lib.utils import ImageReader
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen import canvas
 
 from leveling.models import LevelingRecord
 from tests_academic.utils import get_student_managed_results_queryset
@@ -19,15 +11,41 @@ from tracking.models import Progress
 
 from .models import Certificate
 
+try:
+    from reportlab.graphics import renderPDF
+    from reportlab.graphics.barcode import qr
+    from reportlab.graphics.shapes import Drawing
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.lib.utils import ImageReader
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    from reportlab.pdfgen import canvas
+except ModuleNotFoundError:
+    REPORTLAB_AVAILABLE = False
+    renderPDF = None
+    qr = None
+    Drawing = None
+    colors = None
+    A4 = None
+    mm = None
+    ImageReader = None
+    pdfmetrics = None
+    TTFont = None
+    canvas = None
+else:
+    REPORTLAB_AVAILABLE = True
+
 
 COMPLETION_SOURCE_PHASE = "completion"
-PRIMARY = colors.HexColor("#7c3aed")
-PRIMARY_DEEP = colors.HexColor("#5b21b6")
-HEADER_BG = colors.HexColor("#52347e")
-MUTED = colors.HexColor("#6f6291")
-ACCENT = colors.HexColor("#facc15")
-SURFACE = colors.HexColor("#fffdf4")
-TEXT = colors.HexColor("#24143f")
+PRIMARY = colors.HexColor("#7c3aed") if REPORTLAB_AVAILABLE else None
+PRIMARY_DEEP = colors.HexColor("#5b21b6") if REPORTLAB_AVAILABLE else None
+HEADER_BG = colors.HexColor("#52347e") if REPORTLAB_AVAILABLE else None
+MUTED = colors.HexColor("#6f6291") if REPORTLAB_AVAILABLE else None
+ACCENT = colors.HexColor("#facc15") if REPORTLAB_AVAILABLE else None
+SURFACE = colors.HexColor("#fffdf4") if REPORTLAB_AVAILABLE else None
+TEXT = colors.HexColor("#24143f") if REPORTLAB_AVAILABLE else None
 FONT_REGULAR = "Helvetica"
 FONT_BOLD = "Helvetica-Bold"
 
@@ -104,6 +122,9 @@ def get_or_create_completion_certificate(student):
 
 
 def build_certificate_pdf(student, certificate, request):
+    if not REPORTLAB_AVAILABLE:
+        return _build_basic_pdf(student, certificate, request)
+
     _register_pdf_fonts()
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
@@ -199,18 +220,10 @@ def build_certificate_pdf(student, certificate, request):
     pdf.setFont(FONT_REGULAR, 9.5)
     pdf.drawString(left_x, top_y - 8.9 * line_gap, str(certificate.code))
 
-    qr = qrcode.QRCode(box_size=8, border=1)
-    qr.add_data(validation_url)
-    qr.make(fit=True)
-    qr_image = qr.make_image(fill_color="black", back_color="white")
-    qr_buffer = BytesIO()
-    qr_image.save(qr_buffer, format="PNG")
-    qr_buffer.seek(0)
-
     qr_size = 30 * mm
     qr_x = 141 * mm
     qr_y = height - 218 * mm
-    pdf.drawImage(ImageReader(qr_buffer), qr_x, qr_y, qr_size, qr_size, mask="auto")
+    _draw_qr_code(pdf, validation_url, qr_x, qr_y, qr_size)
 
     pdf.setStrokeColor(colors.HexColor("#d9cdf2"))
     pdf.line(28 * mm, 42 * mm, width - 28 * mm, 42 * mm)
@@ -240,3 +253,107 @@ def _register_pdf_fonts():
         pdfmetrics.registerFont(TTFont("SegoeUI-Bold", str(bold_path)))
         FONT_REGULAR = "SegoeUI"
         FONT_BOLD = "SegoeUI-Bold"
+
+
+def _draw_qr_code(pdf, value, x, y, size):
+    qr_widget = qr.QrCodeWidget(value)
+    bounds = qr_widget.getBounds()
+    qr_width = max(bounds[2] - bounds[0], 1)
+    qr_height = max(bounds[3] - bounds[1], 1)
+    drawing = Drawing(
+        size,
+        size,
+        transform=[size / qr_width, 0, 0, size / qr_height, 0, 0],
+    )
+    drawing.add(qr_widget)
+    renderPDF.draw(drawing, pdf, x, y)
+
+
+def _build_basic_pdf(student, certificate, request):
+    buffer = BytesIO()
+    validation_url = request.build_absolute_uri(
+        reverse("verify_certificate", args=[certificate.code])
+    )
+    status = get_student_certificate_status(student)
+    path_label = "Test diagnostico" if status["qualifying_path"] == "diagnostico" else "Nivelacion"
+    full_name = student.get_full_name().strip() or student.display_name or student.username
+    issue_date = timezone.localtime(certificate.issue_date).strftime("%d/%m/%Y %H:%M")
+
+    lines = [
+        ("Helvetica-Bold", 18, "Certificado academico"),
+        ("Helvetica", 12, f"Se certifica que {full_name} completo su ruta academica."),
+        ("Helvetica", 12, f"Ruta habilitada por: {path_label}"),
+        ("Helvetica", 12, f"Codigo de validacion: {certificate.code}"),
+        ("Helvetica", 11, f"Fecha de emision: {issue_date}"),
+        ("Helvetica", 10, validation_url),
+    ]
+
+    stream_lines = ["BT"]
+    current_y = 790
+    for index, (font_name, font_size, text) in enumerate(lines):
+        escaped_text = _escape_pdf_text(text)
+        if index == 0:
+            stream_lines.extend(
+                [
+                    f"/F{1 if font_name == 'Helvetica-Bold' else 2} {font_size} Tf",
+                    f"72 {current_y} Td",
+                    f"({escaped_text}) Tj",
+                ]
+            )
+        else:
+            current_y -= 26 if index == 1 else 22
+            stream_lines.extend(
+                [
+                    f"72 {current_y} Td",
+                    f"/F{1 if font_name == 'Helvetica-Bold' else 2} {font_size} Tf",
+                    f"({escaped_text}) Tj",
+                ]
+            )
+    stream_lines.append("ET")
+    content = "\n".join(stream_lines).encode("latin-1", "replace")
+
+    objects = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        (
+            b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] "
+            b"/Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> "
+            b"/Contents 6 0 R >>"
+        ),
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        b"<< /Length %d >>\nstream\n%s\nendstream" % (len(content), content),
+    ]
+
+    buffer.write(b"%PDF-1.4\n")
+    offsets = [0]
+    for index, obj in enumerate(objects, start=1):
+        offsets.append(buffer.tell())
+        buffer.write(f"{index} 0 obj\n".encode("ascii"))
+        buffer.write(obj)
+        buffer.write(b"\nendobj\n")
+
+    xref_start = buffer.tell()
+    buffer.write(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
+    buffer.write(b"0000000000 65535 f \n")
+    for offset in offsets[1:]:
+        buffer.write(f"{offset:010d} 00000 n \n".encode("ascii"))
+    buffer.write(
+        (
+            f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\n"
+            f"startxref\n{xref_start}\n%%EOF"
+        ).encode("ascii")
+    )
+    buffer.seek(0)
+    return buffer
+
+
+def _escape_pdf_text(value):
+    return (
+        str(value)
+        .replace("\\", "\\\\")
+        .replace("(", "\\(")
+        .replace(")", "\\)")
+        .replace("\r", " ")
+        .replace("\n", " ")
+    )

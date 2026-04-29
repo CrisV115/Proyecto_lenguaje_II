@@ -15,7 +15,7 @@
             {% endif %}
         {% else %}
             {% if result.passed %}
-                Aprobado. Debes completar la induccion para cerrar tu ruta.
+                Aprobado. Ya puedes generar tu certificado final.
             {% else %}
                 No aprobado. Debes pasar por nivelacion.
             {% endif %}
@@ -28,7 +28,8 @@
         {% else %}
             <a class="btn btn-outline-primary" href="{% url 'student_dashboard' %}">Volver al panel</a>
             {% if result.passed %}
-                <a class="btn btn-primary" href="{% url 'induction_dashboard' %}">Ir a induccion</a>
+                <a class="btn btn-primary" href="{% url 'generate_certificate' %}">Ver certificado</a>
+                <a class="btn btn-outline-primary" href="{% url 'tracking_overview' %}">Ver seguimiento</a>
             {% else %}
                 <a class="btn btn-primary" href="{% url 'leveling_dashboard' %}">Ir a nivelacion</a>
             {% endif %}

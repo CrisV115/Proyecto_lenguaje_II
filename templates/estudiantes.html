@@ -121,7 +121,7 @@
                     <p class="text-secondary">Ya tienes un certificado valido emitido.</p>
                     <a class="btn btn-success" href="{% url 'certificate_detail' certificate.id %}">Ver certificado</a>
                 {% else %}
-                    <div class="empty-state">El certificado se habilitara cuando completes induccion o nivelacion.</div>
+                    <div class="empty-state">El certificado se habilitara cuando apruebes el diagnostico o completes la nivelacion, si aplica.</div>
                 {% endif %}
             </div>
         </div>
