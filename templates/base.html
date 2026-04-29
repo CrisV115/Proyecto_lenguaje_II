@@ -721,6 +721,7 @@
                         {% if request.user.tipo_usuario == "profesor" %}
                             <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_dashboard' %}">Panel docente</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_courses' %}">Nivelaci&oacute;n</a>
+                            <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_training_courses' %}">Capacitacion</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_tests' %}">Gestionar tests</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_results' %}">Resultados</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_students' %}">Estudiantes</a>
@@ -761,6 +762,7 @@
                             </div>
                             <a class="btn btn-outline-primary btn-sm" href="{% url 'student_dashboard' %}">Panel</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'student_courses' %}">Nivelacion</a>
+                            <a class="btn btn-outline-secondary btn-sm" href="{% url 'student_training_courses' %}">Capacitacion</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'tests_index' %}">Tests</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'tracking_overview' %}">Seguimiento</a>
                         {% endif %}

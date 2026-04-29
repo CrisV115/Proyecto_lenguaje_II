@@ -12,13 +12,13 @@ from certifications.models import Certificate
 from courses.models import Course, CourseActivity
 from tests_academic.models import Result, Test
 from tests_academic.utils import (
+    get_student_accessible_courses,
     get_student_managed_results_queryset,
     get_student_managed_tests_queryset,
-    get_student_visible_courses,
     get_teacher_managed_tests_queryset,
     student_has_approved_diagnostic,
 )
-from tracking.models import Progress
+from tracking.services import get_student_progress_entries, sync_student_induction_progress
 
 from .forms import PrimerIngresoPasswordForm, RegistroForm
 from .models import Usuario
@@ -171,12 +171,9 @@ def student_dashboard(request):
         return redirect_user_dashboard(request.user)
 
     diagnostic_approved = student_has_approved_diagnostic(request.user)
-    visible_courses = get_student_visible_courses(
-        request.user,
-        diagnostic_approved=diagnostic_approved,
-    )
+    sync_student_induction_progress(request.user)
     latest_result = get_student_managed_results_queryset(request.user).select_related("test").first()
-    progress_entries = Progress.objects.filter(student=request.user).order_by("phase")
+    progress_entries = get_student_progress_entries(request.user)
     student_tests = (
         get_student_managed_tests_queryset()
         .filter(is_active=True)
@@ -240,20 +237,20 @@ def teacher_dashboard(request):
 
 def _build_student_calendar_events(student, diagnostic_approved=None):
     now_date = timezone.localdate()
-    visible_courses = get_student_visible_courses(
+    accessible_courses = get_student_accessible_courses(
         student,
         diagnostic_approved=diagnostic_approved,
     )
 
     activities = (
-        CourseActivity.objects.filter(course__in=visible_courses, due_date__gte=now_date)
+        CourseActivity.objects.filter(course__in=accessible_courses, due_date__gte=now_date)
         .select_related("course")
         .distinct()
         .order_by("due_date", "opening_time")[:12]
     )
     tests = (
         Test.objects.filter(available_date__gte=now_date)
-        .filter(Q(course__in=visible_courses) | Q(course__isnull=True))
+        .filter(Q(course__in=accessible_courses) | Q(course__isnull=True))
         .select_related("course")
         .distinct()
         .order_by("available_date", "opening_time", "name")[:12]

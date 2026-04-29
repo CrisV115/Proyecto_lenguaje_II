@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}Mis nivelaciones{% endblock %}
+{% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
 <section class="hero-strip p-4 p-lg-5 mb-4">
     <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
         <div>
             <span class="section-kicker mb-3">Estudiante</span>
-            <h1 class="h2 mb-1 text-white">Nivelaciones asignadas</h1>
-            <p class="text-white-50 mb-0">Aqui ves solo las nivelaciones que te asignaron desde administracion.</p>
+            <h1 class="h2 mb-1 text-white">{{ page_title }}</h1>
+            <p class="text-white-50 mb-0">{{ page_description }}</p>
         </div>
         <a class="btn btn-outline-light" href="{% url 'student_dashboard' %}">Volver al panel</a>
     </div>
@@ -20,7 +20,7 @@
             {% for card in course_cards %}
                 <div class="col-md-6 col-xl-4">
                     <div class="metric-card h-100">
-                        <div class="soft-label mb-2">Nivelacion</div>
+                        <div class="soft-label mb-2">{{ course_badge_label }}</div>
                         <h2 class="h5">{{ card.course.name }}</h2>
                         <p class="text-secondary mb-3">{{ card.course.description|default:"Sin descripcion disponible." }}</p>
                         <div class="d-flex justify-content-between small text-secondary mb-1">
@@ -35,7 +35,7 @@
                             (Tareas {{ card.progress.completed_activities }}/{{ card.progress.total_activities }}, tests {{ card.progress.completed_tests }}/{{ card.progress.total_tests }})
                         </div>
                         <div class="d-flex gap-2 flex-wrap">
-                            <a class="btn btn-outline-primary btn-sm" href="{% url 'course_detail' card.course.id %}">Entrar a la nivelacion</a>
+                            <a class="btn btn-outline-primary btn-sm" href="{% url 'course_detail' card.course.id %}">{{ enter_label }}</a>
                             <a class="btn btn-outline-secondary btn-sm" href="{% url 'course_activities_module' card.course.id %}">Asignaciones</a>
                         </div>
                     </div>
@@ -43,13 +43,7 @@
             {% endfor %}
         </div>
     {% else %}
-        <div class="empty-state">
-            {% if diagnostic_approved %}
-                No tienes ninguna nivelacion asignada porque aprobaste el test diagnostico.
-            {% else %}
-                Aun no tienes ninguna nivelacion asignada.
-            {% endif %}
-        </div>
+        <div class="empty-state">{{ empty_message }}</div>
     {% endif %}
 </div>
 {% endblock %}

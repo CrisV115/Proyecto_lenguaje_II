@@ -9,6 +9,11 @@ from django.db import models
 class Course(models.Model):
     name = models.CharField(max_length=120, unique=True)
     description = models.TextField(blank=True)
+    is_training = models.BooleanField(
+        default=False,
+        verbose_name="Es capacitacion",
+        help_text="Marca este curso para mostrarlo en el apartado de capacitacion.",
+    )
     welcome_message = models.TextField(
         default="Bienvenido a este curso.",
         help_text="Mensaje inicial que veran los usuarios asignados.",
@@ -35,6 +40,10 @@ class Course(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def category_label(self):
+        return "Capacitacion" if self.is_training else "Nivelacion"
 
 
 class CourseActivity(models.Model):

@@ -326,7 +326,7 @@ class AcademicFlowTests(TestCase):
         self.assertEqual(dashboard_response.status_code, 200)
         self.assertContains(
             dashboard_response,
-            "No tienes actividades ni tests pendientes porque aprobaste el diagnostico.",
+            "No tienes actividades ni tests programados en tus cursos de capacitacion.",
         )
         self.assertNotContains(dashboard_response, course.name)
         self.assertNotContains(dashboard_response, "Guia 1")
@@ -362,6 +362,48 @@ class AcademicFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Nivelaciones asignadas")
         self.assertContains(response, "Entrar a la nivelacion")
+
+    def test_approved_student_still_sees_training_courses(self):
+        training_course = Course.objects.create(
+            name="Capacitacion Moodle",
+            description="Uso de plataforma",
+            is_training=True,
+        )
+        training_course.students.add(self.user)
+        training_course.teachers.add(self.professor)
+
+        diagnostic_test = Test.objects.create(
+            name="Diagnostico TIC",
+            type="conocimientos",
+            duration=20,
+            created_by=self.professor,
+        )
+        training_test = Test.objects.create(
+            name="Evaluacion de capacitacion",
+            type="curso",
+            duration=20,
+            created_by=self.professor,
+            course=training_course,
+        )
+        Result.objects.create(
+            student=self.user,
+            test=diagnostic_test,
+            score=90,
+            passed=True,
+        )
+
+        training_response = self.client.get(reverse("student_training_courses"))
+        self.assertEqual(training_response.status_code, 200)
+        self.assertContains(training_response, "Capacitaciones asignadas")
+        self.assertContains(training_response, training_course.name)
+
+        tests_response = self.client.get(reverse("tests_index"))
+        self.assertEqual(tests_response.status_code, 200)
+        self.assertContains(tests_response, training_test.name)
+
+        detail_response = self.client.get(reverse("course_detail", args=[training_course.id]))
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertContains(detail_response, "Volver a capacitaciones")
 
     def test_teacher_management_only_lists_diagnostic_and_vocational_tests(self):
         unsupported_test = Test.objects.create(

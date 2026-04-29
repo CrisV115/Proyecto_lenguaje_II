@@ -6,17 +6,29 @@
 <section class="hero-strip p-4 p-lg-5 mb-4">
     <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
         <div>
-            <span class="section-kicker mb-3">{% if request.user.tipo_usuario == "estudiante" %}Nivelacion{% else %}Curso{% endif %}</span>
+            <span class="section-kicker mb-3">
+                {% if course.is_training %}
+                    Capacitacion
+                {% elif request.user.tipo_usuario == "estudiante" %}
+                    Nivelacion
+                {% else %}
+                    Curso
+                {% endif %}
+            </span>
             <h1 class="h2 mb-1 text-white">{{ course.name }}</h1>
             <p class="text-white-50 mb-0">{{ course.description|default:"Este curso no tiene descripcion por ahora." }}</p>
         </div>
         {% if request.user.tipo_usuario == "profesor" %}
             <div class="d-flex gap-2 flex-wrap">
                 <a class="btn btn-outline-light" href="{% url 'course_attendance_module' course.id %}">Modulo de asistencias</a>
-                <a class="btn btn-outline-light" href="{% url 'teacher_courses' %}">Volver a cursos</a>
+                <a class="btn btn-outline-light" href="{% if course.is_training %}{% url 'teacher_training_courses' %}{% else %}{% url 'teacher_courses' %}{% endif %}">
+                    {% if course.is_training %}Volver a capacitaciones{% else %}Volver a cursos{% endif %}
+                </a>
             </div>
         {% else %}
-            <a class="btn btn-outline-light" href="{% url 'student_courses' %}">Volver a nivelaciones</a>
+            <a class="btn btn-outline-light" href="{% if course.is_training %}{% url 'student_training_courses' %}{% else %}{% url 'student_courses' %}{% endif %}">
+                {% if course.is_training %}Volver a capacitaciones{% else %}Volver a nivelaciones{% endif %}
+            </a>
         {% endif %}
     </div>
 </section>
@@ -38,14 +50,14 @@
             <div class="glass-card dashboard-card mb-4">
                 <div class="card-header">
                     <div class="soft-label">Avance</div>
-                    <h2 class="h5 mb-0">Progreso de la nivelacion</h2>
+                    <h2 class="h5 mb-0">Progreso de la {{ course.category_label|lower }}</h2>
                 </div>
                 <div class="card-body">
                     <div class="d-flex justify-content-between small text-secondary mb-1">
                         <span>Completado</span>
                         <strong>{{ student_progress.percentage|floatformat:0 }}%</strong>
                     </div>
-                    <div class="progress mb-2" role="progressbar" aria-label="{% if request.user.tipo_usuario == 'estudiante' %}Progreso de nivelacion{% else %}Progreso de curso{% endif %}" aria-valuenow="{{ student_progress.percentage|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress mb-2" role="progressbar" aria-label="Progreso del curso" aria-valuenow="{{ student_progress.percentage|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100">
                         <div class="progress-bar" style="width: {{ student_progress.percentage }}%;"></div>
                     </div>
                     <div class="small text-secondary">

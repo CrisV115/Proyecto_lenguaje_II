@@ -17,7 +17,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <div class="soft-label mb-2">Listado activo</div>
-        <p class="text-secondary mb-0">Cada test muestra su nivelacion, horario y nota minima para aprobar.</p>
+        <p class="text-secondary mb-0">Cada test muestra su curso relacionado, horario y nota minima para aprobar.</p>
     </div>
 </div>
 
@@ -25,7 +25,7 @@
     <div class="glass-card rounded-4 p-4 mb-3">
         <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
             <div>
-                <div class="soft-label mb-2">{{ test.course.name|default:"Sin nivelacion" }}</div>
+                <div class="soft-label mb-2">{{ test.course.name|default:"General" }}</div>
                 <h2 class="h4">{{ test.name }}</h2>
                 <p class="text-secondary mb-1">Duracion: {{ test.duration }} minutos | Nota minima: {{ test.passing_score }}%</p>
                 <p class="text-secondary mb-3">
@@ -54,7 +54,7 @@
     <div class="glass-card rounded-4 p-4">
         <div class="empty-state">
             {% if diagnostic_approved %}
-                Ya aprobaste el diagnostico y no tienes una nivelacion asignada.
+                No hay tests activos en tus cursos de capacitacion ni evaluaciones pendientes.
             {% else %}
                 No hay tests activos configurados todavia.
             {% endif %}

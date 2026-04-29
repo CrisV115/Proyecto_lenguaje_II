@@ -11,11 +11,13 @@ from users.decorators import role_required
 from users.models import Usuario
 
 from .models import Progress
+from .services import get_student_progress_entries, sync_student_induction_progress
 
 
 @role_required("estudiante")
 def overview(request):
-    progress_entries = Progress.objects.filter(student=request.user).order_by("phase")
+    sync_student_induction_progress(request.user)
+    progress_entries = get_student_progress_entries(request.user)
     certificate_status = get_student_certificate_status(request.user)
     return render(
         request,

@@ -5,6 +5,7 @@ from django.db import models
 class Progress(models.Model):
     class Phases(models.TextChoices):
         TEST = "test", "Test"
+        INDUCTION = "induction", "Induccion"
         LEVELING = "leveling", "Nivelacion"
 
     student = models.ForeignKey(

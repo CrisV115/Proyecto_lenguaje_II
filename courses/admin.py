@@ -13,11 +13,13 @@ from .models import (
 class CourseAdmin(admin.ModelAdmin):
     list_display = (
         "name",
+        "is_training",
         "teachers_count",
         "students_count",
         "updated_at",
     )
     search_fields = ("name", "description")
+    list_filter = ("is_training",)
     filter_horizontal = ("teachers", "students")
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
@@ -27,6 +29,7 @@ class CourseAdmin(admin.ModelAdmin):
                 "fields": (
                     "name",
                     "description",
+                    "is_training",
                     "welcome_message",
                 )
             },
