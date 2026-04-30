@@ -7,36 +7,33 @@
     <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
         <div>
             <span class="section-kicker mb-3">Seguimiento docente</span>
-            <h1 class="h2 mb-1 text-white">Reporte academico consolidado</h1>
-            <p class="text-white-50 mb-0">Vista unica del diagnostico, la nivelacion y la certificacion de cada estudiante.</p>
+            <h1 class="h2 mb-1 text-white">Reporte del test diagnostico</h1>
+            <p class="text-white-50 mb-0">Aqui se listan los estudiantes que ya rindieron el diagnostico con su estado final.</p>
         </div>
-        <a class="btn btn-outline-light" href="{% url 'teacher_dashboard' %}">Volver al panel</a>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-light" href="{% url 'teacher_report_pdf' %}">Descargar PDF</a>
+            <a class="btn btn-outline-light" href="{% url 'teacher_dashboard' %}">Volver al panel</a>
+        </div>
     </div>
 </section>
 
 <div class="row g-4 mb-4">
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-sm-4 col-xl-4">
         <div class="metric-card">
-            <div class="soft-label">Estudiantes</div>
+            <div class="soft-label">Estudiantes evaluados</div>
             <div class="metric-value">{{ students_count }}</div>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-sm-4 col-xl-4">
         <div class="metric-card">
-            <div class="soft-label">Resultados aprobados</div>
-            <div class="metric-value">{{ approved_initial_count }}</div>
+            <div class="soft-label">Aprobados</div>
+            <div class="metric-value">{{ approved_count }}</div>
         </div>
     </div>
-    <div class="col-sm-6 col-xl-3">
+    <div class="col-sm-4 col-xl-4">
         <div class="metric-card">
-            <div class="soft-label">Nivelacion completa</div>
-            <div class="metric-value">{{ leveling_completed_count }}</div>
-        </div>
-    </div>
-    <div class="col-sm-6 col-xl-3">
-        <div class="metric-card">
-            <div class="soft-label">Certificados</div>
-            <div class="metric-value">{{ certified_count }}</div>
+            <div class="soft-label">Reprobados</div>
+            <div class="metric-value">{{ failed_count }}</div>
         </div>
     </div>
 </div>
@@ -47,45 +44,22 @@
             <table class="table table-soft align-middle mb-0">
                 <thead>
                     <tr>
-                        <th>Estudiante</th>
-                        <th>Resultado inicial</th>
-                        <th>Nivelacion</th>
-                        <th>Certificacion</th>
+                        <th>Cedula</th>
+                        <th>Nombres</th>
+                        <th>Apellidos</th>
+                        <th>Estado</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in report_rows %}
                         <tr>
+                            <td>{{ row.cedula }}</td>
+                            <td>{{ row.first_name }}</td>
+                            <td>{{ row.last_name }}</td>
                             <td>
-                                <strong>{{ row.student.display_name }}</strong>
-                                <div class="text-secondary small">{{ row.student.email }}</div>
-                            </td>
-                            <td>
-                                {% if row.latest_result %}
-                                    <div><strong>{{ row.latest_result.test.name }}</strong></div>
-                                    <div class="text-secondary small">{{ row.latest_result.score|floatformat:2 }}% {% if row.latest_result.passed %}Aprobado{% else %}Requiere nivelacion{% endif %}</div>
-                                {% else %}
-                                    <span class="text-secondary">Sin resultado</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if row.leveling_record %}
-                                    <div>{{ row.leveling_record.participation_percentage }}% participacion</div>
-                                    <div class="text-secondary small">Examen: {{ row.leveling_record.final_exam_score|floatformat:2 }}%</div>
-                                {% elif row.leveling_progress %}
-                                    <div>{{ row.leveling_progress.percentage }}%</div>
-                                {% elif row.initial_result_approved %}
-                                    <span class="text-secondary">No requerida</span>
-                                {% else %}
-                                    <span class="text-secondary">No aplica</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if row.certificate %}
-                                    <a class="btn btn-outline-primary btn-sm" href="{% url 'verify_certificate' row.certificate.code %}">Validar</a>
-                                {% else %}
-                                    <span class="text-secondary">Sin certificado</span>
-                                {% endif %}
+                                <span class="status-pill {% if row.diagnostic_result.passed %}success{% else %}warn{% endif %}">
+                                    {{ row.status_label }}
+                                </span>
                             </td>
                         </tr>
                     {% endfor %}
@@ -93,7 +67,7 @@
             </table>
         </div>
     {% else %}
-        <div class="empty-state">Todavia no hay estudiantes para generar el reporte.</div>
+        <div class="empty-state">El reporte se habilita cuando los estudiantes rindan el test diagnostico.</div>
     {% endif %}
 </div>
 {% endblock %}

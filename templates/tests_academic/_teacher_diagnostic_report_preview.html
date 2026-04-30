@@ -1,0 +1,59 @@
+<div class="report-paper">
+    <div class="report-paper__header">
+        <div>
+            <span class="report-paper__eyebrow">Reporte docente</span>
+            <h3 class="report-paper__title">Reporte del test diagnostico</h3>
+            <p class="report-paper__subtitle">Documento consolidado con los estudiantes que ya rindieron el test diagnostico y su estado final de aprobacion o reprobacion.</p>
+        </div>
+        <div class="report-paper__stamp">
+            <span>Generado</span>
+            <strong>{{ generated_at }}</strong>
+        </div>
+    </div>
+
+    <div class="report-paper__metrics">
+        <div class="report-kpi">
+            <span>Evaluados</span>
+            <strong>{{ students_count }}</strong>
+        </div>
+        <div class="report-kpi">
+            <span>Aprobados</span>
+            <strong>{{ approved_count }}</strong>
+        </div>
+        <div class="report-kpi">
+            <span>Reprobados</span>
+            <strong>{{ failed_count }}</strong>
+        </div>
+    </div>
+
+    {% if report_rows %}
+        <div class="report-table-wrap">
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>Cedula</th>
+                        <th>Nombres</th>
+                        <th>Apellidos</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in report_rows %}
+                        <tr>
+                            <td>{{ row.cedula }}</td>
+                            <td>{{ row.first_name }}</td>
+                            <td>{{ row.last_name }}</td>
+                            <td>
+                                <span class="report-status {% if row.diagnostic_result.passed %}report-status--success{% else %}report-status--warn{% endif %}">
+                                    {{ row.status_label }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="report-empty">El reporte se habilita cuando tus estudiantes rindan el test diagnostico.</div>
+    {% endif %}
+</div>

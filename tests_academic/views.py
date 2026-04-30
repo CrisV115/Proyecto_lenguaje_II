@@ -3,6 +3,7 @@ from datetime import datetime
 from django.contrib import messages
 from django.db.models import Count, F, Prefetch, Q
 from django.db import transaction
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
@@ -19,7 +20,7 @@ from .utils import (
     get_teacher_managed_tests_queryset,
     student_has_approved_diagnostic,
 )
-from tracking.services import sync_student_induction_progress
+from tracking.services import build_teacher_report_pdf, sync_student_induction_progress
 
 
 @role_required("estudiante")
@@ -272,7 +273,31 @@ def teacher_results(request):
         .select_related("student", "test")
         .order_by("-submitted_at")
     )
-    return render(request, "tests_academic/teacher_results.html", {"results": results})
+    context = {
+        "results": results,
+        "generated_at": _get_report_generated_at(),
+    }
+    context.update(_build_teacher_diagnostic_report_context(request.user))
+    return render(request, "tests_academic/teacher_results.html", context)
+
+
+@role_required("profesor")
+def teacher_results_pdf(request):
+    context = _build_teacher_diagnostic_report_context(request.user)
+    generated_at = _get_report_generated_at()
+    pdf_buffer = build_teacher_report_pdf(context["report_rows"], generated_at)
+    response = HttpResponse(pdf_buffer.getvalue(), content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename="reporte_resultados_diagnostico.pdf"'
+    return response
+
+
+@role_required("profesor")
+def teacher_results_preview(request):
+    context = {
+        "generated_at": _get_report_generated_at(),
+    }
+    context.update(_build_teacher_diagnostic_report_context(request.user))
+    return render(request, "tests_academic/teacher_results_preview.html", context)
 
 
 @role_required("profesor")
@@ -294,6 +319,57 @@ def teacher_result_detail(request, result_id):
         "tests_academic/teacher_result_detail.html",
         {"result": result},
     )
+
+
+def _build_teacher_diagnostic_report_context(user):
+    diagnostic_results = (
+        Result.objects.filter(
+            test__in=get_teacher_managed_tests_queryset(user).filter(type="conocimientos"),
+        )
+        .select_related("student", "test")
+        .order_by(
+            "student__last_name",
+            "student__first_name",
+            "student__username",
+            "-submitted_at",
+            "-id",
+        )
+    )
+
+    seen_student_ids = set()
+    report_rows = []
+    for diagnostic_result in diagnostic_results:
+        if diagnostic_result.student_id in seen_student_ids:
+            continue
+
+        seen_student_ids.add(diagnostic_result.student_id)
+        student = diagnostic_result.student
+        report_rows.append(
+            {
+                "student": student,
+                "cedula": student.cedula or "-",
+                "first_name": student.first_name or student.username,
+                "last_name": student.last_name or "-",
+                "diagnostic_result": diagnostic_result,
+                "status_label": "Aprobado" if diagnostic_result.passed else "Reprobado",
+            }
+        )
+
+    approved_count = sum(
+        1 for row in report_rows if row["diagnostic_result"].passed
+    )
+    failed_count = len(report_rows) - approved_count
+
+    return {
+        "report_rows": report_rows,
+        "students_count": len(report_rows),
+        "approved_count": approved_count,
+        "failed_count": failed_count,
+    }
+
+
+def _get_report_generated_at():
+    return timezone.localtime().strftime("%d/%m/%Y %H:%M")
 
 
 @role_required("profesor")

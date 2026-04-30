@@ -59,11 +59,40 @@
         }
 
         .topbar {
-            background: rgba(255, 255, 255, 0.78);
-            backdrop-filter: blur(18px);
-            border-bottom: 1px solid rgba(76, 29, 149, 0.1);
-            position: relative;
+            background: transparent;
+            border-bottom: 0;
+            position: sticky;
+            top: 0;
+            padding: 0.7rem 0 0.35rem;
             z-index: 200;
+        }
+
+        .topbar .container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.25rem;
+            padding: 0.85rem 1rem;
+            border-radius: 1.9rem;
+            border: 1px solid rgba(124, 58, 237, 0.14);
+            background:
+                linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(246, 240, 255, 0.9)),
+                rgba(255, 255, 255, 0.9);
+            box-shadow:
+                0 18px 44px rgba(76, 29, 149, 0.14),
+                inset 0 1px 0 rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(22px);
+            overflow: visible;
+        }
+
+        .topbar .container::before {
+            content: "";
+            position: absolute;
+            inset: 0.35rem;
+            border-radius: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.68);
+            pointer-events: none;
         }
 
         .brand-logo {
@@ -107,8 +136,82 @@
         }
 
         .topbar-actions {
-            flex-wrap: nowrap;
+            flex: 1 1 auto;
+            justify-content: flex-end;
+            gap: 0.65rem;
+            min-width: 0;
+            flex-wrap: wrap;
             align-items: center;
+        }
+
+        .topbar-links {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.55rem;
+            flex-wrap: wrap;
+            min-width: 0;
+        }
+
+        .topbar-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 2.7rem;
+            padding: 0.6rem 1rem;
+            border-radius: 999px;
+            border: 1px solid rgba(124, 58, 237, 0.16);
+            background: rgba(255, 255, 255, 0.72);
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.92rem;
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: 0.01em;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.85),
+                0 10px 22px rgba(76, 29, 149, 0.08);
+            transition:
+                transform 0.18s ease,
+                box-shadow 0.18s ease,
+                background-color 0.18s ease,
+                border-color 0.18s ease,
+                color 0.18s ease;
+        }
+
+        .topbar-link:hover,
+        .topbar-link:focus {
+            color: var(--primary-deep);
+            background: rgba(255, 255, 255, 0.96);
+            border-color: rgba(124, 58, 237, 0.28);
+            transform: translateY(-1px);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.95),
+                0 16px 30px rgba(76, 29, 149, 0.12);
+            outline: none;
+        }
+
+        .topbar-link.is-active {
+            color: white;
+            border-color: transparent;
+            background:
+                radial-gradient(circle at top right, rgba(250, 204, 21, 0.24), transparent 36%),
+                linear-gradient(135deg, #8b5cf6, #5b21b6);
+            box-shadow: 0 18px 34px rgba(91, 33, 182, 0.28);
+        }
+
+        .topbar-link--accent {
+            color: white;
+            border-color: transparent;
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            box-shadow: 0 16px 30px rgba(109, 40, 217, 0.24);
+        }
+
+        .topbar-link--accent:hover,
+        .topbar-link--accent:focus {
+            color: white;
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+            border-color: transparent;
         }
 
         .services-menu {
@@ -506,13 +609,340 @@
         .nav-user-chip {
             display: inline-flex;
             align-items: center;
-            gap: 0.45rem;
-            padding: 0.5rem 0.8rem;
+            gap: 0.7rem;
+            min-width: 0;
+            max-width: min(20rem, 100%);
+            padding: 0.45rem 0.55rem 0.45rem 0.45rem;
+            border-radius: 999px;
+            background:
+                linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(124, 58, 237, 0.04)),
+                rgba(255, 255, 255, 0.74);
+            border: 1px solid rgba(124, 58, 237, 0.12);
+            color: var(--primary-deep);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.9),
+                0 12px 24px rgba(76, 29, 149, 0.08);
+        }
+
+        .nav-user-avatar {
+            width: 2.25rem;
+            height: 2.25rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            border-radius: 999px;
+            background:
+                radial-gradient(circle at top right, rgba(250, 204, 21, 0.35), transparent 36%),
+                linear-gradient(135deg, #7c3aed, #5b21b6);
+            color: white;
+            font-size: 0.92rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            box-shadow: 0 12px 24px rgba(91, 33, 182, 0.24);
+        }
+
+        .nav-user-copy {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            line-height: 1.05;
+        }
+
+        .nav-user-name,
+        .nav-user-role {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .nav-user-name {
+            font-size: 0.94rem;
+            font-weight: 800;
+        }
+
+        .nav-user-role {
+            margin-top: 0.12rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 0.7rem;
+            font-weight: 800;
+        }
+
+        .report-studio {
+            display: grid;
+            grid-template-columns: minmax(250px, 320px) minmax(0, 1fr);
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        .report-aside {
+            position: sticky;
+            top: 6rem;
+            display: grid;
+            gap: 1rem;
+        }
+
+        .report-callout,
+        .report-preview-shell {
+            background: rgba(255, 255, 255, 0.84);
+            border: 1px solid rgba(124, 58, 237, 0.12);
+            border-radius: 1.7rem;
+            box-shadow: 0 22px 46px rgba(76, 29, 149, 0.12);
+            backdrop-filter: blur(18px);
+        }
+
+        .report-callout {
+            padding: 1.3rem;
+        }
+
+        .report-callout__title {
+            margin: 0.35rem 0 0.55rem;
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--primary-deep);
+        }
+
+        .report-callout__text {
+            margin: 0;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .report-callout__meta {
+            display: grid;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .report-mini-stat {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.9rem 1rem;
+            border-radius: 1.15rem;
+            background: rgba(124, 58, 237, 0.06);
+            border: 1px solid rgba(124, 58, 237, 0.08);
+        }
+
+        .report-mini-stat strong {
+            font-size: 1.2rem;
+            color: var(--primary-deep);
+        }
+
+        .report-preview-shell {
+            padding: 1.1rem;
+        }
+
+        .report-preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding: 0.35rem 0.25rem 0;
+        }
+
+        .report-preview-header p {
+            margin: 0.35rem 0 0;
+            color: var(--muted);
+        }
+
+        .report-paper {
+            position: relative;
+            overflow: hidden;
+            background:
+                linear-gradient(180deg, rgba(248, 245, 255, 0.74), rgba(255, 255, 255, 0) 24%),
+                #ffffff;
+            border: 1px solid rgba(124, 58, 237, 0.1);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.9),
+                0 22px 42px rgba(76, 29, 149, 0.1);
+        }
+
+        .report-paper::after {
+            content: "";
+            position: absolute;
+            inset: auto -3rem -3rem auto;
+            width: 11rem;
+            height: 11rem;
+            border-radius: 999px;
+            background: radial-gradient(circle, rgba(124, 58, 237, 0.1), rgba(124, 58, 237, 0));
+            pointer-events: none;
+        }
+
+        .report-paper__header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .report-paper__eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.7rem;
             border-radius: 999px;
             background: rgba(124, 58, 237, 0.08);
             color: var(--primary-deep);
-            font-size: 0.88rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 0.72rem;
+            font-weight: 800;
+        }
+
+        .report-paper__title {
+            margin: 0.7rem 0 0.35rem;
+            font-size: 1.55rem;
+            font-weight: 800;
+            color: #1f1140;
+        }
+
+        .report-paper__subtitle {
+            margin: 0;
+            max-width: 40rem;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        .report-paper__stamp {
+            min-width: 11.5rem;
+            padding: 0.95rem 1rem;
+            border-radius: 1.1rem;
+            background: linear-gradient(135deg, rgba(91, 33, 182, 0.08), rgba(250, 204, 21, 0.18));
+            border: 1px solid rgba(124, 58, 237, 0.08);
+            text-align: right;
+        }
+
+        .report-paper__stamp span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.73rem;
             font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .report-paper__stamp strong {
+            display: block;
+            margin-top: 0.25rem;
+            color: #1f1140;
+            font-size: 1rem;
+        }
+
+        .report-paper__metrics {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.9rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .report-kpi {
+            padding: 1rem 1.05rem;
+            border-radius: 1.15rem;
+            background: rgba(124, 58, 237, 0.05);
+            border: 1px solid rgba(124, 58, 237, 0.08);
+        }
+
+        .report-kpi span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .report-kpi strong {
+            display: block;
+            margin-top: 0.35rem;
+            color: var(--primary-deep);
+            font-size: 1.65rem;
+            line-height: 1;
+        }
+
+        .report-table-wrap {
+            position: relative;
+            z-index: 1;
+            border-radius: 1.2rem;
+            border: 1px solid rgba(124, 58, 237, 0.08);
+            overflow: hidden;
+        }
+
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        .report-table thead th {
+            padding: 0.95rem 1rem;
+            background: linear-gradient(135deg, #f4edff, #fff8dd);
+            color: #2f1b55;
+            font-size: 0.82rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            border-bottom: 1px solid rgba(124, 58, 237, 0.1);
+        }
+
+        .report-table tbody td {
+            padding: 0.95rem 1rem;
+            border-bottom: 1px solid rgba(124, 58, 237, 0.08);
+            color: var(--text);
+            vertical-align: middle;
+        }
+
+        .report-table tbody tr:nth-child(even) td {
+            background: rgba(249, 247, 255, 0.6);
+        }
+
+        .report-table tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .report-status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 8rem;
+            padding: 0.45rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 800;
+        }
+
+        .report-status--success {
+            color: #4c1d95;
+            background: rgba(124, 58, 237, 0.14);
+        }
+
+        .report-status--warn {
+            color: #854d0e;
+            background: rgba(250, 204, 21, 0.24);
+        }
+
+        .report-empty {
+            padding: 2rem 1.4rem;
+            border-radius: 1.2rem;
+            border: 1px dashed rgba(124, 58, 237, 0.18);
+            text-align: center;
+            color: var(--muted);
+            background: rgba(249, 247, 255, 0.72);
+        }
+
+        .preview-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
         }
 
         .list-clean {
@@ -684,13 +1114,39 @@
         }
 
         @media (max-width: 991.98px) {
-            .navbar .container { gap: 1rem; }
+            .topbar .container {
+                gap: 1rem;
+                padding: 0.9rem;
+                border-radius: 1.5rem;
+            }
             .hero-strip { border-radius: 1.4rem; }
             .builder-layout { grid-template-columns: 1fr; }
             .brand-logo { height: 2.45rem; }
             .brand-title { font-size: 1.2rem; }
             .brand-subtitle { font-size: 0.82rem; }
-            .topbar-actions { flex-wrap: wrap; }
+            .topbar-actions,
+            .topbar-links {
+                justify-content: flex-start;
+            }
+            .nav-user-chip {
+                max-width: 100%;
+            }
+            .report-studio,
+            .report-paper__metrics {
+                grid-template-columns: 1fr;
+            }
+            .report-aside {
+                position: static;
+            }
+            .report-paper__header,
+            .preview-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .report-paper__stamp {
+                min-width: 0;
+                text-align: left;
+            }
             .services-dropdown,
             .services-submenu {
                 min-width: min(22rem, calc(100vw - 2rem));
@@ -699,6 +1155,34 @@
                 position: static;
                 margin-top: 0.35rem;
                 min-width: 100%;
+            }
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .topbar,
+            .preview-toolbar,
+            .hero-strip,
+            .report-callout,
+            .alert,
+            .btn {
+                display: none !important;
+            }
+
+            main.container {
+                max-width: none;
+                padding: 0 !important;
+            }
+
+            .report-preview-shell,
+            .report-paper {
+                border: 0;
+                box-shadow: none;
+                background: white;
+                padding: 0;
             }
         }
     </style>
@@ -715,61 +1199,76 @@
                         <small class="fw-semibold brand-subtitle">Sistema academico modular</small>
                     </span>
                 </a>
-                <div class="d-flex gap-2 topbar-actions">
+                <div class="d-flex topbar-actions">
                     {% if request.user.is_authenticated %}
-                        <span class="nav-user-chip">{{ request.user.display_name }} &middot; {{ request.user.get_tipo_usuario_display }}</span>
-                        {% if request.user.tipo_usuario == "profesor" %}
-                            <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_dashboard' %}">Panel docente</a>
-                            <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_courses' %}">Nivelaci&oacute;n</a>
-                            <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_training_courses' %}">Capacitacion</a>
-                            <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_tests' %}">Gestionar tests</a>
-                            <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_results' %}">Resultados</a>
-                            <a class="btn btn-outline-secondary btn-sm" href="{% url 'teacher_students' %}">Estudiantes</a>
-                        {% else %}
-                            <div class="services-menu">
-                                <button class="btn btn-outline-secondary btn-sm services-toggle" type="button" aria-haspopup="true" aria-expanded="false">
-                                    Servicios
-                                </button>
-                                <ul class="services-dropdown">
-                                    <li class="services-submenu-wrap">
-                                        <button class="services-submenu-toggle" type="button" aria-haspopup="true" aria-expanded="false">
-                                            Plataformas tecnologicas
+                        <div class="nav-user-chip">
+                            <span class="nav-user-avatar">{{ request.user.display_name|slice:":1"|upper }}</span>
+                            <span class="nav-user-copy">
+                                <span class="nav-user-name">{{ request.user.display_name }}</span>
+                                <span class="nav-user-role">{{ request.user.get_tipo_usuario_display }}</span>
+                            </span>
+                        </div>
+                        {% with current_name=request.resolver_match.url_name %}
+                            {% if request.user.tipo_usuario == "profesor" %}
+                                <div class="topbar-links">
+                                    <a class="topbar-link {% if current_name == 'teacher_dashboard' %}is-active{% endif %}" href="{% url 'teacher_dashboard' %}">Panel docente</a>
+                                    <a class="topbar-link {% if current_name == 'teacher_courses' or current_name == 'course_detail' %}is-active{% endif %}" href="{% url 'teacher_courses' %}">Nivelaci&oacute;n</a>
+                                    <a class="topbar-link {% if current_name == 'teacher_training_courses' %}is-active{% endif %}" href="{% url 'teacher_training_courses' %}">Capacitacion</a>
+                                    <a class="topbar-link {% if current_name == 'teacher_tests' or current_name == 'teacher_test_create' or current_name == 'teacher_test_edit' %}is-active{% endif %}" href="{% url 'teacher_tests' %}">Gestionar tests</a>
+                                    <a class="topbar-link {% if current_name == 'teacher_results' or current_name == 'teacher_result_detail' or current_name == 'teacher_results_preview' %}is-active{% endif %}" href="{% url 'teacher_results' %}">Resultados</a>
+                                    <a class="topbar-link {% if current_name == 'teacher_students' %}is-active{% endif %}" href="{% url 'teacher_students' %}">Estudiantes</a>
+                                    <a class="topbar-link topbar-link--accent" href="{% url 'logout' %}">Salir</a>
+                                </div>
+                            {% else %}
+                                <div class="topbar-links">
+                                    <div class="services-menu">
+                                        <button class="topbar-link services-toggle" type="button" aria-haspopup="true" aria-expanded="false">
+                                            Servicios
                                         </button>
-                                        <ul class="services-submenu">
-                                            <li><a href="https://sga2.itsjapon.edu.ec/login?next=/" target="_blank" rel="noopener noreferrer">Sistema de Gestion Academico</a></li>
-                                            <li><a href="https://pao.itsjapon.edu.ec/" target="_blank" rel="noopener noreferrer">Plataforma Virtual Presencial</a></li>
-                                            <li><a href="https://online.itsjapon.edu.ec/" target="_blank" rel="noopener noreferrer">Plataforma Virtual Online</a></li>
-                                            <li><a href="https://online.itsjapon.edu.ec/" target="_blank" rel="noopener noreferrer">Centro de idiomas</a></li>
+                                        <ul class="services-dropdown">
+                                            <li class="services-submenu-wrap">
+                                                <button class="services-submenu-toggle" type="button" aria-haspopup="true" aria-expanded="false">
+                                                    Plataformas tecnologicas
+                                                </button>
+                                                <ul class="services-submenu">
+                                                    <li><a href="https://sga2.itsjapon.edu.ec/login?next=/" target="_blank" rel="noopener noreferrer">Sistema de Gestion Academico</a></li>
+                                                    <li><a href="https://pao.itsjapon.edu.ec/" target="_blank" rel="noopener noreferrer">Plataforma Virtual Presencial</a></li>
+                                                    <li><a href="https://online.itsjapon.edu.ec/" target="_blank" rel="noopener noreferrer">Plataforma Virtual Online</a></li>
+                                                    <li><a href="https://online.itsjapon.edu.ec/" target="_blank" rel="noopener noreferrer">Centro de idiomas</a></li>
+                                                </ul>
+                                            </li>
+                                            <li class="services-submenu-wrap">
+                                                <button class="services-submenu-toggle" type="button" aria-haspopup="true" aria-expanded="false">
+                                                    Tutoriales
+                                                </button>
+                                                <ul class="services-submenu">
+                                                    <li><a href="https://www.youtube.com/watch?v=Za7Dx9A_q7g" target="_blank" rel="noopener noreferrer">Guia Rapida de Matriculacion en el Sistema de Gestion Academico</a></li>
+                                                    <li><a href="https://www.youtube.com/watch?v=13T-5Up11dU" target="_blank" rel="noopener noreferrer">Ingreso a la Plataforma de Aprendizaje Online PAO - ISTJ</a></li>
+                                                    <li><a href="https://www.youtube.com/watch?v=P4SJ428eT5s" target="_blank" rel="noopener noreferrer">Actualizacion de Banner en Cursos de PAO - ISTJ</a></li>
+                                                    <li><a href="https://www.youtube.com/watch?v=2ijUQ6i9M7o" target="_blank" rel="noopener noreferrer">Restauracion de un curso en PAO - ISTJ</a></li>
+                                                    <li><a href="https://www.youtube.com/watch?v=K-BPyk3p0uM" target="_blank" rel="noopener noreferrer">Inicio de Sesion en Office 365 - ISTJ</a></li>
+                                                    <li><a href="https://www.youtube.com/watch?v=lfFFRRphS0g" target="_blank" rel="noopener noreferrer">Restablecer Contrasena de Office 365 - ISTJ</a></li>
+                                                    <li><a href="https://www.youtube.com/watch?v=PB1gwCU0dHg" target="_blank" rel="noopener noreferrer">Configurar Reunion en Microsoft Teams - ISTJ</a></li>
+                                                    <li><a href="https://www.youtube.com/watch?v=y232Fxh_e9w" target="_blank" rel="noopener noreferrer">Guia Rapida - Seguimiento Curricular en el Sistema de Gestion Academico SGA2</a></li>
+                                                    <li><a href="https://www.youtube.com/watch?v=7XyJSy6J-YU" target="_blank" rel="noopener noreferrer">Tutorial para acceder a clases virtuales en PAO - Estudiantes</a></li>
+                                                </ul>
+                                            </li>
                                         </ul>
-                                    </li>
-                                    <li class="services-submenu-wrap">
-                                        <button class="services-submenu-toggle" type="button" aria-haspopup="true" aria-expanded="false">
-                                            Tutoriales
-                                        </button>
-                                        <ul class="services-submenu">
-                                            <li><a href="https://www.youtube.com/watch?v=Za7Dx9A_q7g" target="_blank" rel="noopener noreferrer">Guia Rapida de Matriculacion en el Sistema de Gestion Academico</a></li>
-                                            <li><a href="https://www.youtube.com/watch?v=13T-5Up11dU" target="_blank" rel="noopener noreferrer">Ingreso a la Plataforma de Aprendizaje Online PAO - ISTJ</a></li>
-                                            <li><a href="https://www.youtube.com/watch?v=P4SJ428eT5s" target="_blank" rel="noopener noreferrer">Actualizacion de Banner en Cursos de PAO - ISTJ</a></li>
-                                            <li><a href="https://www.youtube.com/watch?v=2ijUQ6i9M7o" target="_blank" rel="noopener noreferrer">Restauracion de un curso en PAO - ISTJ</a></li>
-                                            <li><a href="https://www.youtube.com/watch?v=K-BPyk3p0uM" target="_blank" rel="noopener noreferrer">Inicio de Sesion en Office 365 - ISTJ</a></li>
-                                            <li><a href="https://www.youtube.com/watch?v=lfFFRRphS0g" target="_blank" rel="noopener noreferrer">Restablecer Contrasena de Office 365 - ISTJ</a></li>
-                                            <li><a href="https://www.youtube.com/watch?v=PB1gwCU0dHg" target="_blank" rel="noopener noreferrer">Configurar Reunion en Microsoft Teams - ISTJ</a></li>
-                                            <li><a href="https://www.youtube.com/watch?v=y232Fxh_e9w" target="_blank" rel="noopener noreferrer">Guia Rapida - Seguimiento Curricular en el Sistema de Gestion Academico SGA2</a></li>
-                                            <li><a href="https://www.youtube.com/watch?v=7XyJSy6J-YU" target="_blank" rel="noopener noreferrer">Tutorial para acceder a clases virtuales en PAO - Estudiantes</a></li>
-                                        </ul>
-                                    </li>
-                                </ul>
-                            </div>
-                            <a class="btn btn-outline-primary btn-sm" href="{% url 'student_dashboard' %}">Panel</a>
-                            <a class="btn btn-outline-secondary btn-sm" href="{% url 'student_courses' %}">Nivelacion</a>
-                            <a class="btn btn-outline-secondary btn-sm" href="{% url 'student_training_courses' %}">Capacitacion</a>
-                            <a class="btn btn-outline-secondary btn-sm" href="{% url 'tests_index' %}">Tests</a>
-                            <a class="btn btn-outline-secondary btn-sm" href="{% url 'tracking_overview' %}">Seguimiento</a>
-                        {% endif %}
-                        <a class="btn btn-primary btn-sm" href="{% url 'logout' %}">Salir</a>
+                                    </div>
+                                    <a class="topbar-link {% if current_name == 'student_dashboard' %}is-active{% endif %}" href="{% url 'student_dashboard' %}">Panel</a>
+                                    <a class="topbar-link {% if current_name == 'student_courses' %}is-active{% endif %}" href="{% url 'student_courses' %}">Nivelacion</a>
+                                    <a class="topbar-link {% if current_name == 'student_training_courses' %}is-active{% endif %}" href="{% url 'student_training_courses' %}">Capacitacion</a>
+                                    <a class="topbar-link {% if current_name == 'tests_index' or current_name == 'take_test' or current_name == 'test_result' %}is-active{% endif %}" href="{% url 'tests_index' %}">Tests</a>
+                                    <a class="topbar-link {% if current_name == 'tracking_overview' %}is-active{% endif %}" href="{% url 'tracking_overview' %}">Seguimiento</a>
+                                    <a class="topbar-link topbar-link--accent" href="{% url 'logout' %}">Salir</a>
+                                </div>
+                            {% endif %}
+                        {% endwith %}
                     {% else %}
-                        <a class="btn btn-outline-primary btn-sm" href="{% url 'login' %}">Iniciar sesion</a>
-                        <a class="btn btn-primary btn-sm" href="{% url 'register' %}">Registrarse</a>
+                        <div class="topbar-links">
+                            <a class="topbar-link" href="{% url 'login' %}">Iniciar sesion</a>
+                            <a class="topbar-link topbar-link--accent" href="{% url 'register' %}">Registrarse</a>
+                        </div>
                     {% endif %}
                 </div>
             </div>

@@ -29,6 +29,19 @@ class TrackingCertificateTests(TestCase):
             respuesta_seguridad="luna",
         )
         self.client.login(username="estudiante_demo", password="ClaveSegura123")
+        self.professor = self.user_model.objects.create_user(
+            username="profesor_demo",
+            password="ClaveSegura123",
+            email="profesor@example.com",
+            first_name="Luis",
+            last_name="Morales",
+            cedula="0202020202",
+            carrera="Docencia",
+            telefono="0988888888",
+            tipo_usuario="profesor",
+            pregunta_seguridad="madre",
+            respuesta_seguridad="rosa",
+        )
 
     def test_tracking_overview_shows_missing_requirements_and_disabled_button(self):
         response = self.client.get(reverse("tracking_overview"))
@@ -136,3 +149,70 @@ class TrackingCertificateTests(TestCase):
                 completed=True,
             ).exists()
         )
+
+    def test_teacher_report_only_shows_students_with_diagnostic_result(self):
+        another_student = self.user_model.objects.create_user(
+            username="estudiante_sin_resultado",
+            password="ClaveSegura123",
+            email="sinresultado@example.com",
+            first_name="Pablo",
+            last_name="Rojas",
+            cedula="0303030303",
+            carrera="Marketing",
+            telefono="0977777777",
+            tipo_usuario="estudiante",
+            pregunta_seguridad="mascota",
+            respuesta_seguridad="sol",
+        )
+        diagnostic_test = Test.objects.create(
+            name="Diagnostico general",
+            type="conocimientos",
+            duration=30,
+            passing_score=70,
+            is_active=True,
+            created_by=self.professor,
+        )
+        Result.objects.create(
+            student=self.student,
+            test=diagnostic_test,
+            score=88,
+            passed=True,
+        )
+
+        self.client.logout()
+        self.client.login(username="profesor_demo", password="ClaveSegura123")
+
+        response = self.client.get(reverse("teacher_report"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Reporte del test diagnostico")
+        self.assertContains(response, self.student.cedula)
+        self.assertContains(response, self.student.first_name)
+        self.assertContains(response, self.student.last_name)
+        self.assertContains(response, "Aprobado")
+        self.assertNotContains(response, another_student.username)
+
+    def test_teacher_report_pdf_downloads_successfully(self):
+        diagnostic_test = Test.objects.create(
+            name="Diagnostico general",
+            type="conocimientos",
+            duration=30,
+            passing_score=70,
+            is_active=True,
+            created_by=self.professor,
+        )
+        Result.objects.create(
+            student=self.student,
+            test=diagnostic_test,
+            score=55,
+            passed=False,
+        )
+
+        self.client.logout()
+        self.client.login(username="profesor_demo", password="ClaveSegura123")
+
+        response = self.client.get(reverse("teacher_report_pdf"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn("reporte_seguimiento_docente.pdf", response["Content-Disposition"])

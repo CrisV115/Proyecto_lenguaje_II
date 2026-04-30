@@ -1,17 +1,22 @@
 from django.contrib import messages
+from django.http import HttpResponse
 from django.db.models import Prefetch
 from django.shortcuts import redirect, render
+from django.utils import timezone
 
 from certifications.models import Certificate
 from certifications.services import get_student_certificate_status
 from leveling.models import LevelingRecord
 from tests_academic.models import Result
-from tests_academic.utils import MANAGED_TEST_TYPES
 from users.decorators import role_required
 from users.models import Usuario
 
 from .models import Progress
-from .services import get_student_progress_entries, sync_student_induction_progress
+from .services import (
+    build_teacher_report_pdf,
+    get_student_progress_entries,
+    sync_student_induction_progress,
+)
 
 
 @role_required("estudiante")
@@ -50,55 +55,66 @@ def current_certificate(request):
 
 @role_required("profesor")
 def teacher_report(request):
+    return render(
+        request,
+        "tracking/teacher_report.html",
+        _build_teacher_report_context(),
+    )
+
+
+@role_required("profesor")
+def teacher_report_pdf(request):
+    context = _build_teacher_report_context()
+    generated_at = timezone.localtime().strftime("%d/%m/%Y %H:%M")
+    pdf_buffer = build_teacher_report_pdf(context["report_rows"], generated_at)
+    response = HttpResponse(pdf_buffer.getvalue(), content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename="reporte_seguimiento_docente.pdf"'
+    return response
+
+
+def _build_teacher_report_context():
     students = list(
         Usuario.objects.filter(tipo_usuario="estudiante")
-        .order_by("username")
+        .order_by("last_name", "first_name", "username")
         .prefetch_related(
             Prefetch(
                 "results",
                 queryset=Result.objects.select_related("test")
-                .filter(test__type__in=MANAGED_TEST_TYPES, test__course__isnull=True)
+                .filter(
+                    test__type="conocimientos",
+                    test__course__isnull=True,
+                )
                 .order_by("-submitted_at"),
-            ),
-            Prefetch("progress_entries", queryset=Progress.objects.order_by("phase")),
-            Prefetch("certificates", queryset=Certificate.objects.filter(valid=True)),
+                to_attr="diagnostic_results",
+            )
         )
     )
 
-    leveling_records = {
-        record.student_id: record
-        for record in LevelingRecord.objects.select_related("student")
-    }
-
     report_rows = []
     for student in students:
-        student_results = list(student.results.all())
-        student_certificates = list(student.certificates.all())
-        latest_result = student_results[0] if student_results else None
-        progress_map = {entry.phase: entry for entry in student.progress_entries.all()}
-        certificate = student_certificates[0] if student_certificates else None
-        leveling_record = leveling_records.get(student.id)
+        latest_result = student.diagnostic_results[0] if student.diagnostic_results else None
+        if latest_result is None:
+            continue
 
         report_rows.append(
             {
                 "student": student,
-                "latest_result": latest_result,
-                "initial_result_approved": bool(latest_result and latest_result.passed),
-                "leveling_progress": progress_map.get(Progress.Phases.LEVELING),
-                "leveling_record": leveling_record,
-                "certificate": certificate,
+                "cedula": student.cedula or "-",
+                "first_name": student.first_name or student.username,
+                "last_name": student.last_name or "-",
+                "diagnostic_result": latest_result,
+                "status_label": "Aprobado" if latest_result.passed else "Reprobado",
             }
         )
 
-    context = {
+    approved_count = sum(
+        1 for row in report_rows if row["diagnostic_result"].passed
+    )
+    failed_count = len(report_rows) - approved_count
+
+    return {
         "report_rows": report_rows,
         "students_count": len(report_rows),
-        "certified_count": sum(1 for row in report_rows if row["certificate"]),
-        "approved_initial_count": sum(
-            1 for row in report_rows if row["initial_result_approved"]
-        ),
-        "leveling_completed_count": sum(
-            1 for row in report_rows if row["leveling_progress"] and row["leveling_progress"].completed
-        ),
+        "approved_count": approved_count,
+        "failed_count": failed_count,
     }
-    return render(request, "tracking/teacher_report.html", context)

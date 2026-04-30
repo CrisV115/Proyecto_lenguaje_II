@@ -234,6 +234,135 @@ class AcademicFlowTests(TestCase):
         results_response = self.client.get(reverse("teacher_results"))
         self.assertEqual(results_response.status_code, 200)
         self.assertContains(results_response, self.user.username)
+        self.assertContains(results_response, "Reporte del test diagnostico")
+        self.assertContains(results_response, reverse("teacher_results_pdf"))
+
+    def test_teacher_results_include_diagnostic_report_for_own_students(self):
+        report_student = self.user_model.objects.create_user(
+            username="estudiante_reporte",
+            password="ClaveSegura123",
+            email="estudiante_reporte@example.com",
+            first_name="Ana",
+            last_name="Perez",
+            cedula="0102030405",
+            telefono="0999999999",
+            tipo_usuario="estudiante",
+            pregunta_seguridad="color",
+            respuesta_seguridad="azul",
+        )
+        other_professor = self.user_model.objects.create_user(
+            username="profesor_otro",
+            password="ClaveSegura123",
+            email="profesor_otro@example.com",
+            telefono="0977777777",
+            tipo_usuario="profesor",
+            pregunta_seguridad="ciudad",
+            respuesta_seguridad="quito",
+        )
+        other_student = self.user_model.objects.create_user(
+            username="estudiante_otro",
+            password="ClaveSegura123",
+            email="estudiante_otro@example.com",
+            first_name="Luis",
+            last_name="Mora",
+            cedula="1122334455",
+            telefono="0988888888",
+            tipo_usuario="estudiante",
+            pregunta_seguridad="comida",
+            respuesta_seguridad="arroz",
+        )
+        other_test = Test.objects.create(
+            name="Diagnostico externo",
+            type="conocimientos",
+            duration=20,
+            created_by=other_professor,
+        )
+        Result.objects.create(
+            student=report_student,
+            test=self.test,
+            score=84,
+            passed=True,
+        )
+        Result.objects.create(
+            student=other_student,
+            test=other_test,
+            score=42,
+            passed=False,
+        )
+
+        self.client.logout()
+        self.client.login(username="profesor_demo", password="ClaveSegura123")
+
+        response = self.client.get(reverse("teacher_results"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, report_student.cedula)
+        self.assertContains(response, report_student.first_name)
+        self.assertContains(response, report_student.last_name)
+        self.assertContains(response, "Aprobado")
+        self.assertNotContains(response, other_student.cedula)
+
+    def test_teacher_can_download_diagnostic_report_pdf_from_results(self):
+        report_student = self.user_model.objects.create_user(
+            username="estudiante_pdf",
+            password="ClaveSegura123",
+            email="estudiante_pdf@example.com",
+            first_name="Mario",
+            last_name="Lopez",
+            cedula="5566778899",
+            telefono="0966666666",
+            tipo_usuario="estudiante",
+            pregunta_seguridad="animal",
+            respuesta_seguridad="perro",
+        )
+        Result.objects.create(
+            student=report_student,
+            test=self.test,
+            score=55,
+            passed=False,
+        )
+
+        self.client.logout()
+        self.client.login(username="profesor_demo", password="ClaveSegura123")
+
+        response = self.client.get(reverse("teacher_results_pdf"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn(
+            "reporte_resultados_diagnostico.pdf",
+            response["Content-Disposition"],
+        )
+
+    def test_teacher_can_open_diagnostic_report_preview(self):
+        report_student = self.user_model.objects.create_user(
+            username="estudiante_preview",
+            password="ClaveSegura123",
+            email="estudiante_preview@example.com",
+            first_name="Carla",
+            last_name="Ruiz",
+            cedula="4455667788",
+            telefono="0955555555",
+            tipo_usuario="estudiante",
+            pregunta_seguridad="fruta",
+            respuesta_seguridad="pera",
+        )
+        Result.objects.create(
+            student=report_student,
+            test=self.test,
+            score=91,
+            passed=True,
+        )
+
+        self.client.logout()
+        self.client.login(username="profesor_demo", password="ClaveSegura123")
+
+        response = self.client.get(reverse("teacher_results_preview"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Vista previa del reporte")
+        self.assertContains(response, report_student.cedula)
+        self.assertContains(response, "Imprimir")
 
     def test_student_leveling_menu_only_appears_with_score_below_seven(self):
         Result.objects.create(

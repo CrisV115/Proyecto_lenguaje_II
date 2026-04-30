@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Vista previa del reporte{% endblock %}
+
+{% block content %}
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
+        <div>
+            <span class="section-kicker mb-3">Vista previa del reporte</span>
+            <h1 class="h2 mb-1 text-white">Reporte del test diagnostico</h1>
+            <p class="text-white-50 mb-0">Revisa el documento completo en pantalla antes de descargarlo o imprimirlo.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-light" id="print-report-button" type="button">Imprimir</button>
+            <a class="btn btn-outline-light" href="{% url 'teacher_results_pdf' %}">Descargar PDF</a>
+            <a class="btn btn-outline-light" href="{% url 'teacher_results' %}">Volver a resultados</a>
+        </div>
+    </div>
+</section>
+
+<div class="preview-toolbar">
+    <div>
+        <div class="soft-label mb-2">Documento listo para exportar</div>
+        <h2 class="h4 mb-0">Vista previa del reporte</h2>
+    </div>
+    <span class="badge-soft">{{ students_count }} estudiantes registrados</span>
+</div>
+
+<div class="report-preview-shell">
+    {% include "tests_academic/_teacher_diagnostic_report_preview.html" %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const printButton = document.getElementById("print-report-button");
+        if (!printButton) return;
+
+        printButton.addEventListener("click", function () {
+            window.print();
+        });
+    });
+</script>
+{% endblock %}

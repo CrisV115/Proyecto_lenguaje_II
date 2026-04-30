@@ -125,6 +125,13 @@ def build_certificate_pdf(student, certificate, request):
     if not REPORTLAB_AVAILABLE:
         return _build_basic_pdf(student, certificate, request)
 
+    try:
+        return _build_styled_certificate_pdf(student, certificate, request)
+    except Exception:
+        return _build_basic_pdf(student, certificate, request)
+
+
+def _build_styled_certificate_pdf(student, certificate, request):
     _register_pdf_fonts()
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)

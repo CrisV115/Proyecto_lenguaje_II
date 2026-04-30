@@ -11,6 +11,8 @@ urlpatterns = [
     path("profesor/tests/crear/", views.teacher_test_create, name="teacher_test_create"),
     path("profesor/tests/<int:test_id>/editar/", views.teacher_test_edit, name="teacher_test_edit"),
     path("profesor/resultados/", views.teacher_results, name="teacher_results"),
+    path("profesor/resultados/pdf/", views.teacher_results_pdf, name="teacher_results_pdf"),
+    path("profesor/resultados/vista-previa/", views.teacher_results_preview, name="teacher_results_preview"),
     path("profesor/resultados/<int:result_id>/", views.teacher_result_detail, name="teacher_result_detail"),
     path("profesor/estudiantes/", views.teacher_students, name="teacher_students"),
 ]

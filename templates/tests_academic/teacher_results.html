@@ -6,15 +6,83 @@
 <section class="hero-strip p-4 p-lg-5 mb-4">
     <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
         <div>
-            <span class="section-kicker mb-3">Seguimiento docente</span>
-            <h1 class="h2 mb-1 text-white">Resultados de estudiantes</h1>
-            <p class="text-white-50 mb-0">Consulta el desempeno por test y accede al detalle de cada respuesta enviada.</p>
+            <span class="section-kicker mb-3">Resultados docentes</span>
+            <h1 class="h2 mb-1 text-white">Resultados y reporte del test diagnostico</h1>
+            <p class="text-white-50 mb-0">Consulta el reporte consolidado de diagnostico, visualizalo antes de descargarlo y revisa cada intento enviado por tus estudiantes.</p>
         </div>
-        <a class="btn btn-outline-light" href="{% url 'teacher_dashboard' %}">Volver al panel</a>
+        <div class="d-flex gap-2 flex-wrap">
+            <a class="btn btn-light" href="{% url 'teacher_results_preview' %}" target="_blank" rel="noopener noreferrer">Vista previa</a>
+            <a class="btn btn-outline-light" href="{% url 'teacher_results_pdf' %}">Descargar PDF</a>
+            <a class="btn btn-outline-light" href="{% url 'teacher_dashboard' %}">Volver al panel</a>
+        </div>
     </div>
 </section>
 
+<div class="row g-4 mb-4" id="reporte-diagnostico">
+    <div class="col-sm-4 col-xl-4">
+        <div class="metric-card">
+            <div class="soft-label">Estudiantes evaluados</div>
+            <div class="metric-value">{{ students_count }}</div>
+        </div>
+    </div>
+    <div class="col-sm-4 col-xl-4">
+        <div class="metric-card">
+            <div class="soft-label">Aprobados</div>
+            <div class="metric-value">{{ approved_count }}</div>
+        </div>
+    </div>
+    <div class="col-sm-4 col-xl-4">
+        <div class="metric-card">
+            <div class="soft-label">Reprobados</div>
+            <div class="metric-value">{{ failed_count }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="report-studio mb-4">
+    <aside class="report-aside">
+        <div class="report-callout">
+            <span class="section-kicker" style="background: rgba(124, 58, 237, 0.08); border-color: rgba(124, 58, 237, 0.12); color: #5b21b6;">Reporte activo</span>
+            <h2 class="report-callout__title">Vista previa integrada</h2>
+            <p class="report-callout__text">Aqui puedes revisar como se vera el reporte antes de descargarlo. La vista previa muestra el resumen general y el listado oficial con cedula, nombres, apellidos y estado.</p>
+            <div class="report-callout__meta">
+                <div class="report-mini-stat">
+                    <span>Generado</span>
+                    <strong>{{ generated_at }}</strong>
+                </div>
+                <div class="report-mini-stat">
+                    <span>Formato</span>
+                    <strong>PDF + Vista web</strong>
+                </div>
+            </div>
+            <div class="d-flex gap-2 flex-wrap mt-3">
+                <a class="btn btn-primary" href="{% url 'teacher_results_preview' %}" target="_blank" rel="noopener noreferrer">Abrir vista completa</a>
+                <a class="btn btn-outline-primary" href="{% url 'teacher_results_pdf' %}">Descargar PDF</a>
+            </div>
+        </div>
+    </aside>
+
+    <div class="report-preview-shell">
+        <div class="report-preview-header">
+            <div>
+                <div class="soft-label mb-2">Preview del documento</div>
+                <h2 class="h4 mb-0">Reporte del test diagnostico</h2>
+                <p>Visualizacion rapida del reporte que tambien puedes abrir en una pagina independiente.</p>
+            </div>
+            <span class="badge-soft">{{ students_count }} estudiantes</span>
+        </div>
+        {% include "tests_academic/_teacher_diagnostic_report_preview.html" %}
+    </div>
+</div>
+
 <div class="glass-card rounded-4 p-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+        <div>
+            <div class="soft-label mb-2">Resultados individuales</div>
+            <h2 class="h4 mb-0">Intentos enviados</h2>
+        </div>
+        <span class="badge-soft">{{ results|length }} registros</span>
+    </div>
     {% if results %}
         <div class="table-responsive">
             <table class="table table-soft align-middle mb-0">
@@ -36,7 +104,7 @@
                             <td>{{ result.score|floatformat:2 }}%</td>
                             <td>
                                 <span class="status-pill {% if result.passed %}success{% else %}warn{% endif %}">
-                                    {% if result.passed %}Aprobado{% else %}Nivelacion{% endif %}
+                                    {% if result.passed %}Aprobado{% else %}Reprobado{% endif %}
                                 </span>
                             </td>
                             <td>{{ result.submitted_at|date:"d/m/Y H:i" }}</td>
