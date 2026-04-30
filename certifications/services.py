@@ -1,6 +1,8 @@
 from io import BytesIO
 from pathlib import Path
 
+import qrcode
+from qrcode.image.svg import SvgImage
 from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
@@ -11,41 +13,8 @@ from tracking.models import Progress
 
 from .models import Certificate
 
-try:
-    from reportlab.graphics import renderPDF
-    from reportlab.graphics.barcode import qr
-    from reportlab.graphics.shapes import Drawing
-    from reportlab.lib import colors
-    from reportlab.lib.pagesizes import A4
-    from reportlab.lib.units import mm
-    from reportlab.lib.utils import ImageReader
-    from reportlab.pdfbase import pdfmetrics
-    from reportlab.pdfbase.ttfonts import TTFont
-    from reportlab.pdfgen import canvas
-except ModuleNotFoundError:
-    REPORTLAB_AVAILABLE = False
-    renderPDF = None
-    qr = None
-    Drawing = None
-    colors = None
-    A4 = None
-    mm = None
-    ImageReader = None
-    pdfmetrics = None
-    TTFont = None
-    canvas = None
-else:
-    REPORTLAB_AVAILABLE = True
-
 
 COMPLETION_SOURCE_PHASE = "completion"
-PRIMARY = colors.HexColor("#7c3aed") if REPORTLAB_AVAILABLE else None
-PRIMARY_DEEP = colors.HexColor("#5b21b6") if REPORTLAB_AVAILABLE else None
-HEADER_BG = colors.HexColor("#52347e") if REPORTLAB_AVAILABLE else None
-MUTED = colors.HexColor("#6f6291") if REPORTLAB_AVAILABLE else None
-ACCENT = colors.HexColor("#facc15") if REPORTLAB_AVAILABLE else None
-SURFACE = colors.HexColor("#fffdf4") if REPORTLAB_AVAILABLE else None
-TEXT = colors.HexColor("#24143f") if REPORTLAB_AVAILABLE else None
 FONT_REGULAR = "Helvetica"
 FONT_BOLD = "Helvetica-Bold"
 
@@ -122,8 +91,20 @@ def get_or_create_completion_certificate(student):
 
 
 def build_certificate_pdf(student, certificate, request):
-    if not REPORTLAB_AVAILABLE:
-        return _build_basic_pdf(student, certificate, request)
+    from reportlab.graphics import renderPDF
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.lib.utils import ImageReader
+    from reportlab.pdfgen import canvas
+    from svglib.svglib import svg2rlg
+
+    primary = colors.HexColor("#7c3aed")
+    primary_deep = colors.HexColor("#5b21b6")
+    header_bg = colors.HexColor("#52347e")
+    muted = colors.HexColor("#6f6291")
+    surface = colors.HexColor("#fffdf4")
+    text = colors.HexColor("#24143f")
 
     try:
         return _build_styled_certificate_pdf(student, certificate, request)
@@ -143,14 +124,14 @@ def _build_styled_certificate_pdf(student, certificate, request):
     status = get_student_certificate_status(student)
     path_label = "Test diagnostico" if status["qualifying_path"] == "diagnostico" else "Nivelacion"
 
-    pdf.setFillColor(SURFACE)
+    pdf.setFillColor(surface)
     pdf.rect(0, 0, width, height, stroke=0, fill=1)
     pdf.setFillColor(colors.HexColor("#f6f0ff"))
     pdf.circle(width - 24 * mm, height - 24 * mm, 22 * mm, stroke=0, fill=1)
     pdf.setFillColor(colors.HexColor("#fef3c7"))
     pdf.circle(28 * mm, height - 40 * mm, 14 * mm, stroke=0, fill=1)
 
-    pdf.setFillColor(HEADER_BG)
+    pdf.setFillColor(header_bg)
     pdf.roundRect(22 * mm, height - 76 * mm, width - 44 * mm, 48 * mm, 8 * mm, stroke=0, fill=1)
 
     logo_path = Path(settings.BASE_DIR) / "static" / "img" / "channels4_profile.jpg"
@@ -171,7 +152,7 @@ def _build_styled_certificate_pdf(student, certificate, request):
     pdf.drawString(62 * mm, height - 55 * mm, "Universitario Japon")
     pdf.drawString(62 * mm, height - 62 * mm, f"Ruta habilitada por: {path_label}")
 
-    pdf.setFillColor(TEXT)
+    pdf.setFillColor(text)
     pdf.setFont(FONT_BOLD, 20)
     pdf.drawCentredString(width / 2, height - 96 * mm, "Felicitaciones")
 
@@ -194,10 +175,10 @@ def _build_styled_certificate_pdf(student, certificate, request):
     pdf.roundRect(24 * mm, height - 236 * mm, 94 * mm, 96 * mm, 6 * mm, stroke=1, fill=0)
     pdf.roundRect(136 * mm, height - 224 * mm, 40 * mm, 40 * mm, 6 * mm, stroke=1, fill=0)
 
-    pdf.setFillColor(PRIMARY_DEEP)
+    pdf.setFillColor(primary_deep)
     pdf.setFont(FONT_BOLD, 12)
     pdf.drawString(left_x, top_y, "Datos del estudiante")
-    pdf.setFillColor(TEXT)
+    pdf.setFillColor(text)
     pdf.setFont(FONT_BOLD, 10)
     value_x = left_x + 34 * mm
 
@@ -211,30 +192,48 @@ def _build_styled_certificate_pdf(student, certificate, request):
     for index, (label, value) in enumerate(student_rows, start=1):
         current_y = top_y - index * line_gap
         pdf.drawString(left_x, current_y, f"{label}:")
-        pdf.setFillColor(MUTED)
+        pdf.setFillColor(muted)
         pdf.setFont(FONT_REGULAR, 10)
         pdf.drawString(value_x, current_y, str(value))
-        pdf.setFillColor(TEXT)
+        pdf.setFillColor(text)
         pdf.setFont(FONT_BOLD, 10)
 
     validation_url = request.build_absolute_uri(
         reverse("verify_certificate", args=[certificate.code])
     )
-    pdf.setFillColor(PRIMARY_DEEP)
+    pdf.setFillColor(primary_deep)
     pdf.setFont(FONT_BOLD, 11)
     pdf.drawString(left_x, top_y - 7.7 * line_gap, "Codigo de validacion")
-    pdf.setFillColor(TEXT)
+    pdf.setFillColor(text)
     pdf.setFont(FONT_REGULAR, 9.5)
     pdf.drawString(left_x, top_y - 8.9 * line_gap, str(certificate.code))
+
+    qr = qrcode.QRCode(box_size=8, border=1)
+    qr.add_data(validation_url)
+    qr.make(fit=True)
+    qr_image = qr.make_image(image_factory=SvgImage)
+    qr_buffer = BytesIO()
+    qr_image.save(qr_buffer)
+    qr_buffer.seek(0)
 
     qr_size = 30 * mm
     qr_x = 141 * mm
     qr_y = height - 218 * mm
-    _draw_qr_code(pdf, validation_url, qr_x, qr_y, qr_size)
+    qr_drawing = svg2rlg(qr_buffer)
+    if qr_drawing:
+        source_width = float(qr_drawing.width or 1)
+        source_height = float(qr_drawing.height or 1)
+        scale_x = qr_size / source_width
+        scale_y = qr_size / source_height
+        pdf.saveState()
+        pdf.translate(qr_x, qr_y)
+        pdf.scale(scale_x, scale_y)
+        renderPDF.draw(qr_drawing, pdf, 0, 0)
+        pdf.restoreState()
 
     pdf.setStrokeColor(colors.HexColor("#d9cdf2"))
     pdf.line(28 * mm, 42 * mm, width - 28 * mm, 42 * mm)
-    pdf.setFillColor(MUTED)
+    pdf.setFillColor(muted)
     pdf.setFont(FONT_REGULAR, 9)
     pdf.drawString(28 * mm, 34 * mm, "Universitario Japon")
     pdf.drawRightString(width - 28 * mm, 34 * mm, validation_url)
@@ -246,6 +245,9 @@ def _build_styled_certificate_pdf(student, certificate, request):
 
 
 def _register_pdf_fonts():
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+
     global FONT_REGULAR, FONT_BOLD
 
     if "SegoeUI" in pdfmetrics.getRegisteredFontNames():
@@ -260,107 +262,3 @@ def _register_pdf_fonts():
         pdfmetrics.registerFont(TTFont("SegoeUI-Bold", str(bold_path)))
         FONT_REGULAR = "SegoeUI"
         FONT_BOLD = "SegoeUI-Bold"
-
-
-def _draw_qr_code(pdf, value, x, y, size):
-    qr_widget = qr.QrCodeWidget(value)
-    bounds = qr_widget.getBounds()
-    qr_width = max(bounds[2] - bounds[0], 1)
-    qr_height = max(bounds[3] - bounds[1], 1)
-    drawing = Drawing(
-        size,
-        size,
-        transform=[size / qr_width, 0, 0, size / qr_height, 0, 0],
-    )
-    drawing.add(qr_widget)
-    renderPDF.draw(drawing, pdf, x, y)
-
-
-def _build_basic_pdf(student, certificate, request):
-    buffer = BytesIO()
-    validation_url = request.build_absolute_uri(
-        reverse("verify_certificate", args=[certificate.code])
-    )
-    status = get_student_certificate_status(student)
-    path_label = "Test diagnostico" if status["qualifying_path"] == "diagnostico" else "Nivelacion"
-    full_name = student.get_full_name().strip() or student.display_name or student.username
-    issue_date = timezone.localtime(certificate.issue_date).strftime("%d/%m/%Y %H:%M")
-
-    lines = [
-        ("Helvetica-Bold", 18, "Certificado academico"),
-        ("Helvetica", 12, f"Se certifica que {full_name} completo su ruta academica."),
-        ("Helvetica", 12, f"Ruta habilitada por: {path_label}"),
-        ("Helvetica", 12, f"Codigo de validacion: {certificate.code}"),
-        ("Helvetica", 11, f"Fecha de emision: {issue_date}"),
-        ("Helvetica", 10, validation_url),
-    ]
-
-    stream_lines = ["BT"]
-    current_y = 790
-    for index, (font_name, font_size, text) in enumerate(lines):
-        escaped_text = _escape_pdf_text(text)
-        if index == 0:
-            stream_lines.extend(
-                [
-                    f"/F{1 if font_name == 'Helvetica-Bold' else 2} {font_size} Tf",
-                    f"72 {current_y} Td",
-                    f"({escaped_text}) Tj",
-                ]
-            )
-        else:
-            current_y -= 26 if index == 1 else 22
-            stream_lines.extend(
-                [
-                    f"72 {current_y} Td",
-                    f"/F{1 if font_name == 'Helvetica-Bold' else 2} {font_size} Tf",
-                    f"({escaped_text}) Tj",
-                ]
-            )
-    stream_lines.append("ET")
-    content = "\n".join(stream_lines).encode("latin-1", "replace")
-
-    objects = [
-        b"<< /Type /Catalog /Pages 2 0 R >>",
-        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-        (
-            b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] "
-            b"/Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> "
-            b"/Contents 6 0 R >>"
-        ),
-        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>",
-        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-        b"<< /Length %d >>\nstream\n%s\nendstream" % (len(content), content),
-    ]
-
-    buffer.write(b"%PDF-1.4\n")
-    offsets = [0]
-    for index, obj in enumerate(objects, start=1):
-        offsets.append(buffer.tell())
-        buffer.write(f"{index} 0 obj\n".encode("ascii"))
-        buffer.write(obj)
-        buffer.write(b"\nendobj\n")
-
-    xref_start = buffer.tell()
-    buffer.write(f"xref\n0 {len(objects) + 1}\n".encode("ascii"))
-    buffer.write(b"0000000000 65535 f \n")
-    for offset in offsets[1:]:
-        buffer.write(f"{offset:010d} 00000 n \n".encode("ascii"))
-    buffer.write(
-        (
-            f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\n"
-            f"startxref\n{xref_start}\n%%EOF"
-        ).encode("ascii")
-    )
-    buffer.seek(0)
-    return buffer
-
-
-def _escape_pdf_text(value):
-    return (
-        str(value)
-        .replace("\\", "\\\\")
-        .replace("(", "\\(")
-        .replace(")", "\\)")
-        .replace("\r", " ")
-        .replace("\n", " ")
-    )
