@@ -2,16 +2,10 @@ from io import BytesIO
 from pathlib import Path
 
 import qrcode
+from qrcode.image.svg import SvgImage
 from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import mm
-from reportlab.lib.utils import ImageReader
-from reportlab.pdfbase import pdfmetrics
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen import canvas
 
 from leveling.models import LevelingRecord
 from tests_academic.utils import get_student_managed_results_queryset
@@ -21,13 +15,6 @@ from .models import Certificate
 
 
 COMPLETION_SOURCE_PHASE = "completion"
-PRIMARY = colors.HexColor("#7c3aed")
-PRIMARY_DEEP = colors.HexColor("#5b21b6")
-HEADER_BG = colors.HexColor("#52347e")
-MUTED = colors.HexColor("#6f6291")
-ACCENT = colors.HexColor("#facc15")
-SURFACE = colors.HexColor("#fffdf4")
-TEXT = colors.HexColor("#24143f")
 FONT_REGULAR = "Helvetica"
 FONT_BOLD = "Helvetica-Bold"
 
@@ -104,6 +91,21 @@ def get_or_create_completion_certificate(student):
 
 
 def build_certificate_pdf(student, certificate, request):
+    from reportlab.graphics import renderPDF
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    from reportlab.lib.utils import ImageReader
+    from reportlab.pdfgen import canvas
+    from svglib.svglib import svg2rlg
+
+    primary = colors.HexColor("#7c3aed")
+    primary_deep = colors.HexColor("#5b21b6")
+    header_bg = colors.HexColor("#52347e")
+    muted = colors.HexColor("#6f6291")
+    surface = colors.HexColor("#fffdf4")
+    text = colors.HexColor("#24143f")
+
     _register_pdf_fonts()
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
@@ -115,14 +117,14 @@ def build_certificate_pdf(student, certificate, request):
     status = get_student_certificate_status(student)
     path_label = "Test diagnostico" if status["qualifying_path"] == "diagnostico" else "Nivelacion"
 
-    pdf.setFillColor(SURFACE)
+    pdf.setFillColor(surface)
     pdf.rect(0, 0, width, height, stroke=0, fill=1)
     pdf.setFillColor(colors.HexColor("#f6f0ff"))
     pdf.circle(width - 24 * mm, height - 24 * mm, 22 * mm, stroke=0, fill=1)
     pdf.setFillColor(colors.HexColor("#fef3c7"))
     pdf.circle(28 * mm, height - 40 * mm, 14 * mm, stroke=0, fill=1)
 
-    pdf.setFillColor(HEADER_BG)
+    pdf.setFillColor(header_bg)
     pdf.roundRect(22 * mm, height - 76 * mm, width - 44 * mm, 48 * mm, 8 * mm, stroke=0, fill=1)
 
     logo_path = Path(settings.BASE_DIR) / "static" / "img" / "channels4_profile.jpg"
@@ -143,7 +145,7 @@ def build_certificate_pdf(student, certificate, request):
     pdf.drawString(62 * mm, height - 55 * mm, "Universitario Japon")
     pdf.drawString(62 * mm, height - 62 * mm, f"Ruta habilitada por: {path_label}")
 
-    pdf.setFillColor(TEXT)
+    pdf.setFillColor(text)
     pdf.setFont(FONT_BOLD, 20)
     pdf.drawCentredString(width / 2, height - 96 * mm, "Felicitaciones")
 
@@ -166,10 +168,10 @@ def build_certificate_pdf(student, certificate, request):
     pdf.roundRect(24 * mm, height - 236 * mm, 94 * mm, 96 * mm, 6 * mm, stroke=1, fill=0)
     pdf.roundRect(136 * mm, height - 224 * mm, 40 * mm, 40 * mm, 6 * mm, stroke=1, fill=0)
 
-    pdf.setFillColor(PRIMARY_DEEP)
+    pdf.setFillColor(primary_deep)
     pdf.setFont(FONT_BOLD, 12)
     pdf.drawString(left_x, top_y, "Datos del estudiante")
-    pdf.setFillColor(TEXT)
+    pdf.setFillColor(text)
     pdf.setFont(FONT_BOLD, 10)
     value_x = left_x + 34 * mm
 
@@ -183,38 +185,48 @@ def build_certificate_pdf(student, certificate, request):
     for index, (label, value) in enumerate(student_rows, start=1):
         current_y = top_y - index * line_gap
         pdf.drawString(left_x, current_y, f"{label}:")
-        pdf.setFillColor(MUTED)
+        pdf.setFillColor(muted)
         pdf.setFont(FONT_REGULAR, 10)
         pdf.drawString(value_x, current_y, str(value))
-        pdf.setFillColor(TEXT)
+        pdf.setFillColor(text)
         pdf.setFont(FONT_BOLD, 10)
 
     validation_url = request.build_absolute_uri(
         reverse("verify_certificate", args=[certificate.code])
     )
-    pdf.setFillColor(PRIMARY_DEEP)
+    pdf.setFillColor(primary_deep)
     pdf.setFont(FONT_BOLD, 11)
     pdf.drawString(left_x, top_y - 7.7 * line_gap, "Codigo de validacion")
-    pdf.setFillColor(TEXT)
+    pdf.setFillColor(text)
     pdf.setFont(FONT_REGULAR, 9.5)
     pdf.drawString(left_x, top_y - 8.9 * line_gap, str(certificate.code))
 
     qr = qrcode.QRCode(box_size=8, border=1)
     qr.add_data(validation_url)
     qr.make(fit=True)
-    qr_image = qr.make_image(fill_color="black", back_color="white")
+    qr_image = qr.make_image(image_factory=SvgImage)
     qr_buffer = BytesIO()
-    qr_image.save(qr_buffer, format="PNG")
+    qr_image.save(qr_buffer)
     qr_buffer.seek(0)
 
     qr_size = 30 * mm
     qr_x = 141 * mm
     qr_y = height - 218 * mm
-    pdf.drawImage(ImageReader(qr_buffer), qr_x, qr_y, qr_size, qr_size, mask="auto")
+    qr_drawing = svg2rlg(qr_buffer)
+    if qr_drawing:
+        source_width = float(qr_drawing.width or 1)
+        source_height = float(qr_drawing.height or 1)
+        scale_x = qr_size / source_width
+        scale_y = qr_size / source_height
+        pdf.saveState()
+        pdf.translate(qr_x, qr_y)
+        pdf.scale(scale_x, scale_y)
+        renderPDF.draw(qr_drawing, pdf, 0, 0)
+        pdf.restoreState()
 
     pdf.setStrokeColor(colors.HexColor("#d9cdf2"))
     pdf.line(28 * mm, 42 * mm, width - 28 * mm, 42 * mm)
-    pdf.setFillColor(MUTED)
+    pdf.setFillColor(muted)
     pdf.setFont(FONT_REGULAR, 9)
     pdf.drawString(28 * mm, 34 * mm, "Universitario Japon")
     pdf.drawRightString(width - 28 * mm, 34 * mm, validation_url)
@@ -226,6 +238,9 @@ def build_certificate_pdf(student, certificate, request):
 
 
 def _register_pdf_fonts():
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+
     global FONT_REGULAR, FONT_BOLD
 
     if "SegoeUI" in pdfmetrics.getRegisteredFontNames():
