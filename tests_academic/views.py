@@ -13,18 +13,19 @@ from users.decorators import role_required
 
 from .forms import TeacherTestForm, TestForm
 from .models import Answer, Question, Result, StudentAnswer, Test
+from .utils import get_student_accessible_courses
 from .utils import (
-    get_student_visible_courses,
     get_teacher_editable_tests_queryset,
     get_teacher_managed_tests_queryset,
     student_has_approved_diagnostic,
 )
+from tracking.services import sync_student_induction_progress
 
 
 @role_required("estudiante")
 def index(request):
     diagnostic_approved = student_has_approved_diagnostic(request.user)
-    visible_courses = get_student_visible_courses(
+    accessible_courses = get_student_accessible_courses(
         request.user,
         diagnostic_approved=diagnostic_approved,
     )
@@ -33,7 +34,7 @@ def index(request):
             is_active=True,
         )
         .filter(
-            Q(course__in=visible_courses) | Q(course__isnull=True)
+            Q(course__in=accessible_courses) | Q(course__isnull=True)
         )
         .select_related("course")
         .distinct()
@@ -63,8 +64,8 @@ def take_test(request, test_id):
         id=test_id,
         is_active=True,
     )
-    if test.course and not get_student_visible_courses(request.user).filter(id=test.course_id).exists():
-        messages.warning(request, "No tienes ninguna nivelacion asignada para este test.")
+    if test.course and not get_student_accessible_courses(request.user).filter(id=test.course_id).exists():
+        messages.warning(request, "No tienes acceso a este test de curso.")
         return redirect("tests_index")
 
     if not _is_test_open(test, timezone.localtime()):
@@ -122,20 +123,16 @@ def take_test(request, test_id):
                     student_answer.result = result
                 StudentAnswer.objects.bulk_create(student_answers)
 
-                if not test.is_course_test:
+                if test.is_course_test and test.course and test.course.is_training:
+                    sync_student_induction_progress(request.user)
+                elif not test.is_course_test:
                     Progress.objects.update_or_create(
                         student=request.user,
                         phase=Progress.Phases.TEST,
                         defaults={"completed": True, "percentage": 100},
                     )
 
-                    if passed:
-                        Progress.objects.update_or_create(
-                            student=request.user,
-                            phase=Progress.Phases.INDUCTION,
-                            defaults={"completed": False, "percentage": 0},
-                        )
-                    else:
+                    if not passed:
                         Progress.objects.update_or_create(
                             student=request.user,
                             phase=Progress.Phases.LEVELING,

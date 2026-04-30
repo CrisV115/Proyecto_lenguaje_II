@@ -7,7 +7,13 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from tests_academic.models import Result
-from tests_academic.utils import get_student_visible_courses, student_has_approved_diagnostic
+from tests_academic.utils import (
+    get_student_accessible_courses,
+    get_student_training_courses,
+    get_student_visible_courses,
+    student_has_approved_diagnostic,
+)
+from tracking.services import sync_student_induction_progress
 from users.decorators import role_required
 from users.models import Usuario
 
@@ -33,29 +39,59 @@ def student_courses(request):
         request.user,
         diagnostic_approved=diagnostic_approved,
     )
-    course_cards = []
-    for course in courses:
-        progress = _calculate_course_completion(course, request.user)
-        course_cards.append(
-            {
-                "course": course,
-                "progress": progress,
-            }
-        )
-    return render(
+    return _render_student_course_list(
         request,
-        "courses/student_courses.html",
-        {
-            "course_cards": course_cards,
-            "diagnostic_approved": diagnostic_approved,
-        },
+        courses=courses,
+        page_title="Nivelaciones asignadas",
+        page_description="Aqui ves solo las nivelaciones que te asignaron desde administracion.",
+        course_badge_label="Nivelacion",
+        enter_label="Entrar a la nivelacion",
+        empty_message=(
+            "No tienes ninguna nivelacion asignada porque aprobaste el test diagnostico."
+            if diagnostic_approved
+            else "Aun no tienes ninguna nivelacion asignada."
+        ),
     )
 
 
 @role_required("profesor")
 def teacher_courses(request):
-    courses = request.user.courses_taught.order_by("name")
-    return render(request, "courses/teacher_courses.html", {"courses": courses})
+    courses = request.user.courses_taught.filter(is_training=False).order_by("name")
+    return _render_teacher_course_list(
+        request,
+        courses=courses,
+        page_title="Cursos de nivelacion",
+        page_description="Aqui ves solo los cursos de nivelacion que te asignaron desde administracion.",
+        course_badge_label="Nivelacion",
+        empty_message="Aun no tienes cursos de nivelacion asignados.",
+    )
+
+
+@role_required("estudiante")
+def student_training_courses(request):
+    courses = get_student_training_courses(request.user)
+    return _render_student_course_list(
+        request,
+        courses=courses,
+        page_title="Capacitaciones asignadas",
+        page_description="Aqui ves las capacitaciones que te asignaron desde administracion.",
+        course_badge_label="Capacitacion",
+        enter_label="Entrar a la capacitacion",
+        empty_message="Aun no tienes ninguna capacitacion asignada.",
+    )
+
+
+@role_required("profesor")
+def teacher_training_courses(request):
+    courses = request.user.courses_taught.filter(is_training=True).order_by("name")
+    return _render_teacher_course_list(
+        request,
+        courses=courses,
+        page_title="Capacitaciones asignadas",
+        page_description="Aqui ves solo las capacitaciones que te asignaron desde administracion.",
+        course_badge_label="Capacitacion",
+        empty_message="Aun no tienes capacitaciones asignadas.",
+    )
 
 
 @role_required("estudiante", "profesor")
@@ -226,7 +262,7 @@ def submit_course_activity(request, course_id, activity_id):
         CourseActivity.objects.select_related("course"),
         id=activity_id,
         course_id=course_id,
-        course__in=get_student_visible_courses(request.user),
+        course__in=get_student_accessible_courses(request.user),
     )
     form = CourseActivitySubmissionForm(request.POST, request.FILES)
     if not form.is_valid():
@@ -258,6 +294,9 @@ def submit_course_activity(request, course_id, activity_id):
             submission.attachment = form.cleaned_data["attachment"]
         submission.full_clean()
         submission.save()
+
+    if activity.course.is_training:
+        sync_student_induction_progress(request.user)
 
     messages.success(
         request,
@@ -593,8 +632,67 @@ def _build_teacher_progress_rows(course, students_queryset):
 
 def _get_course_for_user(user, course_id):
     if user.tipo_usuario == "estudiante":
-        visible_courses = get_student_visible_courses(user)
-        return get_object_or_404(visible_courses, id=course_id)
+        accessible_courses = get_student_accessible_courses(user)
+        return get_object_or_404(accessible_courses, id=course_id)
     if user.tipo_usuario == "profesor":
         return get_object_or_404(Course, id=course_id, teachers=user)
     raise Http404("No tienes permisos para este curso.")
+
+
+def _build_course_cards(courses, student):
+    course_cards = []
+    for course in courses:
+        progress = _calculate_course_completion(course, student)
+        course_cards.append(
+            {
+                "course": course,
+                "progress": progress,
+            }
+        )
+    return course_cards
+
+
+def _render_student_course_list(
+    request,
+    *,
+    courses,
+    page_title,
+    page_description,
+    course_badge_label,
+    enter_label,
+    empty_message,
+):
+    return render(
+        request,
+        "courses/student_courses.html",
+        {
+            "course_cards": _build_course_cards(courses, request.user),
+            "page_title": page_title,
+            "page_description": page_description,
+            "course_badge_label": course_badge_label,
+            "enter_label": enter_label,
+            "empty_message": empty_message,
+        },
+    )
+
+
+def _render_teacher_course_list(
+    request,
+    *,
+    courses,
+    page_title,
+    page_description,
+    course_badge_label,
+    empty_message,
+):
+    return render(
+        request,
+        "courses/teacher_courses.html",
+        {
+            "courses": courses,
+            "page_title": page_title,
+            "page_description": page_description,
+            "course_badge_label": course_badge_label,
+            "empty_message": empty_message,
+        },
+    )

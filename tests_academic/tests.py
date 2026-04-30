@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from certifications.models import Certificate
+from certifications.services import COMPLETION_SOURCE_PHASE
 from courses.models import Course, CourseActivity
 from leveling.models import LevelingRecord
 from tracking.models import Progress
@@ -72,7 +73,7 @@ class AcademicFlowTests(TestCase):
         )
         self.client.login(username="estudiante_demo", password="ClaveSegura123")
 
-    def test_correct_submission_creates_result_answers_and_induction_progress(self):
+    def test_correct_submission_creates_result_answers_and_test_progress(self):
         response = self.client.post(
             reverse("take_test", args=[self.test.id]),
             {
@@ -89,13 +90,14 @@ class AcademicFlowTests(TestCase):
         self.assertEqual(StudentAnswer.objects.filter(result=result).count(), 2)
 
         test_progress = Progress.objects.get(student=self.user, phase=Progress.Phases.TEST)
-        induction_progress = Progress.objects.get(
-            student=self.user,
-            phase=Progress.Phases.INDUCTION,
-        )
         self.assertTrue(test_progress.completed)
         self.assertEqual(test_progress.percentage, 100)
-        self.assertFalse(induction_progress.completed)
+        self.assertFalse(
+            Progress.objects.filter(
+                student=self.user,
+                phase=Progress.Phases.LEVELING,
+            ).exists()
+        )
 
     def test_multiple_attempts_are_blocked(self):
         Result.objects.create(
@@ -147,12 +149,12 @@ class AcademicFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         certificate = Certificate.objects.get(student=self.user)
-        self.assertEqual(certificate.source_phase, Progress.Phases.LEVELING)
+        self.assertEqual(certificate.source_phase, COMPLETION_SOURCE_PHASE)
         self.assertTrue(certificate.valid)
         record = LevelingRecord.objects.get(student=self.user)
         self.assertTrue(record.ready_for_completion)
 
-    def test_induction_completion_generates_certificate(self):
+    def test_passing_diagnostic_enables_certificate_without_additional_phase(self):
         self.client.post(
             reverse("take_test", args=[self.test.id]),
             {
@@ -162,36 +164,18 @@ class AcademicFlowTests(TestCase):
             follow=True,
         )
 
-        induction_page = self.client.get(reverse("induction_dashboard"))
-        self.assertEqual(induction_page.status_code, 200)
-
-        for module in induction_page.context["modules"]:
-            self.client.post(
-                reverse("induction_dashboard"),
-                {"action": "attend", "module_id": module.id},
-                follow=True,
-            )
-            self.client.post(
-                reverse("induction_dashboard"),
-                {"action": "complete", "module_id": module.id},
-                follow=True,
-            )
-
-        response = self.client.get(reverse("induction_constancy_detail"), follow=True)
-        self.assertEqual(response.status_code, 200)
-
-        induction_progress = Progress.objects.get(
-            student=self.user,
-            phase=Progress.Phases.INDUCTION,
-        )
-        self.assertTrue(induction_progress.completed)
-
         response = self.client.get(reverse("generate_certificate"), follow=True)
         self.assertEqual(response.status_code, 200)
 
         certificate = Certificate.objects.get(student=self.user)
-        self.assertEqual(certificate.source_phase, Progress.Phases.INDUCTION)
+        self.assertEqual(certificate.source_phase, COMPLETION_SOURCE_PHASE)
         self.assertTrue(certificate.valid)
+        self.assertFalse(
+            Progress.objects.filter(
+                student=self.user,
+                phase=Progress.Phases.LEVELING,
+            ).exists()
+        )
 
     def test_public_certificate_verification_page(self):
         self.client.post(
@@ -203,18 +187,6 @@ class AcademicFlowTests(TestCase):
             follow=True,
         )
 
-        induction_page = self.client.get(reverse("induction_dashboard"))
-        for module in induction_page.context["modules"]:
-            self.client.post(
-                reverse("induction_dashboard"),
-                {"action": "attend", "module_id": module.id},
-                follow=True,
-            )
-            self.client.post(
-                reverse("induction_dashboard"),
-                {"action": "complete", "module_id": module.id},
-                follow=True,
-            )
         self.client.get(reverse("generate_certificate"), follow=True)
 
         certificate = Certificate.objects.get(student=self.user)
@@ -354,7 +326,7 @@ class AcademicFlowTests(TestCase):
         self.assertEqual(dashboard_response.status_code, 200)
         self.assertContains(
             dashboard_response,
-            "No tienes actividades ni tests pendientes porque aprobaste el diagnostico.",
+            "No tienes actividades ni tests programados en tus cursos de capacitacion.",
         )
         self.assertNotContains(dashboard_response, course.name)
         self.assertNotContains(dashboard_response, "Guia 1")
@@ -390,6 +362,48 @@ class AcademicFlowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Nivelaciones asignadas")
         self.assertContains(response, "Entrar a la nivelacion")
+
+    def test_approved_student_still_sees_training_courses(self):
+        training_course = Course.objects.create(
+            name="Capacitacion Moodle",
+            description="Uso de plataforma",
+            is_training=True,
+        )
+        training_course.students.add(self.user)
+        training_course.teachers.add(self.professor)
+
+        diagnostic_test = Test.objects.create(
+            name="Diagnostico TIC",
+            type="conocimientos",
+            duration=20,
+            created_by=self.professor,
+        )
+        training_test = Test.objects.create(
+            name="Evaluacion de capacitacion",
+            type="curso",
+            duration=20,
+            created_by=self.professor,
+            course=training_course,
+        )
+        Result.objects.create(
+            student=self.user,
+            test=diagnostic_test,
+            score=90,
+            passed=True,
+        )
+
+        training_response = self.client.get(reverse("student_training_courses"))
+        self.assertEqual(training_response.status_code, 200)
+        self.assertContains(training_response, "Capacitaciones asignadas")
+        self.assertContains(training_response, training_course.name)
+
+        tests_response = self.client.get(reverse("tests_index"))
+        self.assertEqual(tests_response.status_code, 200)
+        self.assertContains(tests_response, training_test.name)
+
+        detail_response = self.client.get(reverse("course_detail", args=[training_course.id]))
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertContains(detail_response, "Volver a capacitaciones")
 
     def test_teacher_management_only_lists_diagnostic_and_vocational_tests(self):
         unsupported_test = Test.objects.create(

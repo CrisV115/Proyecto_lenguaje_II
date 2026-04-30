@@ -1,9 +1,12 @@
+from datetime import time
+
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
 from certifications.models import Certificate
 from certifications.services import COMPLETION_SOURCE_PHASE
+from courses.models import Course, CourseActivity, CourseActivitySubmission
 from leveling.models import LevelingRecord
 from tests_academic.models import Result, Test
 from tracking.models import Progress
@@ -98,3 +101,38 @@ class TrackingCertificateTests(TestCase):
 
         self.assertRedirects(response, reverse("tracking_overview"))
         self.assertFalse(Certificate.objects.filter(student=self.student).exists())
+
+    def test_tracking_overview_restores_induction_progress_from_training_courses(self):
+        training_course = Course.objects.create(
+            name="Capacitacion Office",
+            description="Herramientas base",
+            is_training=True,
+        )
+        training_course.students.add(self.student)
+
+        activity = CourseActivity.objects.create(
+            course=training_course,
+            title="Tutorial inicial",
+            description="Completar tutorial",
+            due_date=self.student.date_joined.date(),
+            opening_time=time(8, 0),
+            closing_time=time(10, 0),
+        )
+        CourseActivitySubmission.objects.create(
+            activity=activity,
+            student=self.student,
+            submission_text="Completado",
+        )
+
+        response = self.client.get(reverse("tracking_overview"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Induccion")
+        self.assertTrue(
+            Progress.objects.filter(
+                student=self.student,
+                phase=Progress.Phases.INDUCTION,
+                percentage=100,
+                completed=True,
+            ).exists()
+        )

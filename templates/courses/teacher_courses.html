@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}Cursos del profesor{% endblock %}
+{% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
 <section class="hero-strip p-4 p-lg-5 mb-4">
     <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
         <div>
             <span class="section-kicker mb-3">Profesor</span>
-            <h1 class="h2 mb-1 text-white">Cursos asignados</h1>
-            <p class="text-white-50 mb-0">Aqui ves solo los cursos que te asignaron desde administracion.</p>
+            <h1 class="h2 mb-1 text-white">{{ page_title }}</h1>
+            <p class="text-white-50 mb-0">{{ page_description }}</p>
         </div>
         <a class="btn btn-outline-light" href="{% url 'teacher_dashboard' %}">Volver al panel</a>
     </div>
@@ -20,7 +20,7 @@
             {% for course in courses %}
                 <div class="col-md-6 col-xl-4">
                     <div class="metric-card h-100">
-                        <div class="soft-label mb-2">Curso</div>
+                        <div class="soft-label mb-2">{{ course_badge_label }}</div>
                         <h2 class="h5">{{ course.name }}</h2>
                         <p class="text-secondary mb-2">{{ course.description|default:"Sin descripcion disponible." }}</p>
                         <div class="small text-secondary mb-3">{{ course.students.count }} estudiantes asignados</div>
@@ -30,7 +30,7 @@
             {% endfor %}
         </div>
     {% else %}
-        <div class="empty-state">Aun no tienes cursos asignados.</div>
+        <div class="empty-state">{{ empty_message }}</div>
     {% endif %}
 </div>
 {% endblock %}

@@ -5,7 +5,17 @@ from . import views
 
 urlpatterns = [
     path("estudiante/", views.student_courses, name="student_courses"),
+    path(
+        "estudiante/capacitacion/",
+        views.student_training_courses,
+        name="student_training_courses",
+    ),
     path("profesor/", views.teacher_courses, name="teacher_courses"),
+    path(
+        "profesor/capacitacion/",
+        views.teacher_training_courses,
+        name="teacher_training_courses",
+    ),
     path("<int:course_id>/actividades/", views.course_activities_module, name="course_activities_module"),
     path("<int:course_id>/asistencias/", views.course_attendance_module, name="course_attendance_module"),
     path(

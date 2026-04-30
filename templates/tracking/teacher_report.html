@@ -8,7 +8,7 @@
         <div>
             <span class="section-kicker mb-3">Seguimiento docente</span>
             <h1 class="h2 mb-1 text-white">Reporte academico consolidado</h1>
-            <p class="text-white-50 mb-0">Vista unica del diagnostico, la induccion, la nivelacion y la certificacion de cada estudiante.</p>
+            <p class="text-white-50 mb-0">Vista unica del diagnostico, la nivelacion y la certificacion de cada estudiante.</p>
         </div>
         <a class="btn btn-outline-light" href="{% url 'teacher_dashboard' %}">Volver al panel</a>
     </div>
@@ -23,8 +23,8 @@
     </div>
     <div class="col-sm-6 col-xl-3">
         <div class="metric-card">
-            <div class="soft-label">Induccion completa</div>
-            <div class="metric-value">{{ induction_completed_count }}</div>
+            <div class="soft-label">Resultados aprobados</div>
+            <div class="metric-value">{{ approved_initial_count }}</div>
         </div>
     </div>
     <div class="col-sm-6 col-xl-3">
@@ -48,8 +48,7 @@
                 <thead>
                     <tr>
                         <th>Estudiante</th>
-                        <th>Diagnostico</th>
-                        <th>Induccion</th>
+                        <th>Resultado inicial</th>
                         <th>Nivelacion</th>
                         <th>Certificacion</th>
                     </tr>
@@ -70,22 +69,13 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if row.induction_progress %}
-                                    <div>{{ row.induction_progress.percentage }}%</div>
-                                    <div class="text-secondary small">{{ row.induction_completed }} / {{ row.induction_required }} modulos</div>
-                                    {% if row.constancy %}
-                                        <div class="text-secondary small">Constancia: {{ row.constancy.code }}</div>
-                                    {% endif %}
-                                {% else %}
-                                    <span class="text-secondary">No habilitada</span>
-                                {% endif %}
-                            </td>
-                            <td>
                                 {% if row.leveling_record %}
                                     <div>{{ row.leveling_record.participation_percentage }}% participacion</div>
                                     <div class="text-secondary small">Examen: {{ row.leveling_record.final_exam_score|floatformat:2 }}%</div>
                                 {% elif row.leveling_progress %}
                                     <div>{{ row.leveling_progress.percentage }}%</div>
+                                {% elif row.initial_result_approved %}
+                                    <span class="text-secondary">No requerida</span>
                                 {% else %}
                                     <span class="text-secondary">No aplica</span>
                                 {% endif %}

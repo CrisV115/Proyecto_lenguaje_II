@@ -6,7 +6,6 @@ from django.db import models
 
 class Certificate(models.Model):
     SOURCE_PHASE_CHOICES = [
-        ("induction", "Induccion"),
         ("leveling", "Nivelacion"),
         ("completion", "Ruta academica completa"),
     ]

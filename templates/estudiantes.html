@@ -21,7 +21,7 @@
                     <thead>
                         <tr>
                             <th>Tipo</th>
-                            <th>Nivelacion</th>
+                            <th>Curso</th>
                             <th>Titulo</th>
                             <th>Fecha</th>
                             <th>Horario</th>
@@ -49,9 +49,9 @@
         {% else %}
             <div class="empty-state">
                 {% if diagnostic_approved %}
-                    No tienes actividades ni tests pendientes porque aprobaste el diagnostico.
+                    No tienes actividades ni tests programados en tus cursos de capacitacion.
                 {% else %}
-                    Aun no tienes actividades ni tests programados en tu nivelacion.
+                    Aun no tienes actividades ni tests programados en tus cursos asignados.
                 {% endif %}
             </div>
         {% endif %}
@@ -121,7 +121,7 @@
                     <p class="text-secondary">Ya tienes un certificado valido emitido.</p>
                     <a class="btn btn-success" href="{% url 'certificate_detail' certificate.id %}">Ver certificado</a>
                 {% else %}
-                    <div class="empty-state">El certificado se habilitara cuando completes induccion o nivelacion.</div>
+                    <div class="empty-state">El certificado se habilitara cuando apruebes el diagnostico o completes la nivelacion, si aplica.</div>
                 {% endif %}
             </div>
         </div>

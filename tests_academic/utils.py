@@ -1,5 +1,7 @@
 from django.db.models import Q
 
+from courses.models import Course
+
 from .models import Result, Test
 
 
@@ -17,11 +19,26 @@ def student_has_approved_diagnostic(student):
 
 
 def get_student_visible_courses(student, diagnostic_approved=None):
-    courses = student.courses_enrolled.order_by("name")
+    courses = student.courses_enrolled.filter(is_training=False).order_by("name")
     if diagnostic_approved is None:
         diagnostic_approved = student_has_approved_diagnostic(student)
     if diagnostic_approved:
         return courses.none()
+    return courses
+
+
+def get_student_training_courses(student):
+    if not getattr(student, "is_authenticated", False):
+        return Course.objects.none()
+    return student.courses_enrolled.filter(is_training=True).order_by("name")
+
+
+def get_student_accessible_courses(student, diagnostic_approved=None):
+    courses = student.courses_enrolled.order_by("name")
+    if diagnostic_approved is None:
+        diagnostic_approved = student_has_approved_diagnostic(student)
+    if diagnostic_approved:
+        return courses.filter(is_training=True)
     return courses
 
 
