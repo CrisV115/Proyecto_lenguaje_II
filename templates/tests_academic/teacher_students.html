@@ -21,8 +21,8 @@
                 <thead>
                     <tr>
                         <th>Materia</th>
-                        <th>Usuario</th>
-                        <th>Correo</th>
+                        <th>Nombres</th>
+                        <th>Apellidos</th>
                         <th>Completado</th>
                         <th>Detalle</th>
                         <th>Porcentaje</th>
@@ -33,8 +33,8 @@
                     {% for row in rows %}
                         <tr>
                             <td>{{ row.course.name }}</td>
-                            <td>{{ row.student.username }}</td>
-                            <td>{{ row.student.email }}</td>
+                            <td>{{ row.student.first_name|default:"-" }}</td>
+                            <td>{{ row.student.last_name|default:"-" }}</td>
                             <td>{{ row.completed_items }}/{{ row.total_items }}</td>
                             <td class="small text-secondary">Tareas {{ row.completed_activities }} - Tests {{ row.completed_tests }}</td>
                             <td><strong>{{ row.percentage|floatformat:0 }}%</strong></td>
