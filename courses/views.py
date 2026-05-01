@@ -8,6 +8,8 @@ from django.utils import timezone
 
 from tests_academic.models import Result
 from tests_academic.utils import (
+    get_course_students_for_teacher,
+    get_course_teachers_for_student,
     get_student_accessible_courses,
     get_student_training_courses,
     get_student_visible_courses,
@@ -15,7 +17,6 @@ from tests_academic.utils import (
 )
 from tracking.services import sync_student_induction_progress
 from users.decorators import role_required
-from users.models import Usuario
 
 from .forms import (
     CourseActivityForm,
@@ -98,8 +99,12 @@ def teacher_training_courses(request):
 def course_detail(request, course_id):
     course = _get_course_for_user(request.user, course_id)
 
-    students = course.students.order_by("username")
-    teachers = course.teachers.order_by("username")
+    if request.user.tipo_usuario == "profesor":
+        students = get_course_students_for_teacher(course, request.user)
+        teachers = course.teachers.order_by("username")
+    else:
+        students = course.students.order_by("username")
+        teachers = get_course_teachers_for_student(course, request.user)
     activities = list(
         course.activities.select_related("created_by")
         .prefetch_related("submissions__student")
@@ -124,6 +129,11 @@ def course_detail(request, course_id):
         for activity in activities:
             activity.student_submission = student_submissions.get(activity.id)
     else:
+        assigned_student_ids = list(students.values_list("id", flat=True))
+        for activity in activities:
+            activity.teacher_submission_count = activity.submissions.filter(
+                student_id__in=assigned_student_ids,
+            ).count()
         teacher_progress_rows = _build_teacher_progress_rows(course, students)
 
     return render(
@@ -160,6 +170,14 @@ def course_activities_module(request, course_id):
         }
         for activity in activities:
             activity.student_submission = student_submissions.get(activity.id)
+    else:
+        assigned_student_ids = list(
+            get_course_students_for_teacher(course, request.user).values_list("id", flat=True)
+        )
+        for activity in activities:
+            activity.teacher_submission_count = activity.submissions.filter(
+                student_id__in=assigned_student_ids,
+            ).count()
 
     return render(
         request,
@@ -209,8 +227,11 @@ def course_activity_submission_module(request, course_id, activity_id):
             },
         )
 
+    assigned_students = get_course_students_for_teacher(course, request.user)
     submissions = list(
-        activity.submissions.select_related("student", "graded_by").order_by("-submitted_at")
+        activity.submissions.filter(student__in=assigned_students)
+        .select_related("student", "graded_by")
+        .order_by("-submitted_at")
     )
     for submission in submissions:
         submission.grade_form = CourseActivityGradeForm(
@@ -318,12 +339,16 @@ def grade_course_activity_submission(request, course_id, activity_id, submission
             activity_id=activity_id,
         )
 
+    course = get_object_or_404(Course, id=course_id, teachers=request.user)
     submission = get_object_or_404(
         CourseActivitySubmission.objects.select_related("activity__course", "student"),
         id=submission_id,
         activity_id=activity_id,
-        activity__course_id=course_id,
-        activity__course__teachers=request.user,
+        activity__course=course,
+        student__in=get_course_students_for_teacher(
+            course,
+            request.user,
+        ),
     )
     form = CourseActivityGradeForm(
         request.POST,
@@ -359,7 +384,13 @@ def grade_course_activity_submission(request, course_id, activity_id, submission
 @role_required("profesor")
 def course_attendance_module(request, course_id):
     course = get_object_or_404(Course, id=course_id, teachers=request.user)
-    students = list(course.students.order_by("last_name", "first_name", "username"))
+    students = list(
+        get_course_students_for_teacher(course, request.user).order_by(
+            "last_name",
+            "first_name",
+            "username",
+        )
+    )
     sessions = list(course.class_sessions.order_by("session_number", "class_date", "id"))
 
     if request.method == "POST":
@@ -413,8 +444,12 @@ def course_attendance_module(request, course_id):
     else:
         form = CourseClassSessionForm()
 
+    student_ids = [student.id for student in students]
     for session in sessions:
-        present_count = session.attendances.filter(present=True).count()
+        present_count = session.attendances.filter(
+            present=True,
+            student_id__in=student_ids,
+        ).count()
         total_students = len(students)
         session.present_count = present_count
         session.total_students = total_students
@@ -434,13 +469,16 @@ def course_attendance_module(request, course_id):
 @role_required("profesor")
 def course_attendance_session_detail(request, course_id, session_id):
     course = get_object_or_404(Course, id=course_id, teachers=request.user)
+    assigned_students = get_course_students_for_teacher(course, request.user)
     session = get_object_or_404(
         CourseClassSession.objects.select_related("course"),
         id=session_id,
         course=course,
     )
     attendances = list(
-        session.attendances.select_related("student").order_by("student__last_name", "student__first_name", "student__username")
+        session.attendances.filter(student__in=assigned_students)
+        .select_related("student")
+        .order_by("student__last_name", "student__first_name", "student__username")
     )
 
     if request.method == "POST":
@@ -494,10 +532,8 @@ def course_attendance_session_detail(request, course_id, session_id):
 def teacher_student_course_detail(request, course_id, student_id):
     course = get_object_or_404(Course, id=course_id, teachers=request.user)
     student = get_object_or_404(
-        Usuario,
+        get_course_students_for_teacher(course, request.user),
         id=student_id,
-        tipo_usuario="estudiante",
-        courses_enrolled=course,
     )
     progress = _calculate_course_completion(course, student)
 

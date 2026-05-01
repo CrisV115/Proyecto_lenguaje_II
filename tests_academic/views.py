@@ -14,10 +14,12 @@ from users.decorators import role_required
 
 from .forms import TeacherTestForm, TestForm
 from .models import Answer, Question, Result, StudentAnswer, Test
-from .utils import get_student_accessible_courses
 from .utils import (
+    get_course_students_for_teacher,
+    get_student_accessible_courses,
     get_teacher_editable_tests_queryset,
     get_teacher_managed_tests_queryset,
+    sync_student_course_assignments,
     student_has_approved_diagnostic,
 )
 from tracking.services import build_teacher_report_pdf, sync_student_induction_progress
@@ -139,6 +141,10 @@ def take_test(request, test_id):
                             phase=Progress.Phases.LEVELING,
                             defaults={"completed": False, "percentage": 0},
                         )
+                    sync_student_course_assignments(
+                        request.user,
+                        diagnostic_approved=passed,
+                    )
 
             messages.success(request, "Test enviado y calificado correctamente.")
             return redirect("test_result", test_id=test.id)
@@ -382,13 +388,20 @@ def teacher_students(request):
     if not teacher_courses:
         return render(request, "tests_academic/teacher_students.html", {"rows": []})
 
+    course_students_map = {
+        course.id: list(get_course_students_for_teacher(course, request.user))
+        for course in teacher_courses
+    }
     all_students = {
         student.id: student
-        for course in teacher_courses
-        for student in course.students.all()
+        for students in course_students_map.values()
+        for student in students
     }
     all_student_ids = list(all_students.keys())
     course_ids = [course.id for course in teacher_courses]
+
+    if not all_student_ids:
+        return render(request, "tests_academic/teacher_students.html", {"rows": []})
 
     activity_completion = {
         (item["activity__course_id"], item["student_id"]): item["total"]
@@ -422,7 +435,7 @@ def teacher_students(request):
     rows = []
     for course in teacher_courses:
         total_items = total_activities.get(course.id, 0) + total_tests.get(course.id, 0)
-        for student in course.students.all():
+        for student in course_students_map[course.id]:
             completed_activities = activity_completion.get((course.id, student.id), 0)
             completed_tests = test_completion.get((course.id, student.id), 0)
             completed_items = completed_activities + completed_tests

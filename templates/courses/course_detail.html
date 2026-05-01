@@ -215,11 +215,9 @@
                                             </td>
                                         {% else %}
                                             <td>
-                                                {% with submissions=activity.submissions.all %}
                                                 <div class="small">
-                                                    {{ submissions|length }}/{{ students|length }} entregas
+                                                    {{ activity.teacher_submission_count|default:0 }}/{{ students|length }} entregas
                                                 </div>
-                                                {% endwith %}
                                             </td>
                                             <td class="text-end">
                                                 <a class="btn btn-outline-primary btn-sm" href="{% url 'course_activity_submission_module' course.id activity.id %}">
