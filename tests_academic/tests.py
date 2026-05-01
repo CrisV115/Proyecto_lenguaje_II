@@ -638,3 +638,201 @@ class AcademicFlowTests(TestCase):
         self.assertContains(response, "Aprobado en el test del curso.")
         self.assertContains(response, reverse("course_detail", args=[course.id]))
         self.assertEqual(Progress.objects.filter(student=self.user).count(), 0)
+
+    def test_failed_student_is_auto_enrolled_in_same_career_leveling_course(self):
+        student = self.user_model.objects.create_user(
+            username="estudiante_marketing",
+            password="ClaveSegura123",
+            email="estudiante_marketing@example.com",
+            carrera="Marketing",
+            telefono="0990000001",
+            tipo_usuario="estudiante",
+            pregunta_seguridad="color",
+            respuesta_seguridad="rojo",
+        )
+        teacher = self.user_model.objects.create_user(
+            username="profesor_marketing",
+            password="ClaveSegura123",
+            email="profesor_marketing@example.com",
+            carrera="Marketing",
+            telefono="0980000001",
+            tipo_usuario="profesor",
+            pregunta_seguridad="ciudad",
+            respuesta_seguridad="quito",
+        )
+        course = Course.objects.create(
+            name="Nivelacion Marketing",
+            description="Refuerzo comercial",
+        )
+        course.teachers.add(teacher)
+        diagnostic_test = Test.objects.create(
+            name="Diagnostico Marketing",
+            type="conocimientos",
+            duration=20,
+            created_by=teacher,
+        )
+        Result.objects.create(
+            student=student,
+            test=diagnostic_test,
+            score=45,
+            passed=False,
+        )
+
+        self.client.logout()
+        self.client.login(username="estudiante_marketing", password="ClaveSegura123")
+
+        response = self.client.get(reverse("student_courses"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, course.name)
+        self.assertTrue(course.students.filter(id=student.id).exists())
+
+    def test_training_courses_are_visible_to_failed_students_without_manual_assignment(self):
+        training_course = Course.objects.create(
+            name="Capacitacion Excel",
+            description="Herramientas de apoyo",
+            is_training=True,
+        )
+        training_course.teachers.add(self.professor)
+        training_test = Test.objects.create(
+            name="Quiz Excel",
+            type="curso",
+            duration=20,
+            created_by=self.professor,
+            course=training_course,
+        )
+        Result.objects.create(
+            student=self.user,
+            test=self.test,
+            score=50,
+            passed=False,
+        )
+
+        training_response = self.client.get(reverse("student_training_courses"))
+        tests_response = self.client.get(reverse("tests_index"))
+        detail_response = self.client.get(reverse("course_detail", args=[training_course.id]))
+
+        self.assertEqual(training_response.status_code, 200)
+        self.assertContains(training_response, training_course.name)
+        self.assertEqual(tests_response.status_code, 200)
+        self.assertContains(tests_response, training_test.name)
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertTrue(training_course.students.filter(id=self.user.id).exists())
+
+    def test_training_courses_are_visible_to_approved_students_without_manual_assignment(self):
+        training_course = Course.objects.create(
+            name="Capacitacion Word",
+            description="Edicion de documentos",
+            is_training=True,
+        )
+        training_course.teachers.add(self.professor)
+        training_test = Test.objects.create(
+            name="Quiz Word",
+            type="curso",
+            duration=20,
+            created_by=self.professor,
+            course=training_course,
+        )
+        Result.objects.create(
+            student=self.user,
+            test=self.test,
+            score=95,
+            passed=True,
+        )
+
+        training_response = self.client.get(reverse("student_training_courses"))
+        tests_response = self.client.get(reverse("tests_index"))
+
+        self.assertEqual(training_response.status_code, 200)
+        self.assertContains(training_response, training_course.name)
+        self.assertEqual(tests_response.status_code, 200)
+        self.assertContains(tests_response, training_test.name)
+        self.assertTrue(training_course.students.filter(id=self.user.id).exists())
+
+    def test_leveling_dashboard_only_shows_failed_students_from_teacher_career(self):
+        software_teacher = self.user_model.objects.create_user(
+            username="profesor_software",
+            password="ClaveSegura123",
+            email="profesor_software@example.com",
+            carrera="Software",
+            telefono="0980000002",
+            tipo_usuario="profesor",
+            pregunta_seguridad="mascota",
+            respuesta_seguridad="luna",
+        )
+        marketing_teacher = self.user_model.objects.create_user(
+            username="profesor_marketing_2",
+            password="ClaveSegura123",
+            email="profesor_marketing_2@example.com",
+            carrera="Marketing",
+            telefono="0980000003",
+            tipo_usuario="profesor",
+            pregunta_seguridad="mascota",
+            respuesta_seguridad="sol",
+        )
+        software_student = self.user_model.objects.create_user(
+            username="estudiante_software",
+            password="ClaveSegura123",
+            email="estudiante_software@example.com",
+            carrera="Software",
+            telefono="0990000002",
+            tipo_usuario="estudiante",
+            pregunta_seguridad="fruta",
+            respuesta_seguridad="uva",
+        )
+        marketing_student = self.user_model.objects.create_user(
+            username="estudiante_marketing_2",
+            password="ClaveSegura123",
+            email="estudiante_marketing_2@example.com",
+            carrera="Marketing",
+            telefono="0990000003",
+            tipo_usuario="estudiante",
+            pregunta_seguridad="fruta",
+            respuesta_seguridad="pera",
+        )
+        shared_course = Course.objects.create(
+            name="Nivelacion Compartida",
+            description="Curso comun",
+        )
+        shared_course.teachers.add(software_teacher, marketing_teacher)
+        shared_course.students.add(software_student, marketing_student)
+        software_test = Test.objects.create(
+            name="Diagnostico Software",
+            type="conocimientos",
+            duration=20,
+            created_by=software_teacher,
+        )
+        marketing_test = Test.objects.create(
+            name="Diagnostico Marketing 2",
+            type="conocimientos",
+            duration=20,
+            created_by=marketing_teacher,
+        )
+        Result.objects.create(
+            student=software_student,
+            test=software_test,
+            score=40,
+            passed=False,
+        )
+        Result.objects.create(
+            student=marketing_student,
+            test=marketing_test,
+            score=35,
+            passed=False,
+        )
+
+        self.client.logout()
+        self.client.login(username="profesor_software", password="ClaveSegura123")
+        software_response = self.client.get(reverse("teacher_leveling_dashboard"))
+
+        self.client.logout()
+        self.client.login(username="profesor_marketing_2", password="ClaveSegura123")
+        marketing_response = self.client.get(reverse("teacher_leveling_dashboard"))
+
+        self.assertEqual(software_response.status_code, 200)
+        self.assertContains(software_response, software_student.username)
+        self.assertNotContains(software_response, marketing_student.username)
+
+        self.assertEqual(marketing_response.status_code, 200)
+        self.assertContains(marketing_response, marketing_student.username)
+        self.assertNotContains(marketing_response, software_student.username)
