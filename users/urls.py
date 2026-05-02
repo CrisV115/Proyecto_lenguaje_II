@@ -14,4 +14,5 @@ urlpatterns = [
     path("meme/", views.meme, name="meme"),
     path("estudiantes/", views.student_dashboard, name="student_dashboard"),
     path("profesores/", views.teacher_dashboard, name="teacher_dashboard"),
+    path("profesores/seguimiento-tests/", views.teacher_test_monitor, name="teacher_test_monitor"),
 ]

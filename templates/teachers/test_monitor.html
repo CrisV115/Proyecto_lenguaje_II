@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Seguimiento de tests{% endblock %}
+
+{% block content %}
+<section class="hero-strip p-4 p-lg-5 mb-4">
+    <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
+        <div>
+            <span class="section-kicker mb-3">Panel docente</span>
+            <h1 class="h2 mb-1 text-white">Seguimiento de diagnostico y nivelacion</h1>
+            <p class="text-white-50 mb-0">Consulta que estudiantes rindieron el test diagnostico, quienes aprobaron y como avanza su nivelacion.</p>
+        </div>
+        <a class="btn btn-outline-light" href="{% url 'teacher_dashboard' %}">Volver al panel</a>
+    </div>
+</section>
+
+<div class="row g-4 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="soft-label">Estudiantes</div>
+            <div class="metric-value">{{ students_count }}</div>
+            <div class="text-secondary mt-2">Estudiantes registrados en tus cursos.</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="soft-label">Diagnostico rendido</div>
+            <div class="metric-value">{{ diagnostic_taken_count }}</div>
+            <div class="text-secondary mt-2">Ya enviaron al menos un test diagnostico.</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="soft-label">Diagnostico aprobado</div>
+            <div class="metric-value">{{ diagnostic_passed_count }}</div>
+            <div class="text-secondary mt-2">Pueden cerrar la ruta sin nivelacion.</div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="metric-card">
+            <div class="soft-label">Nivelacion aprobada</div>
+            <div class="metric-value">{{ leveling_passed_count }}</div>
+            <div class="text-secondary mt-2">Aprobaron la ruta por nivelacion.</div>
+        </div>
+    </div>
+</div>
+
+<div class="glass-card rounded-4 p-4">
+    {% if rows %}
+        <div class="table-responsive">
+            <table class="table table-soft align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Estudiante</th>
+                        <th>Cursos</th>
+                        <th>Diagnostico</th>
+                        <th>Nivelacion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            <td>
+                                <strong>{{ row.student.display_name }}</strong>
+                                <div class="text-secondary small">{{ row.student.email }}</div>
+                            </td>
+                            <td>
+                                <span class="text-secondary">{{ row.course_names }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex gap-2 flex-wrap align-items-center mb-1">
+                                    <span class="status-pill {% if row.diagnostic_status == 'Aprobado' %}success{% else %}{% if row.diagnostic_status == 'No aprobado' %}warn{% else %}warn{% endif %}{% endif %}">
+                                        {{ row.diagnostic_status }}
+                                    </span>
+                                </div>
+                                {% if row.diagnostic_result %}
+                                    <div class="text-secondary small">
+                                        {{ row.diagnostic_result.test.name }} · {{ row.diagnostic_result.score|floatformat:2 }}%
+                                    </div>
+                                {% else %}
+                                    <div class="text-secondary small">Todavia no rinde el diagnostico.</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex gap-2 flex-wrap align-items-center mb-1">
+                                    <span class="status-pill {% if row.leveling_status == 'Aprobada' or row.leveling_status == 'No requerida' %}success{% else %}warn{% endif %}">
+                                        {{ row.leveling_status }}
+                                    </span>
+                                </div>
+                                {% if row.leveling_record %}
+                                    <div class="text-secondary small">
+                                        Participacion: {{ row.leveling_record.participation_percentage }}% · Examen: {{ row.leveling_record.final_exam_score|floatformat:2 }}%
+                                    </div>
+                                {% elif row.leveling_progress %}
+                                    <div class="text-secondary small">
+                                        Avance registrado: {{ row.leveling_progress.percentage }}%
+                                    </div>
+                                {% else %}
+                                    <div class="text-secondary small">
+                                        {% if row.diagnostic_status == "No aprobado" %}
+                                            Sin registros de nivelacion todavia.
+                                        {% else %}
+                                            No requiere seguimiento de nivelacion.
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">Todavia no tienes estudiantes asignados en tus cursos para mostrar este seguimiento.</div>
+    {% endif %}
+</div>
+{% endblock %}

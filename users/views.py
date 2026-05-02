@@ -10,10 +10,15 @@ from django.utils import timezone
 
 from certifications.models import Certificate
 from courses.models import Course, CourseActivity
+from leveling.models import LevelingRecord
 from tests_academic.models import Result, Test
 from tests_academic.utils import (
+<<<<<<< Updated upstream
     get_course_students_for_teacher,
     get_student_accessible_courses,
+=======
+    MANAGED_TEST_TYPES,
+>>>>>>> Stashed changes
     get_student_managed_results_queryset,
     get_student_managed_tests_queryset,
     get_teacher_managed_tests_queryset,
@@ -234,6 +239,113 @@ def teacher_dashboard(request):
         "students": students,
     }
     return render(request, "teachers/dashboard.html", context)
+
+
+@login_required
+def teacher_test_monitor(request):
+    if request.user.tipo_usuario != "profesor":
+        return redirect_user_dashboard(request.user)
+
+    teacher_courses = list(
+        Course.objects.filter(teachers=request.user)
+        .prefetch_related("students")
+        .order_by("name")
+    )
+    if not teacher_courses:
+        return render(
+            request,
+            "teachers/test_monitor.html",
+            {
+                "rows": [],
+                "students_count": 0,
+                "diagnostic_taken_count": 0,
+                "diagnostic_passed_count": 0,
+                "leveling_passed_count": 0,
+            },
+        )
+
+    students_map = {}
+    for course in teacher_courses:
+        for student in course.students.all():
+            if student.tipo_usuario != "estudiante":
+                continue
+            if student.id not in students_map:
+                student.assigned_course_names = []
+                students_map[student.id] = student
+            students_map[student.id].assigned_course_names.append(course.name)
+
+    students = list(students_map.values())
+    student_ids = [student.id for student in students]
+
+    diagnostic_results = (
+        Result.objects.filter(
+            student_id__in=student_ids,
+            test__type__in=MANAGED_TEST_TYPES,
+            test__course__isnull=True,
+        )
+        .select_related("student", "test")
+        .order_by("student_id", "-submitted_at")
+    )
+    latest_result_by_student = {}
+    for result in diagnostic_results:
+        latest_result_by_student.setdefault(result.student_id, result)
+
+    leveling_records = {
+        record.student_id: record
+        for record in LevelingRecord.objects.filter(student_id__in=student_ids).select_related("student")
+    }
+    leveling_progress_map = {
+        progress.student_id: progress
+        for progress in Progress.objects.filter(
+            student_id__in=student_ids,
+            phase=Progress.Phases.LEVELING,
+        )
+    }
+
+    rows = []
+    for student in sorted(students, key=lambda item: item.username.lower()):
+        diagnostic_result = latest_result_by_student.get(student.id)
+        leveling_record = leveling_records.get(student.id)
+        leveling_progress = leveling_progress_map.get(student.id)
+
+        if diagnostic_result is None:
+            diagnostic_status = "Sin rendir"
+        elif diagnostic_result.passed:
+            diagnostic_status = "Aprobado"
+        else:
+            diagnostic_status = "No aprobado"
+
+        if diagnostic_result is None:
+            leveling_status = "No aplica"
+        elif diagnostic_result.passed:
+            leveling_status = "No requerida"
+        elif leveling_record and leveling_record.ready_for_completion:
+            leveling_status = "Aprobada"
+        elif leveling_record or leveling_progress:
+            leveling_status = "En proceso"
+        else:
+            leveling_status = "Pendiente"
+
+        rows.append(
+            {
+                "student": student,
+                "course_names": ", ".join(student.assigned_course_names),
+                "diagnostic_result": diagnostic_result,
+                "diagnostic_status": diagnostic_status,
+                "leveling_record": leveling_record,
+                "leveling_progress": leveling_progress,
+                "leveling_status": leveling_status,
+            }
+        )
+
+    context = {
+        "rows": rows,
+        "students_count": len(rows),
+        "diagnostic_taken_count": sum(1 for row in rows if row["diagnostic_result"]),
+        "diagnostic_passed_count": sum(1 for row in rows if row["diagnostic_status"] == "Aprobado"),
+        "leveling_passed_count": sum(1 for row in rows if row["leveling_status"] == "Aprobada"),
+    }
+    return render(request, "teachers/test_monitor.html", context)
 
 
 def _build_student_calendar_events(student, diagnostic_approved=None):
