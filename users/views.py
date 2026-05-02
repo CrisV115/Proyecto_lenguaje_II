@@ -171,7 +171,7 @@ def student_dashboard(request):
     latest_result = get_student_managed_results_queryset(request.user).select_related("test").first()
     progress_entries = get_student_progress_entries(request.user)
     student_tests = (
-        get_student_managed_tests_queryset()
+        get_student_managed_tests_queryset(request.user)
         .filter(is_active=True)
         .select_related("course")
         .distinct()
@@ -209,20 +209,12 @@ def teacher_dashboard(request):
         .prefetch_related("students")
         .order_by("name")
     )
-    course_student_ids = {
-        student.id
-        for course in teacher_courses
-        for student in get_course_students_for_teacher(course, request.user)
-    }
-    course_students = Usuario.objects.filter(
-        id__in=course_student_ids,
-        tipo_usuario="estudiante",
-    ).order_by("username")
+    course_students = _get_teacher_related_students(request.user, teacher_courses=teacher_courses)
 
     managed_tests = get_teacher_managed_tests_queryset(request.user)
     tests = managed_tests.select_related("created_by").prefetch_related("questions")[:5]
     recent_results = (
-        Result.objects.filter(test__in=managed_tests)
+        Result.objects.filter(test__in=managed_tests, student__in=course_students)
         .select_related("student", "test")[:8]
     )
     students = course_students[:8]
@@ -249,7 +241,8 @@ def teacher_test_monitor(request):
         .prefetch_related("students")
         .order_by("name")
     )
-    if not teacher_courses:
+    students = list(_get_teacher_related_students(request.user, teacher_courses=teacher_courses))
+    if not students:
         return render(
             request,
             "teachers/test_monitor.html",
@@ -262,17 +255,14 @@ def teacher_test_monitor(request):
             },
         )
 
-    students_map = {}
+    course_names_by_student_id = {}
     for course in teacher_courses:
-        for student in course.students.all():
-            if student.tipo_usuario != "estudiante":
-                continue
-            if student.id not in students_map:
-                student.assigned_course_names = []
-                students_map[student.id] = student
-            students_map[student.id].assigned_course_names.append(course.name)
+        for student in get_course_students_for_teacher(course, request.user):
+            course_names_by_student_id.setdefault(student.id, []).append(course.name)
 
-    students = list(students_map.values())
+    for student in students:
+        student.assigned_course_names = course_names_by_student_id.get(student.id, [])
+
     student_ids = [student.id for student in students]
 
     diagnostic_results = (
@@ -327,7 +317,7 @@ def teacher_test_monitor(request):
         rows.append(
             {
                 "student": student,
-                "course_names": ", ".join(student.assigned_course_names),
+                "course_names": ", ".join(student.assigned_course_names) or student.carrera or "Sin carrera",
                 "diagnostic_result": diagnostic_result,
                 "diagnostic_status": diagnostic_status,
                 "leveling_record": leveling_record,
@@ -403,6 +393,31 @@ def _build_student_calendar_events(student, diagnostic_approved=None):
         )
     )
     return events[:15]
+
+
+def _get_teacher_related_students(teacher, teacher_courses=None):
+    teacher_courses = teacher_courses or []
+    course_student_ids = {
+        student.id
+        for course in teacher_courses
+        for student in get_course_students_for_teacher(course, teacher)
+    }
+
+    students_queryset = Usuario.objects.filter(tipo_usuario="estudiante")
+    teacher_career = Usuario.normalize_carrera(getattr(teacher, "carrera", ""))
+    if teacher_career:
+        students_queryset = students_queryset.filter(carrera__iexact=teacher_career)
+    elif course_student_ids:
+        students_queryset = students_queryset.filter(id__in=course_student_ids)
+    else:
+        return Usuario.objects.none()
+
+    if course_student_ids:
+        students_queryset = students_queryset.filter(
+            Q(id__in=course_student_ids) | Q(carrera__iexact=teacher_career)
+        )
+
+    return students_queryset.distinct().order_by("username")
 
 
 def _is_test_open_now(test, now):

@@ -177,8 +177,16 @@ def get_student_managed_results_queryset(student):
     )
 
 
-def get_student_managed_tests_queryset():
-    return Test.objects.filter(
+def get_student_managed_tests_queryset(student=None):
+    queryset = Test.objects.filter(
         type__in=MANAGED_TEST_TYPES,
         course__isnull=True,
     )
+    if student is None:
+        return queryset
+
+    student_career = _normalize_career(getattr(student, "carrera", ""))
+    if not student_career:
+        return queryset.none()
+
+    return queryset.filter(created_by__carrera__iexact=student.carrera)

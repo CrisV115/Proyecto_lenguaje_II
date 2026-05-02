@@ -99,7 +99,7 @@ class Command(BaseCommand):
                 nombre = normalized[first_name_column]
                 apellido = normalized[last_name_column]
                 correo = normalized["Correo"].lower()
-                carrera = normalized["Carrera"]
+                carrera = user_model.normalize_carrera(normalized["Carrera"])
 
                 if not cedula or not nombre or not apellido or not correo:
                     raise CommandError(

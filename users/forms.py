@@ -89,6 +89,12 @@ class RegistroForm(UserCreationForm):
 
 
 class PrimerIngresoPasswordForm(PasswordChangeForm):
+    carrera = forms.ChoiceField(
+        label="Carrera",
+        choices=Usuario.CARRERA_CHOICES,
+        widget=forms.Select(attrs={"class": "form-select"}),
+    )
+
     old_password = forms.CharField(
         label="Contrasena actual",
         widget=forms.PasswordInput(attrs={"class": "form-control"}),
@@ -101,3 +107,16 @@ class PrimerIngresoPasswordForm(PasswordChangeForm):
         label="Confirmar nueva contrasena",
         widget=forms.PasswordInput(attrs={"class": "form-control"}),
     )
+
+    def __init__(self, user, *args, **kwargs):
+        super().__init__(user, *args, **kwargs)
+        self.fields["carrera"].initial = Usuario.normalize_carrera(
+            getattr(user, "carrera", "")
+        )
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.carrera = self.cleaned_data["carrera"]
+        if commit:
+            user.save()
+        return user
