@@ -61,7 +61,7 @@
                                                     <span class="status-pill warn">Pendiente</span>
                                                 {% endif %}
                                             {% else %}
-                                                <span class="badge-soft">{{ activity.submissions.count }} entregas</span>
+                                                <span class="badge-soft">{{ activity.teacher_submission_count|default:0 }} entregas</span>
                                             {% endif %}
                                         </td>
                                         <td class="text-end">

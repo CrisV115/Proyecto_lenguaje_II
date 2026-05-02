@@ -12,6 +12,7 @@ from certifications.models import Certificate
 from courses.models import Course, CourseActivity
 from tests_academic.models import Result, Test
 from tests_academic.utils import (
+    get_course_students_for_teacher,
     get_student_accessible_courses,
     get_student_managed_results_queryset,
     get_student_managed_tests_queryset,
@@ -208,12 +209,20 @@ def teacher_dashboard(request):
     if request.user.tipo_usuario != "profesor":
         return redirect_user_dashboard(request.user)
 
-    teacher_courses = Course.objects.filter(teachers=request.user)
-    course_students = (
-        Usuario.objects.filter(courses_enrolled__in=teacher_courses, tipo_usuario="estudiante")
-        .distinct()
-        .order_by("username")
+    teacher_courses = list(
+        Course.objects.filter(teachers=request.user)
+        .prefetch_related("students")
+        .order_by("name")
     )
+    course_student_ids = {
+        student.id
+        for course in teacher_courses
+        for student in get_course_students_for_teacher(course, request.user)
+    }
+    course_students = Usuario.objects.filter(
+        id__in=course_student_ids,
+        tipo_usuario="estudiante",
+    ).order_by("username")
 
     managed_tests = get_teacher_managed_tests_queryset(request.user)
     tests = managed_tests.select_related("created_by").prefetch_related("questions")[:5]

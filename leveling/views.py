@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.db.models import OuterRef, Subquery
 from django.shortcuts import redirect, render
 
+from tests_academic.utils import get_course_students_for_teacher
 from tests_academic.models import Result
 from tracking.models import Progress
 from users.decorators import role_required
@@ -85,6 +86,25 @@ def complete_leveling(request):
 
 @role_required("profesor")
 def teacher_dashboard(request):
+    teacher_courses = list(
+        request.user.courses_taught.filter(is_training=False).prefetch_related("students")
+    )
+    student_ids = {
+        student.id
+        for course in teacher_courses
+        for student in get_course_students_for_teacher(course, request.user)
+    }
+
+    if not student_ids:
+        student_ids = set(
+            Result.objects.filter(
+                test__created_by=request.user,
+                passed=False,
+            ).values_list("student_id", flat=True)
+        )
+    if not student_ids:
+        return render(request, "leveling/teacher_dashboard.html", {"students_in_leveling": []})
+
     latest_results = Result.objects.filter(student=OuterRef("pk")).order_by("-submitted_at")
     leveling_progress = Progress.objects.filter(
         student=OuterRef("pk"),
@@ -92,7 +112,7 @@ def teacher_dashboard(request):
     )
 
     students = (
-        Usuario.objects.filter(tipo_usuario="estudiante")
+        Usuario.objects.filter(tipo_usuario="estudiante", id__in=student_ids)
         .annotate(
             latest_score=Subquery(latest_results.values("score")[:1]),
             latest_test_name=Subquery(latest_results.values("test__name")[:1]),

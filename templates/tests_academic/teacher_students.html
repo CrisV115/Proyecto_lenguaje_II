@@ -21,8 +21,8 @@
                 <thead>
                     <tr>
                         <th>Materia</th>
-                        <th>Usuario</th>
-                        <th>Correo</th>
+                        <th>Nombres</th>
+                        <th>Apellidos</th>
                         <th>Completado</th>
                         <th>Detalle</th>
                         <th>Porcentaje</th>
@@ -32,22 +32,15 @@
                 <tbody>
                     {% for row in rows %}
                         <tr>
-<<<<<<< HEAD
                             <td>{{ row.course.name }}</td>
-                            <td>{{ row.student.username }}</td>
-                            <td>{{ row.student.email }}</td>
+                            <td>{{ row.student.first_name|default:"-" }}</td>
+                            <td>{{ row.student.last_name|default:"-" }}</td>
                             <td>{{ row.completed_items }}/{{ row.total_items }}</td>
                             <td class="small text-secondary">Tareas {{ row.completed_activities }} - Tests {{ row.completed_tests }}</td>
                             <td><strong>{{ row.percentage|floatformat:0 }}%</strong></td>
                             <td class="text-end">
                                 <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_student_course_detail' row.course.id row.student.id %}">Ver detalle</a>
                             </td>
-=======
-                            <td>{{ student.display_name }}</td>
-                            <td>{{ student.email }}</td>
-                            <td>{{ student.telefono }}</td>
-                            <td>{{ student.results_count }}</td>
->>>>>>> 5fb10494317007ec87c9063901df59d07d548623
                         </tr>
                     {% endfor %}
                 </tbody>
