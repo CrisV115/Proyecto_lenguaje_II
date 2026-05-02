@@ -142,6 +142,8 @@ DEFAULT_FROM_EMAIL = config(
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "student_dashboard"
 LOGOUT_REDIRECT_URL = "home"
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_SAVE_EVERY_REQUEST = True
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

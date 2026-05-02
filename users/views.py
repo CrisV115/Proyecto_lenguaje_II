@@ -21,7 +21,7 @@ from tests_academic.utils import (
 )
 from tracking.services import get_student_progress_entries, sync_student_induction_progress
 
-from .forms import PrimerIngresoPasswordForm, RegistroForm
+from .forms import PrimerIngresoPasswordForm
 from .models import Usuario
 
 
@@ -40,20 +40,11 @@ def home(request):
 
 
 def register(request):
-    if request.method == "POST":
-        form = RegistroForm(request.POST)
-        if form.is_valid():
-            usuario = form.save(commit=False)
-            usuario.email = form.cleaned_data["email"]
-            usuario.save()
-            messages.success(request, "Usuario registrado correctamente.")
-            return redirect("login")
-
-        messages.error(request, "Corrija los errores del formulario.")
-    else:
-        form = RegistroForm()
-
-    return render(request, "register.html", {"form": form})
+    messages.warning(
+        request,
+        "El registro publico esta deshabilitado temporalmente. Los usuarios solo pueden cargarse desde los archivos CSV autorizados.",
+    )
+    return redirect("login")
 
 
 def login_view(request):
@@ -81,6 +72,7 @@ def login_view(request):
             return redirect("login")
 
         login(request, user)
+        request.session.set_expiry(0)
         return redirect_user_dashboard(user)
 
     return render(request, "login.html")
