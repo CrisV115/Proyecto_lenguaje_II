@@ -13,17 +13,15 @@ from courses.models import Course, CourseActivity
 from leveling.models import LevelingRecord
 from tests_academic.models import Result, Test
 from tests_academic.utils import (
-<<<<<<< Updated upstream
     get_course_students_for_teacher,
     get_student_accessible_courses,
-=======
     MANAGED_TEST_TYPES,
->>>>>>> Stashed changes
     get_student_managed_results_queryset,
     get_student_managed_tests_queryset,
     get_teacher_managed_tests_queryset,
     student_has_approved_diagnostic,
 )
+from tracking.models import Progress
 from tracking.services import get_student_progress_entries, sync_student_induction_progress
 
 from .forms import PrimerIngresoPasswordForm
