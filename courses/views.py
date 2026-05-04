@@ -44,7 +44,7 @@ def student_courses(request):
         request,
         courses=courses,
         page_title="Nivelaciones asignadas",
-        page_description="Aqui ves solo las nivelaciones que te asignaron desde administracion.",
+        page_description="Aqui ves las nivelaciones que el sistema te asigno automaticamente segun tu carrera y resultado diagnostico.",
         course_badge_label="Nivelacion",
         enter_label="Entrar a la nivelacion",
         empty_message=(
@@ -62,7 +62,7 @@ def teacher_courses(request):
         request,
         courses=courses,
         page_title="Cursos de nivelacion",
-        page_description="Aqui ves solo los cursos de nivelacion que te asignaron desde administracion.",
+        page_description="Aqui ves las nivelaciones que administras y sus estudiantes asignados automaticamente por carrera.",
         course_badge_label="Nivelacion",
         empty_message="Aun no tienes cursos de nivelacion asignados.",
     )
@@ -74,11 +74,11 @@ def student_training_courses(request):
     return _render_student_course_list(
         request,
         courses=courses,
-        page_title="Capacitaciones asignadas",
-        page_description="Aqui ves las capacitaciones que te asignaron desde administracion.",
-        course_badge_label="Capacitacion",
-        enter_label="Entrar a la capacitacion",
-        empty_message="Aun no tienes ninguna capacitacion asignada.",
+        page_title="Cursos de induccion",
+        page_description="Aqui ves los cursos de induccion base que se habilitan para todos los estudiantes.",
+        course_badge_label="Induccion",
+        enter_label="Entrar al curso",
+        empty_message="Aun no tienes cursos de induccion disponibles.",
     )
 
 
@@ -88,10 +88,10 @@ def teacher_training_courses(request):
     return _render_teacher_course_list(
         request,
         courses=courses,
-        page_title="Capacitaciones asignadas",
-        page_description="Aqui ves solo las capacitaciones que te asignaron desde administracion.",
-        course_badge_label="Capacitacion",
-        empty_message="Aun no tienes capacitaciones asignadas.",
+        page_title="Cursos de induccion",
+        page_description="Aqui administras los cursos de induccion y los docentes asignados manualmente.",
+        course_badge_label="Induccion",
+        empty_message="Aun no tienes cursos de induccion asignados.",
     )
 
 

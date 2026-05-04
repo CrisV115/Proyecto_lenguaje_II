@@ -1213,7 +1213,7 @@
                                 <div class="topbar-links">
                                     <a class="topbar-link {% if current_name == 'teacher_dashboard' %}is-active{% endif %}" href="{% url 'teacher_dashboard' %}">Panel docente</a>
                                     <a class="topbar-link {% if current_name == 'teacher_courses' or current_name == 'course_detail' %}is-active{% endif %}" href="{% url 'teacher_courses' %}">Nivelaci&oacute;n</a>
-                                    <a class="topbar-link {% if current_name == 'teacher_training_courses' %}is-active{% endif %}" href="{% url 'teacher_training_courses' %}">Capacitacion</a>
+                                    <a class="topbar-link {% if current_name == 'teacher_training_courses' %}is-active{% endif %}" href="{% url 'teacher_training_courses' %}">Induccion</a>
                                     <a class="topbar-link {% if current_name == 'teacher_tests' or current_name == 'teacher_test_create' or current_name == 'teacher_test_edit' %}is-active{% endif %}" href="{% url 'teacher_tests' %}">Gestionar tests</a>
                                     <a class="topbar-link {% if current_name == 'teacher_results' or current_name == 'teacher_result_detail' or current_name == 'teacher_results_preview' %}is-active{% endif %}" href="{% url 'teacher_results' %}">Resultados</a>
                                     <a class="topbar-link {% if current_name == 'teacher_students' %}is-active{% endif %}" href="{% url 'teacher_students' %}">Estudiantes</a>
@@ -1257,7 +1257,7 @@
                                     </div>
                                     <a class="topbar-link {% if current_name == 'student_dashboard' %}is-active{% endif %}" href="{% url 'student_dashboard' %}">Panel</a>
                                     <a class="topbar-link {% if current_name == 'student_courses' %}is-active{% endif %}" href="{% url 'student_courses' %}">Nivelacion</a>
-                                    <a class="topbar-link {% if current_name == 'student_training_courses' %}is-active{% endif %}" href="{% url 'student_training_courses' %}">Capacitacion</a>
+                                    <a class="topbar-link {% if current_name == 'student_training_courses' %}is-active{% endif %}" href="{% url 'student_training_courses' %}">Induccion</a>
                                     <a class="topbar-link {% if current_name == 'tests_index' or current_name == 'take_test' or current_name == 'test_result' %}is-active{% endif %}" href="{% url 'tests_index' %}">Tests</a>
                                     <a class="topbar-link {% if current_name == 'tracking_overview' %}is-active{% endif %}" href="{% url 'tracking_overview' %}">Seguimiento</a>
                                     <a class="topbar-link topbar-link--accent" href="{% url 'logout' %}">Salir</a>

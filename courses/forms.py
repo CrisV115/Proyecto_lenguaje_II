@@ -1,6 +1,72 @@
 from django import forms
 
-from .models import CourseActivity, CourseActivitySubmission
+from users.models import Usuario
+
+from .models import Course, CourseActivity, CourseActivitySubmission
+
+
+class CourseAdminForm(forms.ModelForm):
+    class Meta:
+        model = Course
+        fields = [
+            "name",
+            "career",
+            "description",
+            "welcome_message",
+            "teachers",
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "career" not in self.fields:
+            return
+
+        careers = sorted(
+            {
+                career
+                for career in Usuario.objects.exclude(carrera="")
+                .values_list("carrera", flat=True)
+                if career
+            },
+            key=str.casefold,
+        )
+        current_career = Usuario.normalize_carrera(
+            getattr(self.instance, "career", "")
+        )
+        if current_career and current_career not in careers:
+            careers.append(current_career)
+            careers.sort(key=str.casefold)
+
+        self.fields["career"].required = False
+        self.fields["career"].label = "Carrera de la nivelacion"
+        self.fields["career"].widget = forms.Select(
+            choices=[
+                ("", "Seleccione una carrera"),
+                *[(career, career) for career in careers],
+            ]
+        )
+        self.fields["career"].help_text = (
+            "Las carreras se cargan automaticamente desde los estudiantes y profesores importados."
+        )
+
+    def clean_career(self):
+        return Usuario.normalize_carrera(self.cleaned_data.get("career", ""))
+
+    def clean(self):
+        cleaned_data = super().clean()
+        career = cleaned_data.get("career", "")
+
+        if getattr(self.instance, "is_training", False):
+            cleaned_data["career"] = ""
+            return cleaned_data
+
+        if "career" in self.fields and not career:
+            self.add_error(
+                "career",
+                "Selecciona la carrera a la que pertenece esta nivelacion.",
+            )
+
+        return cleaned_data
 
 
 class CourseActivityForm(forms.ModelForm):

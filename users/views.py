@@ -403,21 +403,17 @@ def _get_teacher_related_students(teacher, teacher_courses=None):
         for student in get_course_students_for_teacher(course, teacher)
     }
 
-    students_queryset = Usuario.objects.filter(tipo_usuario="estudiante")
-    teacher_career = Usuario.normalize_carrera(getattr(teacher, "carrera", ""))
-    if teacher_career:
-        students_queryset = students_queryset.filter(carrera__iexact=teacher_career)
-    elif course_student_ids:
-        students_queryset = students_queryset.filter(id__in=course_student_ids)
-    else:
+    if not course_student_ids:
         return Usuario.objects.none()
 
-    if course_student_ids:
-        students_queryset = students_queryset.filter(
-            Q(id__in=course_student_ids) | Q(carrera__iexact=teacher_career)
+    return (
+        Usuario.objects.filter(
+            tipo_usuario="estudiante",
+            id__in=course_student_ids,
         )
-
-    return students_queryset.distinct().order_by("username")
+        .distinct()
+        .order_by("username")
+    )
 
 
 def _is_test_open_now(test, now):

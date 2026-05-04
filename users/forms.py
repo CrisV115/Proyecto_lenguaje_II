@@ -92,6 +92,7 @@ class PrimerIngresoPasswordForm(PasswordChangeForm):
     carrera = forms.ChoiceField(
         label="Carrera",
         choices=Usuario.CARRERA_CHOICES,
+        required=False,
         widget=forms.Select(attrs={"class": "form-select"}),
     )
 
@@ -116,7 +117,7 @@ class PrimerIngresoPasswordForm(PasswordChangeForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.carrera = self.cleaned_data["carrera"]
+        user.carrera = self.cleaned_data.get("carrera") or getattr(self.user, "carrera", "")
         if commit:
             user.save()
         return user
