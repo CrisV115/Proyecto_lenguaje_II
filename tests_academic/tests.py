@@ -455,7 +455,7 @@ class AcademicFlowTests(TestCase):
         self.assertEqual(dashboard_response.status_code, 200)
         self.assertContains(
             dashboard_response,
-            "No tienes actividades ni tests programados en tus cursos de capacitacion.",
+            "No tienes actividades ni tests programados en tus cursos de induccion.",
         )
         self.assertNotContains(dashboard_response, course.name)
         self.assertNotContains(dashboard_response, "Guia 1")
@@ -523,7 +523,7 @@ class AcademicFlowTests(TestCase):
 
         training_response = self.client.get(reverse("student_training_courses"))
         self.assertEqual(training_response.status_code, 200)
-        self.assertContains(training_response, "Capacitaciones asignadas")
+        self.assertContains(training_response, "Cursos de induccion")
         self.assertContains(training_response, training_course.name)
 
         tests_response = self.client.get(reverse("tests_index"))
@@ -532,7 +532,7 @@ class AcademicFlowTests(TestCase):
 
         detail_response = self.client.get(reverse("course_detail", args=[training_course.id]))
         self.assertEqual(detail_response.status_code, 200)
-        self.assertContains(detail_response, "Volver a capacitaciones")
+        self.assertContains(detail_response, "Volver a induccion")
 
     def test_teacher_management_only_lists_diagnostic_and_vocational_tests(self):
         unsupported_test = Test.objects.create(

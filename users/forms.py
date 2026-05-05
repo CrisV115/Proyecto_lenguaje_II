@@ -129,6 +129,7 @@ class PrimerIngresoPasswordForm(PasswordChangeForm):
     carrera = forms.ChoiceField(
         label="Carrera principal",
         choices=Usuario.CARRERA_CHOICES,
+        required=False,
         widget=forms.Select(attrs={"class": "form-select"}),
     )
     carreras = forms.CharField(

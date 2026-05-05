@@ -6,7 +6,7 @@ class Usuario(AbstractUser):
     CAREER_GROUP_PREFIX = "Carrera - "
     CARRERAS = [
         "Enfermeria",
-        "Desarrollo de software",
+        "Software",
         "Contabilidad",
         "Educacion Inicial",
         "Gestion del Talento Humano",
@@ -18,9 +18,9 @@ class Usuario(AbstractUser):
     CARRERA_CHOICES = [(career, career) for career in CARRERAS]
     CARRERA_ALIASES = {
         "enfermeria": "Enfermeria",
-        "desarrollo de software": "Desarrollo de software",
-        "desarrollo software": "Desarrollo de software",
-        "software": "Desarrollo de software",
+        "desarrollo de software": "Software",
+        "desarrollo software": "Software",
+        "software": "Software",
         "contabilidad": "Contabilidad",
         "educacion inicial": "Educacion Inicial",
         "gestion del talento humano": "Gestion del Talento Humano",

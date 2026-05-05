@@ -7,12 +7,24 @@ from django.db import models
 
 
 class Course(models.Model):
+    INDUCTION_COURSE_NAMES = (
+        "Microsoft Teams",
+        "SGA",
+        "PAO",
+    )
+
     name = models.CharField(max_length=120, unique=True)
+    career = models.CharField(
+        max_length=120,
+        blank=True,
+        verbose_name="Carrera",
+        help_text="Selecciona la carrera para las nivelaciones. Los cursos de induccion aplican a todos.",
+    )
     description = models.TextField(blank=True)
     is_training = models.BooleanField(
         default=False,
-        verbose_name="Es capacitacion",
-        help_text="Marca este curso para mostrarlo en el apartado de capacitacion.",
+        verbose_name="Es induccion",
+        help_text="Marca este curso para mostrarlo en el apartado de induccion.",
     )
     welcome_message = models.TextField(
         default="Bienvenido a este curso.",
@@ -43,7 +55,36 @@ class Course(models.Model):
 
     @property
     def category_label(self):
-        return "Capacitacion" if self.is_training else "Nivelacion"
+        return "Induccion" if self.is_training else "Nivelacion"
+
+    @property
+    def audience_label(self):
+        if self.is_training:
+            return "Todas las carreras"
+        return self.career or "Sin carrera"
+
+    def clean(self):
+        super().clean()
+        from users.models import Usuario
+
+        self.career = Usuario.normalize_carrera(self.career)
+        if self.is_training and self.career:
+            raise ValidationError(
+                {
+                    "career": (
+                        "Los cursos de induccion no se asignan por carrera. "
+                        "Deja este campo vacio."
+                    )
+                }
+            )
+
+    def save(self, *args, **kwargs):
+        from users.models import Usuario
+
+        self.career = Usuario.normalize_carrera(self.career)
+        if self.is_training:
+            self.career = ""
+        super().save(*args, **kwargs)
 
 
 class CourseActivity(models.Model):

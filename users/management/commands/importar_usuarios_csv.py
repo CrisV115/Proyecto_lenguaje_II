@@ -6,6 +6,8 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
+from tests_academic.utils import sync_student_course_assignments
+
 
 class Command(BaseCommand):
     help = "Importa estudiantes y profesores desde archivos CSV separados por punto y coma."
@@ -134,6 +136,9 @@ class Command(BaseCommand):
                     user.debe_cambiar_password = True
                     user.save(update_fields=["password", "debe_cambiar_password"])
                     updated += 1
+
+                if role == "estudiante":
+                    sync_student_course_assignments(user)
 
         return role, created, updated, skipped
 

@@ -8,7 +8,7 @@
         <div>
             <span class="section-kicker mb-3">
                 {% if course.is_training %}
-                    Capacitacion
+                    Induccion
                 {% elif request.user.tipo_usuario == "estudiante" %}
                     Nivelacion
                 {% else %}
@@ -22,12 +22,12 @@
             <div class="d-flex gap-2 flex-wrap">
                 <a class="btn btn-outline-light" href="{% url 'course_attendance_module' course.id %}">Modulo de asistencias</a>
                 <a class="btn btn-outline-light" href="{% if course.is_training %}{% url 'teacher_training_courses' %}{% else %}{% url 'teacher_courses' %}{% endif %}">
-                    {% if course.is_training %}Volver a capacitaciones{% else %}Volver a cursos{% endif %}
+                    {% if course.is_training %}Volver a induccion{% else %}Volver a cursos{% endif %}
                 </a>
             </div>
         {% else %}
             <a class="btn btn-outline-light" href="{% if course.is_training %}{% url 'student_training_courses' %}{% else %}{% url 'student_courses' %}{% endif %}">
-                {% if course.is_training %}Volver a capacitaciones{% else %}Volver a nivelaciones{% endif %}
+                {% if course.is_training %}Volver a induccion{% else %}Volver a nivelaciones{% endif %}
             </a>
         {% endif %}
     </div>
