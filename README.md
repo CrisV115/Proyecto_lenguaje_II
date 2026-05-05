@@ -171,6 +171,24 @@ Nota:
 - Elastic Beanstalk no cobra extra por el servicio; cobran los recursos que uses como EC2, RDS, disco y transferencia.
 - Si tu cuenta AWS fue creada el 15 de julio de 2025 o despues, el plan gratis nuevo funciona con creditos y vence a los 6 meses o cuando se acaben esos creditos.
 
+## Despliegue recomendado para demo gratis: EC2
+
+Si quieres dejarlo funcional hoy mismo con el menor costo posible, la mejor ruta practica es:
+
+- `EC2`
+- `1 sola instancia`
+- `t3.micro`
+- `Amazon Linux`
+- `SQLite`
+- `nginx + gunicorn`
+
+Archivos listos para eso:
+
+- [deploy/aws/ec2/gunicorn.service](C:/Users/Joseph/Desktop/edadpromedio/Proyecto_lenguaje_II/deploy/aws/ec2/gunicorn.service)
+- [deploy/aws/ec2/nginx-proyecto.conf](C:/Users/Joseph/Desktop/edadpromedio/Proyecto_lenguaje_II/deploy/aws/ec2/nginx-proyecto.conf)
+- [deploy/aws/ec2/.env.ec2.example](C:/Users/Joseph/Desktop/edadpromedio/Proyecto_lenguaje_II/deploy/aws/ec2/.env.ec2.example)
+- [deploy/aws/ec2/deploy_commands.md](C:/Users/Joseph/Desktop/edadpromedio/Proyecto_lenguaje_II/deploy/aws/ec2/deploy_commands.md)
+
 ## Importacion desde archivos planos
 
 Los archivos planos del proyecto ahora viven en la raiz del repositorio:
