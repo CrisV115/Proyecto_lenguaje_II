@@ -38,6 +38,7 @@ class Test(models.Model):
         blank=True,
         related_name="created_tests",
     )
+    target_career = models.CharField(max_length=120, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

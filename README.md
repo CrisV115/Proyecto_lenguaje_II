@@ -100,6 +100,54 @@ DB_CONN_MAX_AGE=60
 python .\manage.py test
 ```
 
+## Despliegue basico en AWS
+
+El proyecto ya queda preparado para un despliegue simple con `gunicorn`.
+
+Archivos relevantes:
+
+- `Procfile`: arranque de la app con `gunicorn`
+- `requirements.txt`: ahora incluye `gunicorn`
+- `proyecto/settings.py`: incluye `STATIC_ROOT`, `CSRF_TRUSTED_ORIGINS` y soporte para proxy HTTPS
+
+Flujo recomendado en AWS Elastic Beanstalk:
+
+1. Crear un entorno Python para Django.
+2. Configurar variables de entorno:
+
+```env
+DEBUG=False
+SECRET_KEY=tu-clave-segura
+ALLOWED_HOSTS=tu-dominio.us-east-1.elasticbeanstalk.com,tu-dominio.com
+CSRF_TRUSTED_ORIGINS=https://tu-dominio.us-east-1.elasticbeanstalk.com,https://tu-dominio.com
+DB_ENGINE=mysql
+DB_NAME=nombre_bd
+DB_USER=usuario_bd
+DB_PASSWORD=clave_bd
+DB_HOST=endpoint-rds
+DB_PORT=3306
+DB_CONN_MAX_AGE=60
+```
+
+3. Ejecutar migraciones:
+
+```powershell
+python .\manage.py migrate
+```
+
+4. Recolectar archivos estaticos:
+
+```powershell
+python .\manage.py collectstatic --noinput
+```
+
+5. Usar Amazon RDS MySQL si quieres una base persistente en produccion.
+
+Nota:
+
+- Para produccion no conviene usar SQLite en AWS si la app tendra varios accesos o reinicios del servidor.
+- Elastic Beanstalk no cobra extra por el servicio; cobran los recursos que uses como EC2, RDS, disco y transferencia.
+
 ## Importacion desde archivos planos
 
 Los archivos planos del proyecto ahora viven en la raiz del repositorio:

@@ -24,6 +24,22 @@ def get_student_certificate_status(student):
     diagnostic_attempted = diagnostic_result is not None
     diagnostic_passed = approved_diagnostic_result is not None
 
+    if not diagnostic_attempted:
+        return {
+            "diagnostic_result": None,
+            "diagnostic_attempted": False,
+            "diagnostic_passed": False,
+            "leveling_progress": None,
+            "leveling_record": None,
+            "leveling_attempted": False,
+            "leveling_passed": False,
+            "needs_leveling": False,
+            "eligible": False,
+            "qualifying_path": "",
+            "missing_items": ["rendir el test diagnostico"],
+            "pending_items": [],
+        }
+
     leveling_progress = Progress.objects.filter(
         student=student,
         phase=Progress.Phases.LEVELING,
@@ -47,9 +63,7 @@ def get_student_certificate_status(student):
     needs_leveling = diagnostic_attempted and not diagnostic_passed
 
     missing_items = []
-    if not diagnostic_attempted:
-        missing_items.append("rendir el test diagnostico")
-    elif needs_leveling and not leveling_attempted:
+    if needs_leveling and not leveling_attempted:
         missing_items.append("completar la nivelacion")
 
     pending_items = []

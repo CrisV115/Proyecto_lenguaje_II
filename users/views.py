@@ -9,6 +9,7 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from certifications.models import Certificate
+from certifications.services import get_student_certificate_status
 from courses.models import Course, CourseActivity
 from leveling.models import LevelingRecord
 from tests_academic.models import Result, Test
@@ -24,7 +25,9 @@ from tests_academic.utils import (
 from tracking.models import Progress
 from tracking.services import get_student_progress_entries, sync_student_induction_progress
 
-from .forms import PrimerIngresoPasswordForm
+from .career_utils import get_active_teacher_career, get_available_teacher_careers, set_active_teacher_career
+from .csv_storage import save_user_registration_to_csv
+from .forms import PrimerIngresoPasswordForm, RegistroForm
 from .models import Usuario
 
 
@@ -43,11 +46,37 @@ def home(request):
 
 
 def register(request):
-    messages.warning(
-        request,
-        "El registro publico esta deshabilitado temporalmente. Los usuarios solo pueden cargarse desde los archivos CSV autorizados.",
-    )
-    return redirect("login")
+    if request.user.is_authenticated:
+        return redirect_user_dashboard(request.user)
+
+    if request.method == "POST":
+        form = RegistroForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.email = form.cleaned_data["email"]
+            user.cedula = form.cleaned_data["cedula"]
+            user.carrera = form.cleaned_data["carrera"]
+            user.telefono = form.cleaned_data["telefono"]
+            user.tipo_usuario = form.cleaned_data["tipo_usuario"]
+            if user.tipo_usuario == "profesor":
+                user.debe_cambiar_password = True
+                user.set_carreras([form.cleaned_data["carrera"]])
+            else:
+                user.set_carreras([form.cleaned_data["carrera"]])
+            user.save()
+            save_user_registration_to_csv(user)
+            messages.success(
+                request,
+                "Registro completado correctamente. Ya puedes iniciar sesion."
+                if user.tipo_usuario == "estudiante"
+                else "Registro completado correctamente. Al iniciar sesion deberas confirmar tu clave y carreras.",
+            )
+            return redirect("login")
+        messages.error(request, "Corrija los errores del formulario.")
+    else:
+        form = RegistroForm()
+
+    return render(request, "register.html", {"form": form})
 
 
 def login_view(request):
@@ -106,6 +135,20 @@ def force_password_change(request):
         form = PrimerIngresoPasswordForm(request.user)
 
     return render(request, "force_password_change.html", {"form": form})
+
+
+@login_required
+def switch_teacher_career(request):
+    if request.user.tipo_usuario != "profesor":
+        return redirect_user_dashboard(request.user)
+    if request.method == "POST":
+        set_active_teacher_career(
+            request,
+            request.user,
+            request.POST.get("career", ""),
+        )
+    target = request.POST.get("next") or reverse("teacher_dashboard")
+    return redirect(target)
 
 
 def password_reset_security(request):
@@ -179,7 +222,10 @@ def student_dashboard(request):
     )
     now = timezone.localtime()
     active_test = next((test for test in student_tests if _is_test_open_now(test, now)), None)
-    certificate = Certificate.objects.filter(student=request.user, valid=True).first()
+    certificate_status = get_student_certificate_status(request.user)
+    certificate = None
+    if certificate_status["eligible"]:
+        certificate = Certificate.objects.filter(student=request.user, valid=True).first()
     calendar_events = _build_student_calendar_events(
         request.user,
         diagnostic_approved=diagnostic_approved,
@@ -193,6 +239,7 @@ def student_dashboard(request):
             "progress_entries": progress_entries,
             "active_test": active_test,
             "certificate": certificate,
+            "certificate_status": certificate_status,
             "calendar_events": calendar_events,
             "diagnostic_approved": diagnostic_approved,
         },
@@ -204,6 +251,8 @@ def teacher_dashboard(request):
     if request.user.tipo_usuario != "profesor":
         return redirect_user_dashboard(request.user)
 
+    active_career = get_active_teacher_career(request.user, request)
+    request.user.active_career = active_career
     teacher_courses = list(
         Course.objects.filter(teachers=request.user)
         .prefetch_related("students")
@@ -227,6 +276,9 @@ def teacher_dashboard(request):
         "tests": tests,
         "recent_results": recent_results,
         "students": students,
+        "available_careers": get_available_teacher_careers(request.user),
+        "active_career": active_career,
+        "teacher_courses": teacher_courses,
     }
     return render(request, "teachers/dashboard.html", context)
 
@@ -236,6 +288,8 @@ def teacher_test_monitor(request):
     if request.user.tipo_usuario != "profesor":
         return redirect_user_dashboard(request.user)
 
+    active_career = get_active_teacher_career(request.user, request)
+    request.user.active_career = active_career
     teacher_courses = list(
         Course.objects.filter(teachers=request.user)
         .prefetch_related("students")
@@ -252,6 +306,8 @@ def teacher_test_monitor(request):
                 "diagnostic_taken_count": 0,
                 "diagnostic_passed_count": 0,
                 "leveling_passed_count": 0,
+                "available_careers": get_available_teacher_careers(request.user),
+                "active_career": active_career,
             },
         )
 
@@ -332,6 +388,8 @@ def teacher_test_monitor(request):
         "diagnostic_taken_count": sum(1 for row in rows if row["diagnostic_result"]),
         "diagnostic_passed_count": sum(1 for row in rows if row["diagnostic_status"] == "Aprobado"),
         "leveling_passed_count": sum(1 for row in rows if row["leveling_status"] == "Aprobada"),
+        "available_careers": get_available_teacher_careers(request.user),
+        "active_career": active_career,
     }
     return render(request, "teachers/test_monitor.html", context)
 
@@ -404,7 +462,9 @@ def _get_teacher_related_students(teacher, teacher_courses=None):
     }
 
     students_queryset = Usuario.objects.filter(tipo_usuario="estudiante")
-    teacher_career = Usuario.normalize_carrera(getattr(teacher, "carrera", ""))
+    teacher_career = Usuario.normalize_carrera(
+        getattr(teacher, "active_career", "") or getattr(teacher, "carrera", "")
+    )
     if teacher_career:
         students_queryset = students_queryset.filter(carrera__iexact=teacher_career)
     elif course_student_ids:

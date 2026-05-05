@@ -1,5 +1,8 @@
-Cedula;Nombres;Apellidos;Carrera;Correo
-1750126730;Cristopher Davida;Vasconez Cadavid;Desarrollo de software;cdvasconezc@itsjapon.edu.ec
-1753593712;Joseph Joan;Angulo Tumbaco;Desarrollo de software;jjangulot@itsjapon.edu.ec
-1234567890;Maria Jose;Lopez Torres;Desarrollo de software;mlopez@itsjapon.edu.ec
-0987654321;Carlos Andres;Perez Mena;Desarrollo de software;cperez@itsjapon.edu.ec
+Cedula;Nombres;Apellidos;Carrera;Correo;Carreras;Telefono;Username;TipoUsuario
+1750126730;Cristopher Davida;Vasconez Cadavid;Desarrollo de software;cdvasconezc@itsjapon.edu.ec;Desarrollo de software;;1750126730;profesor
+1753593712;Joseph Joan;Angulo Tumbaco;Desarrollo de software;jjangulot@itsjapon.edu.ec;Desarrollo de software;;1753593712;profesor
+1234567890;Maria Jose;Lopez Torres;Desarrollo de software;mlopez@itsjapon.edu.ec;Desarrollo de software;;1234567890;profesor
+0987654321;Carlos Andres;Perez Mena;Desarrollo de software;cperez@itsjapon.edu.ec;Desarrollo de software;;0987654321;profesor
+1753593701;Daammaa qa;asasa asasa;Desarrollo de software;dama7@hotmail.com;Desarrollo de software;0998081462;Damaris7;profesor
+0984756214;dsad adad;asda;Contabilidad;carlos@hotail.com;Contabilidad, Mecanica Automotriz;0999999999;carlos;profesor
+;;;;cris123@hotmail.com;;0998081462;joseph45680;profesor
