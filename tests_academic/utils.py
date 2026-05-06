@@ -8,6 +8,12 @@ from .models import Result, Test
 APPROVED_DIAGNOSTIC_SCORE = 70
 MANAGED_TEST_TYPES = ("conocimientos", "vocacional")
 COURSE_TEST_TYPE = "curso"
+DEFAULT_LEVELING_COURSE_NAMES = (
+    "Logica Matematica",
+    "Linguistica",
+    "Geometria",
+    "Abstracto",
+)
 
 
 def student_has_approved_diagnostic(student):
@@ -32,7 +38,7 @@ def get_student_visible_courses(student, diagnostic_approved=None):
         diagnostic_approved = student_has_approved_diagnostic(student)
     sync_student_course_assignments(student, diagnostic_approved=diagnostic_approved)
     if diagnostic_approved:
-        return Course.objects.none()
+        return _get_student_default_leveling_courses(student)
     return get_student_leveling_courses(student)
 
 
@@ -121,6 +127,8 @@ def sync_student_course_assignments(student, diagnostic_approved=None):
     if not getattr(student, "is_authenticated", False):
         return
 
+    default_leveling_ids = _ensure_default_leveling_courses()
+
     if diagnostic_approved is None:
         diagnostic_approved = student_has_approved_diagnostic(student)
     current_course_ids = set(student.courses_enrolled.values_list("id", flat=True))
@@ -145,9 +153,14 @@ def sync_student_course_assignments(student, diagnostic_approved=None):
         .values_list("id", flat=True)
     )
 
-    target_course_ids = training_course_ids | legacy_leveling_ids | desired_leveling_ids
+    target_course_ids = (
+        training_course_ids
+        | legacy_leveling_ids
+        | desired_leveling_ids
+        | default_leveling_ids
+    )
     add_ids = target_course_ids - current_course_ids
-    remove_ids = managed_leveling_ids - desired_leveling_ids
+    remove_ids = managed_leveling_ids - (desired_leveling_ids | default_leveling_ids)
 
     if add_ids:
         student.courses_enrolled.add(*add_ids)
@@ -235,6 +248,42 @@ def _get_automatic_leveling_courses_queryset(student):
 
 def _normalize_career(value):
     return (value or "").strip().casefold()
+
+
+def _ensure_default_leveling_courses():
+    default_ids = set()
+    for course_name in DEFAULT_LEVELING_COURSE_NAMES:
+        course, _ = Course.objects.get_or_create(
+            name=course_name,
+            defaults={
+                "career": "",
+                "description": "",
+                "is_training": False,
+                "welcome_message": "Bienvenido a este curso.",
+            },
+        )
+        updated_fields = []
+        if course.is_training:
+            course.is_training = False
+            updated_fields.append("is_training")
+        if course.career:
+            course.career = ""
+            updated_fields.append("career")
+        if updated_fields:
+            course.save(update_fields=updated_fields)
+        default_ids.add(course.id)
+    return default_ids
+
+
+def _get_student_default_leveling_courses(student):
+    return (
+        student.courses_enrolled.filter(
+            is_training=False,
+            name__in=DEFAULT_LEVELING_COURSE_NAMES,
+        )
+        .distinct()
+        .order_by("name")
+    )
 
 
 def get_teacher_managed_tests_queryset(user):
