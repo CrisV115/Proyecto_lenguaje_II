@@ -9,7 +9,7 @@
         <div class="auth-card rounded-4 p-4 p-lg-5">
             <span class="section-kicker mb-3">Nuevo acceso</span>
             <h1 class="h2 mb-3">Registro de usuario</h1>
-            <p class="mb-4">Crea una cuenta de estudiante o profesor para trabajar con diagnosticos, seguimiento y resultados en el mismo sistema.</p>
+            <p class="mb-4">Crea una cuenta de estudiante o profesor. Los datos se guardaran en la plataforma y tambien en los archivos CSV oficiales.</p>
             <form method="post" class="row g-3">
                 {% csrf_token %}
 
@@ -17,6 +17,24 @@
                     <label class="form-label">Usuario</label>
                     {{ form.username }}
                     {% if form.username.errors %}<div class="text-danger small mt-1">{{ form.username.errors }}</div>{% endif %}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Nombres</label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}<div class="text-danger small mt-1">{{ form.first_name.errors }}</div>{% endif %}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Apellidos</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}<div class="text-danger small mt-1">{{ form.last_name.errors }}</div>{% endif %}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Cedula</label>
+                    {{ form.cedula }}
+                    {% if form.cedula.errors %}<div class="text-danger small mt-1">{{ form.cedula.errors }}</div>{% endif %}
                 </div>
 
                 <div class="col-md-6">
@@ -29,6 +47,12 @@
                     <label class="form-label">Telefono</label>
                     {{ form.telefono }}
                     {% if form.telefono.errors %}<div class="text-danger small mt-1">{{ form.telefono.errors }}</div>{% endif %}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Carrera</label>
+                    {{ form.carrera }}
+                    {% if form.carrera.errors %}<div class="text-danger small mt-1">{{ form.carrera.errors }}</div>{% endif %}
                 </div>
 
                 <div class="col-md-6">
@@ -69,7 +93,7 @@
 
                 <div class="col-12 d-flex gap-2 flex-wrap pt-2">
                     <button type="submit" class="btn btn-primary">Registrarse</button>
-                    <a href="{% url 'home' %}" class="btn btn-outline-secondary">Volver</a>
+                    <a href="{% url 'login' %}" class="btn btn-outline-secondary">Volver</a>
                 </div>
             </form>
         </div>

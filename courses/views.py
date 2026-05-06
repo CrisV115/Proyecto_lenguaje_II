@@ -16,6 +16,7 @@ from tests_academic.utils import (
     student_has_approved_diagnostic,
 )
 from tracking.services import sync_student_induction_progress
+from users.career_utils import get_active_teacher_career, get_available_teacher_careers
 from users.decorators import role_required
 
 from .forms import (
@@ -57,7 +58,9 @@ def student_courses(request):
 
 @role_required("profesor")
 def teacher_courses(request):
-    courses = request.user.courses_taught.filter(is_training=False).order_by("name")
+    active_career = get_active_teacher_career(request.user, request)
+    request.user.active_career = active_career
+    courses = _get_teacher_courses_for_active_career(request.user, is_training=False)
     return _render_teacher_course_list(
         request,
         courses=courses,
@@ -65,6 +68,7 @@ def teacher_courses(request):
         page_description="Aqui ves las nivelaciones que administras y sus estudiantes asignados automaticamente por carrera.",
         course_badge_label="Nivelacion",
         empty_message="Aun no tienes cursos de nivelacion asignados.",
+        active_career=active_career,
     )
 
 
@@ -84,7 +88,9 @@ def student_training_courses(request):
 
 @role_required("profesor")
 def teacher_training_courses(request):
-    courses = request.user.courses_taught.filter(is_training=True).order_by("name")
+    active_career = get_active_teacher_career(request.user, request)
+    request.user.active_career = active_career
+    courses = _get_teacher_courses_for_active_career(request.user, is_training=True)
     return _render_teacher_course_list(
         request,
         courses=courses,
@@ -92,11 +98,14 @@ def teacher_training_courses(request):
         page_description="Aqui administras los cursos de induccion y los docentes asignados manualmente.",
         course_badge_label="Induccion",
         empty_message="Aun no tienes cursos de induccion asignados.",
+        active_career=active_career,
     )
 
 
 @role_required("estudiante", "profesor")
 def course_detail(request, course_id):
+    if request.user.tipo_usuario == "profesor":
+        request.user.active_career = get_active_teacher_career(request.user, request)
     course = _get_course_for_user(request.user, course_id)
 
     if request.user.tipo_usuario == "profesor":
@@ -153,6 +162,8 @@ def course_detail(request, course_id):
 
 @role_required("estudiante", "profesor")
 def course_activities_module(request, course_id):
+    if request.user.tipo_usuario == "profesor":
+        request.user.active_career = get_active_teacher_career(request.user, request)
     course = _get_course_for_user(request.user, course_id)
     activities = list(
         course.activities.select_related("created_by")
@@ -201,6 +212,8 @@ def course_activity_detail(request, course_id, activity_id):
 
 @role_required("estudiante", "profesor")
 def course_activity_submission_module(request, course_id, activity_id):
+    if request.user.tipo_usuario == "profesor":
+        request.user.active_career = get_active_teacher_career(request.user, request)
     course = _get_course_for_user(request.user, course_id)
     activity = get_object_or_404(
         CourseActivity.objects.select_related("course", "created_by"),
@@ -251,6 +264,7 @@ def course_activity_submission_module(request, course_id, activity_id):
 
 @role_required("profesor")
 def create_course_activity(request, course_id):
+    request.user.active_career = get_active_teacher_career(request.user, request)
     course = get_object_or_404(Course, id=course_id, teachers=request.user)
     if request.method != "POST":
         return redirect("course_activities_module", course_id=course.id)
@@ -332,6 +346,7 @@ def submit_course_activity(request, course_id, activity_id):
 
 @role_required("profesor")
 def grade_course_activity_submission(request, course_id, activity_id, submission_id):
+    request.user.active_career = get_active_teacher_career(request.user, request)
     if request.method != "POST":
         return redirect(
             "course_activity_submission_module",
@@ -383,6 +398,7 @@ def grade_course_activity_submission(request, course_id, activity_id, submission
 
 @role_required("profesor")
 def course_attendance_module(request, course_id):
+    request.user.active_career = get_active_teacher_career(request.user, request)
     course = get_object_or_404(Course, id=course_id, teachers=request.user)
     students = list(
         get_course_students_for_teacher(course, request.user).order_by(
@@ -468,6 +484,7 @@ def course_attendance_module(request, course_id):
 
 @role_required("profesor")
 def course_attendance_session_detail(request, course_id, session_id):
+    request.user.active_career = get_active_teacher_career(request.user, request)
     course = get_object_or_404(Course, id=course_id, teachers=request.user)
     assigned_students = get_course_students_for_teacher(course, request.user)
     session = get_object_or_404(
@@ -530,6 +547,7 @@ def course_attendance_session_detail(request, course_id, session_id):
 
 @role_required("profesor")
 def teacher_student_course_detail(request, course_id, student_id):
+    request.user.active_career = get_active_teacher_career(request.user, request)
     course = get_object_or_404(Course, id=course_id, teachers=request.user)
     student = get_object_or_404(
         get_course_students_for_teacher(course, request.user),
@@ -720,6 +738,7 @@ def _render_teacher_course_list(
     page_description,
     course_badge_label,
     empty_message,
+    active_career,
 ):
     return render(
         request,
@@ -730,5 +749,23 @@ def _render_teacher_course_list(
             "page_description": page_description,
             "course_badge_label": course_badge_label,
             "empty_message": empty_message,
+            "active_career": active_career,
+            "available_careers": get_available_teacher_careers(request.user),
         },
     )
+
+
+def _get_teacher_courses_for_active_career(user, *, is_training):
+    queryset = user.courses_taught.filter(is_training=is_training).prefetch_related("students").order_by("name")
+    active_career = getattr(user, "active_career", "") or getattr(user, "carrera", "")
+    if not active_career:
+        return queryset
+
+    matching_ids = []
+    for course in queryset:
+        if course.is_training:
+            matching_ids.append(course.id)
+            continue
+        if course.students.filter(carrera__iexact=active_career).exists():
+            matching_ids.append(course.id)
+    return Course.objects.filter(id__in=matching_ids).order_by("name")

@@ -50,6 +50,14 @@ class TrackingCertificateTests(TestCase):
         self.assertContains(response, "Descargar certificado PDF")
         self.assertNotContains(response, f'href="{reverse("download_certificate_pdf")}"')
 
+    def test_new_student_is_not_approved_without_diagnostic_or_leveling(self):
+        response = self.client.get(reverse("student_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Ya tienes un certificado valido emitido.")
+        self.assertNotContains(response, "Aprobado. Ya puedes generar tu certificado final.")
+        self.assertContains(response, "Todavia no hay tests activos configurados.")
+
     def test_download_certificate_pdf_returns_pdf_when_student_passes_diagnostic(self):
         diagnostic_test = Test.objects.create(
             name="Diagnostico principal",

@@ -10,6 +10,27 @@ from .models import Usuario
 class RegistroForm(UserCreationForm):
     CODIGO_PROFESOR = "PrfsrJapon1077"
 
+    first_name = forms.CharField(
+        label="Nombres",
+        max_length=150,
+        widget=forms.TextInput(attrs={"placeholder": "Ej: Maria Fernanda"}),
+    )
+    last_name = forms.CharField(
+        label="Apellidos",
+        max_length=150,
+        widget=forms.TextInput(attrs={"placeholder": "Ej: Perez Lopez"}),
+    )
+    cedula = forms.CharField(
+        max_length=10,
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": "Ej: 0102030405",
+                "pattern": "[0-9]{10}",
+                "maxlength": "10",
+                "title": "Ingrese exactamente 10 numeros",
+            }
+        ),
+    )
     telefono = forms.CharField(
         max_length=10,
         widget=forms.TextInput(
@@ -33,6 +54,10 @@ class RegistroForm(UserCreationForm):
             attrs={"placeholder": "Codigo exclusivo para profesores"}
         ),
     )
+    carrera = forms.ChoiceField(
+        choices=Usuario.CARRERA_CHOICES,
+        widget=forms.Select(),
+    )
 
     pregunta_seguridad = forms.ChoiceField(choices=Usuario.PREGUNTAS_SEGURIDAD)
 
@@ -40,7 +65,11 @@ class RegistroForm(UserCreationForm):
         model = Usuario
         fields = [
             "username",
+            "first_name",
+            "last_name",
+            "cedula",
             "email",
+            "carrera",
             "telefono",
             "tipo_usuario",
             "password1",
@@ -54,6 +83,14 @@ class RegistroForm(UserCreationForm):
         if Usuario.objects.filter(email=email).exists():
             raise ValidationError("Ya existe un usuario registrado con ese correo.")
         return email
+
+    def clean_cedula(self):
+        cedula = self.cleaned_data.get("cedula", "").strip()
+        if not re.fullmatch(r"\d{10}", cedula):
+            raise ValidationError("La cedula debe tener exactamente 10 numeros.")
+        if Usuario.objects.filter(cedula=cedula).exists():
+            raise ValidationError("Ya existe un usuario registrado con esa cedula.")
+        return cedula
 
     def clean_telefono(self):
         telefono = self.cleaned_data.get("telefono", "")
@@ -90,10 +127,14 @@ class RegistroForm(UserCreationForm):
 
 class PrimerIngresoPasswordForm(PasswordChangeForm):
     carrera = forms.ChoiceField(
-        label="Carrera",
+        label="Carrera principal",
         choices=Usuario.CARRERA_CHOICES,
         required=False,
         widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    carreras = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput(),
     )
 
     old_password = forms.CharField(
@@ -114,10 +155,33 @@ class PrimerIngresoPasswordForm(PasswordChangeForm):
         self.fields["carrera"].initial = Usuario.normalize_carrera(
             getattr(user, "carrera", "")
         )
+        self.fields["carreras"].initial = "|".join(user.get_carreras())
+
+    def clean(self):
+        cleaned_data = super().clean()
+        carrera = cleaned_data.get("carrera")
+        raw_carreras = cleaned_data.get("carreras", "")
+
+        if self.user.tipo_usuario == "profesor":
+            careers = [
+                Usuario.normalize_carrera(item)
+                for item in raw_carreras.split("|")
+                if Usuario.normalize_carrera(item)
+            ]
+            if carrera and carrera not in careers:
+                careers.insert(0, carrera)
+            careers = Usuario.normalize_carreras(careers)
+            if not careers:
+                self.add_error("carrera", "Debes seleccionar al menos una carrera.")
+            cleaned_data["career_list"] = careers
+        else:
+            cleaned_data["career_list"] = [carrera] if carrera else []
+
+        return cleaned_data
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.carrera = self.cleaned_data.get("carrera") or getattr(self.user, "carrera", "")
+        user.set_carreras(self.cleaned_data["career_list"])
         if commit:
             user.save()
         return user

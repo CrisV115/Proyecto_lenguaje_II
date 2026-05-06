@@ -21,6 +21,26 @@
     </div>
 </section>
 
+<div class="glass-card rounded-4 p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center gap-3 flex-wrap">
+        <div>
+            <div class="soft-label mb-2">Carrera activa</div>
+            <h2 class="h4 mb-1">{{ active_career|default:"Sin carrera" }}</h2>
+            <p class="text-secondary mb-0">Cambia de carrera para administrar sus estudiantes, cursos y tests.</p>
+        </div>
+        <form method="post" action="{% url 'switch_teacher_career' %}" class="d-flex gap-2 flex-wrap">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <select name="career" class="form-select">
+                {% for career in available_careers %}
+                    <option value="{{ career }}" {% if career == active_career %}selected{% endif %}>{{ career }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">Cambiar carrera</button>
+        </form>
+    </div>
+</div>
+
 <div class="row g-4 mb-4">
     <div class="col-sm-6 col-xl-3">
         <div class="metric-card">
@@ -154,6 +174,25 @@
         </div>
     {% else %}
         <div class="empty-state">Todavia no hay estudiantes con la misma carrera vinculados a tu cuenta.</div>
+    {% endif %}
+</div>
+
+<div class="glass-card rounded-4 p-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+        <div>
+            <div class="soft-label mb-2">Carrera en administracion</div>
+            <h2 class="h4 mb-0">Cursos disponibles en {{ active_career|default:"tu cuenta" }}</h2>
+        </div>
+        <a class="btn btn-outline-primary" href="{% url 'teacher_courses' %}">Abrir cursos</a>
+    </div>
+    {% if teacher_courses %}
+        <div class="d-flex flex-wrap gap-2">
+            {% for course in teacher_courses %}
+                <a class="badge-soft text-decoration-none" href="{% url 'course_detail' course.id %}">{{ course.name }}</a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">No hay cursos disponibles para la carrera activa.</div>
     {% endif %}
 </div>
 {% endblock %}
