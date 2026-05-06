@@ -1,6 +1,7 @@
 from django.db.models import Q
 
 from courses.models import Course
+from users.career_utils import get_active_teacher_career
 
 from .models import Result, Test
 
@@ -8,6 +9,12 @@ from .models import Result, Test
 APPROVED_DIAGNOSTIC_SCORE = 70
 MANAGED_TEST_TYPES = ("conocimientos", "vocacional")
 COURSE_TEST_TYPE = "curso"
+DEFAULT_LEVELING_COURSE_NAMES = (
+    "Logica Matematica",
+    "Linguistica",
+    "Geometria",
+    "Abstracto",
+)
 
 
 def student_has_approved_diagnostic(student):
@@ -32,7 +39,7 @@ def get_student_visible_courses(student, diagnostic_approved=None):
         diagnostic_approved = student_has_approved_diagnostic(student)
     sync_student_course_assignments(student, diagnostic_approved=diagnostic_approved)
     if diagnostic_approved:
-        return Course.objects.none()
+        return _get_student_default_leveling_courses(student)
     return get_student_leveling_courses(student)
 
 
@@ -52,15 +59,21 @@ def get_student_leveling_courses(student):
     if not student_career:
         return courses.order_by("name")
 
-    return (
-        courses.filter(
-            Q(career__iexact=student.carrera)
-            | Q(career__isnull=True)
-            | Q(career="")
-        )
-        .distinct()
-        .order_by("name")
-    )
+    matching_ids = []
+    for course in courses.prefetch_related("teachers"):
+        course_career = _normalize_career(getattr(course, "career", ""))
+        if course_career and course_career == student_career:
+            matching_ids.append(course.id)
+            continue
+        if any(
+            teacher.has_career(student_career)
+            for teacher in course.teachers.filter(tipo_usuario="profesor")
+        ):
+            matching_ids.append(course.id)
+    matching_courses = courses.filter(id__in=matching_ids).distinct()
+    if matching_courses.exists():
+        return matching_courses.order_by("name")
+    return courses.order_by("name")
 
 
 def get_student_accessible_courses(student, diagnostic_approved=None):
@@ -92,9 +105,11 @@ def get_course_teachers_for_student(course, student):
     if not student_career:
         return teachers.order_by("username")
 
-    matching_teachers = teachers.filter(carrera__iexact=student.carrera)
-    if matching_teachers.exists():
-        return matching_teachers.order_by("username")
+    matching_teacher_ids = [
+        teacher.id for teacher in teachers if teacher.has_career(student_career)
+    ]
+    if matching_teacher_ids:
+        return teachers.filter(id__in=matching_teacher_ids).order_by("username")
     return teachers.order_by("username")
 
 
@@ -107,11 +122,13 @@ def get_course_students_for_teacher(course, teacher):
     if course_career:
         return students.filter(carrera__iexact=course.career).order_by("username")
 
-    teacher_career = _normalize_career(getattr(teacher, "carrera", ""))
+    teacher_career = _normalize_career(
+        getattr(teacher, "active_career", "") or getattr(teacher, "carrera", "")
+    )
     if not teacher_career:
         return students.order_by("username")
 
-    matching_students = students.filter(carrera__iexact=teacher.carrera)
+    matching_students = students.filter(carrera__iexact=teacher_career)
     if matching_students.exists():
         return matching_students.order_by("username")
     return students.order_by("username")
@@ -120,6 +137,8 @@ def get_course_students_for_teacher(course, teacher):
 def sync_student_course_assignments(student, diagnostic_approved=None):
     if not getattr(student, "is_authenticated", False):
         return
+
+    default_leveling_ids = _ensure_default_leveling_courses()
 
     if diagnostic_approved is None:
         diagnostic_approved = student_has_approved_diagnostic(student)
@@ -145,9 +164,14 @@ def sync_student_course_assignments(student, diagnostic_approved=None):
         .values_list("id", flat=True)
     )
 
-    target_course_ids = training_course_ids | legacy_leveling_ids | desired_leveling_ids
+    target_course_ids = (
+        training_course_ids
+        | legacy_leveling_ids
+        | desired_leveling_ids
+        | default_leveling_ids
+    )
     add_ids = target_course_ids - current_course_ids
-    remove_ids = managed_leveling_ids - desired_leveling_ids
+    remove_ids = managed_leveling_ids - (desired_leveling_ids | default_leveling_ids)
 
     if add_ids:
         student.courses_enrolled.add(*add_ids)
@@ -213,36 +237,75 @@ def _get_automatic_leveling_courses_queryset(student):
     if not student_career:
         return Course.objects.none()
 
-    return Course.objects.filter(
-        Q(
+    matching_ids = set(
+        Course.objects.filter(
             is_training=False,
             career__iexact=student.carrera,
-        )
-        | Q(
-            is_training=False,
-            career__isnull=True,
-            teachers__tipo_usuario="profesor",
-            teachers__carrera__iexact=student.carrera,
-        )
-        | Q(
-            is_training=False,
-            career="",
-            teachers__tipo_usuario="profesor",
-            teachers__carrera__iexact=student.carrera,
-        )
-    ).distinct()
+        ).values_list("id", flat=True)
+    )
+    legacy_courses = Course.objects.filter(
+        is_training=False,
+    ).filter(Q(career__isnull=True) | Q(career="")).prefetch_related("teachers")
+    for course in legacy_courses:
+        if any(
+            teacher.has_career(student_career)
+            for teacher in course.teachers.filter(tipo_usuario="profesor")
+        ):
+            matching_ids.add(course.id)
+    return Course.objects.filter(id__in=matching_ids).distinct()
 
 
 def _normalize_career(value):
     return (value or "").strip().casefold()
 
 
+def _ensure_default_leveling_courses():
+    default_ids = set()
+    for course_name in DEFAULT_LEVELING_COURSE_NAMES:
+        course, _ = Course.objects.get_or_create(
+            name=course_name,
+            defaults={
+                "career": "",
+                "description": "",
+                "is_training": False,
+                "welcome_message": "Bienvenido a este curso.",
+            },
+        )
+        updated_fields = []
+        if course.is_training:
+            course.is_training = False
+            updated_fields.append("is_training")
+        if course.career:
+            course.career = ""
+            updated_fields.append("career")
+        if updated_fields:
+            course.save(update_fields=updated_fields)
+        default_ids.add(course.id)
+    return default_ids
+
+
+def _get_student_default_leveling_courses(student):
+    return (
+        student.courses_enrolled.filter(
+            is_training=False,
+            name__in=DEFAULT_LEVELING_COURSE_NAMES,
+        )
+        .distinct()
+        .order_by("name")
+    )
+
+
 def get_teacher_managed_tests_queryset(user):
-    return Test.objects.filter(
+    queryset = Test.objects.filter(
         created_by=user,
         type__in=MANAGED_TEST_TYPES,
         course__isnull=True,
     )
+    active_career = get_active_teacher_career(user)
+    active_career = _normalize_career(getattr(user, "active_career", "") or active_career)
+    if active_career:
+        queryset = queryset.filter(Q(target_career__iexact=active_career) | Q(target_career=""))
+    return queryset
 
 
 def get_teacher_course_tests_queryset(user):
@@ -276,4 +339,12 @@ def get_student_managed_tests_queryset(student=None):
     if not student_career:
         return queryset
 
-    return queryset.filter(created_by__carrera__iexact=student.carrera)
+    matching_ids = []
+    for test in queryset.select_related("created_by"):
+        target_career = _normalize_career(getattr(test, "target_career", ""))
+        if target_career:
+            if target_career == student_career:
+                matching_ids.append(test.id)
+        elif test.created_by and test.created_by.has_career(student_career):
+            matching_ids.append(test.id)
+    return queryset.filter(id__in=matching_ids)

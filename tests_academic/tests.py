@@ -466,10 +466,10 @@ class AcademicFlowTests(TestCase):
 
         student_courses_response = self.client.get(reverse("student_courses"))
         self.assertEqual(student_courses_response.status_code, 200)
-        self.assertContains(
-            student_courses_response,
-            "No tienes ninguna nivelacion asignada porque aprobaste el test diagnostico.",
-        )
+        self.assertContains(student_courses_response, "Logica Matematica")
+        self.assertContains(student_courses_response, "Linguistica")
+        self.assertContains(student_courses_response, "Geometria")
+        self.assertContains(student_courses_response, "Abstracto")
         self.assertNotContains(student_courses_response, course.name)
 
         tests_response = self.client.get(reverse("tests_index"))

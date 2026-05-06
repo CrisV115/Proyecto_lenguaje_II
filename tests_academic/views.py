@@ -10,6 +10,7 @@ from django.utils import timezone
 from courses.models import Course
 from courses.models import CourseActivitySubmission
 from tracking.models import Progress
+from users.career_utils import get_active_teacher_career, get_available_teacher_careers
 from users.decorators import role_required
 
 from .forms import TeacherTestForm, TestForm
@@ -177,6 +178,8 @@ def test_result(request, test_id):
 
 @role_required("profesor")
 def teacher_tests(request):
+    active_career = get_active_teacher_career(request.user, request)
+    request.user.active_career = active_career
     course_id = request.GET.get("course")
     tests = (
         get_teacher_managed_tests_queryset(request.user)
@@ -192,12 +195,19 @@ def teacher_tests(request):
     return render(
         request,
         "tests_academic/teacher_tests.html",
-        {"tests": tests, "course_id": course_id},
+        {
+            "tests": tests,
+            "course_id": course_id,
+            "active_career": active_career,
+            "available_careers": get_available_teacher_careers(request.user),
+        },
     )
 
 
 @role_required("profesor")
 def teacher_test_create(request):
+    active_career = get_active_teacher_career(request.user, request)
+    request.user.active_career = active_career
     initial_course = _resolve_course_for_teacher(request, request.GET.get("course"))
     course_context = initial_course is not None
     if request.method == "POST":
@@ -228,12 +238,16 @@ def teacher_test_create(request):
             "page_title": "Crear test del curso" if course_context else "Crear test diagnostico o vocacional",
             "back_course": initial_course,
             "course_form_context": course_context,
+            "active_career": active_career,
+            "available_careers": get_available_teacher_careers(request.user),
         },
     )
 
 
 @role_required("profesor")
 def teacher_test_edit(request, test_id):
+    active_career = get_active_teacher_career(request.user, request)
+    request.user.active_career = active_career
     test = get_object_or_404(get_teacher_editable_tests_queryset(request.user), id=test_id)
     course_context = test.is_course_test
 
@@ -266,12 +280,16 @@ def teacher_test_edit(request, test_id):
             "test": test,
             "back_course": test.course if course_context else None,
             "course_form_context": course_context,
+            "active_career": active_career,
+            "available_careers": get_available_teacher_careers(request.user),
         },
     )
 
 
 @role_required("profesor")
 def teacher_results(request):
+    active_career = get_active_teacher_career(request.user, request)
+    request.user.active_career = active_career
     results = (
         Result.objects.filter(
             test__in=get_teacher_managed_tests_queryset(request.user),
@@ -282,6 +300,8 @@ def teacher_results(request):
     context = {
         "results": results,
         "generated_at": _get_report_generated_at(),
+        "active_career": active_career,
+        "available_careers": get_available_teacher_careers(request.user),
     }
     context.update(_build_teacher_diagnostic_report_context(request.user))
     return render(request, "tests_academic/teacher_results.html", context)
@@ -289,6 +309,8 @@ def teacher_results(request):
 
 @role_required("profesor")
 def teacher_results_pdf(request):
+    active_career = get_active_teacher_career(request.user, request)
+    request.user.active_career = active_career
     context = _build_teacher_diagnostic_report_context(request.user)
     generated_at = _get_report_generated_at()
     pdf_buffer = build_teacher_report_pdf(context["report_rows"], generated_at)
@@ -299,8 +321,12 @@ def teacher_results_pdf(request):
 
 @role_required("profesor")
 def teacher_results_preview(request):
+    active_career = get_active_teacher_career(request.user, request)
+    request.user.active_career = active_career
     context = {
         "generated_at": _get_report_generated_at(),
+        "active_career": active_career,
+        "available_careers": get_available_teacher_careers(request.user),
     }
     context.update(_build_teacher_diagnostic_report_context(request.user))
     return render(request, "tests_academic/teacher_results_preview.html", context)
@@ -308,6 +334,8 @@ def teacher_results_preview(request):
 
 @role_required("profesor")
 def teacher_result_detail(request, result_id):
+    active_career = get_active_teacher_career(request.user, request)
+    request.user.active_career = active_career
     result = get_object_or_404(
         Result.objects.select_related("student", "test").prefetch_related(
             Prefetch(
@@ -323,7 +351,11 @@ def teacher_result_detail(request, result_id):
     return render(
         request,
         "tests_academic/teacher_result_detail.html",
-        {"result": result},
+        {
+            "result": result,
+            "active_career": active_career,
+            "available_careers": get_available_teacher_careers(request.user),
+        },
     )
 
 
@@ -380,13 +412,23 @@ def _get_report_generated_at():
 
 @role_required("profesor")
 def teacher_students(request):
+    active_career = get_active_teacher_career(request.user, request)
+    request.user.active_career = active_career
     teacher_courses = list(
         Course.objects.filter(teachers=request.user)
         .prefetch_related("students")
         .order_by("name")
     )
     if not teacher_courses:
-        return render(request, "tests_academic/teacher_students.html", {"rows": []})
+        return render(
+            request,
+            "tests_academic/teacher_students.html",
+            {
+                "rows": [],
+                "active_career": active_career,
+                "available_careers": get_available_teacher_careers(request.user),
+            },
+        )
 
     course_students_map = {
         course.id: list(get_course_students_for_teacher(course, request.user))
@@ -401,7 +443,15 @@ def teacher_students(request):
     course_ids = [course.id for course in teacher_courses]
 
     if not all_student_ids:
-        return render(request, "tests_academic/teacher_students.html", {"rows": []})
+        return render(
+            request,
+            "tests_academic/teacher_students.html",
+            {
+                "rows": [],
+                "active_career": active_career,
+                "available_careers": get_available_teacher_careers(request.user),
+            },
+        )
 
     activity_completion = {
         (item["activity__course_id"], item["student_id"]): item["total"]
@@ -452,7 +502,15 @@ def teacher_students(request):
                 }
             )
     rows.sort(key=lambda row: (row["course"].name.lower(), row["student"].username.lower()))
-    return render(request, "tests_academic/teacher_students.html", {"rows": rows})
+    return render(
+        request,
+        "tests_academic/teacher_students.html",
+        {
+            "rows": rows,
+            "active_career": active_career,
+            "available_careers": get_available_teacher_careers(request.user),
+        },
+    )
 
 
 def course_activity_totals(course_ids):
@@ -481,6 +539,8 @@ def _save_test_with_questions(form, user):
             test.created_by = user
         if not test.type:
             test.type = "conocimientos"
+        if not test.course_id:
+            test.target_career = getattr(user, "active_career", "") or getattr(user, "carrera", "")
         test.save()
 
         test.questions.all().delete()

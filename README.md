@@ -100,6 +100,95 @@ DB_CONN_MAX_AGE=60
 python .\manage.py test
 ```
 
+## Despliegue basico en AWS
+
+El proyecto ya queda preparado para un despliegue simple con `gunicorn` en AWS Elastic Beanstalk.
+
+Archivos relevantes:
+
+- `Procfile`: arranque de la app con `gunicorn`
+- `requirements.txt`: ahora incluye `gunicorn`
+- `proyecto/settings.py`: incluye `STATIC_ROOT`, `CSRF_TRUSTED_ORIGINS` y soporte para proxy HTTPS
+- `.ebextensions/01_django.config`: define `WSGIPath`, `collectstatic` y `migrate`
+
+Flujo recomendado en AWS Elastic Beanstalk:
+
+1. Crear un entorno Python para Django.
+2. Elegir ambiente `Single instance` para gastar lo minimo.
+3. Configurar variables de entorno:
+
+```env
+DEBUG=False
+SECRET_KEY=tu-clave-segura
+ALLOWED_HOSTS=tu-dominio.us-east-1.elasticbeanstalk.com,tu-dominio.com
+CSRF_TRUSTED_ORIGINS=https://tu-dominio.us-east-1.elasticbeanstalk.com,https://tu-dominio.com
+DB_ENGINE=mysql
+DB_NAME=nombre_bd
+DB_USER=usuario_bd
+DB_PASSWORD=clave_bd
+DB_HOST=endpoint-rds
+DB_PORT=3306
+DB_CONN_MAX_AGE=60
+```
+
+4. Si vas solo a demo o pruebas pequenas, puedes empezar con SQLite para no pagar RDS.
+
+```env
+DEBUG=False
+SECRET_KEY=tu-clave-segura
+ALLOWED_HOSTS=tu-dominio.us-east-1.elasticbeanstalk.com
+CSRF_TRUSTED_ORIGINS=https://tu-dominio.us-east-1.elasticbeanstalk.com
+DB_ENGINE=sqlite
+SQLITE_NAME=dev.sqlite3
+```
+
+5. Si usas RDS o una base ya creada, Elastic Beanstalk ejecutara migraciones automaticamente al desplegar.
+
+6. Si despliegas con EB CLI:
+
+```powershell
+pip install awsebcli
+eb init -p python-3.11 proyecto-lenguaje-ii
+eb create proyecto-lenguaje-ii-prod --single
+eb deploy
+```
+
+7. Abre la aplicacion:
+
+```powershell
+eb open
+```
+
+8. Cuando termines de probar, elimina el entorno para no seguir consumiendo creditos o cobros:
+
+```powershell
+eb terminate proyecto-lenguaje-ii-prod
+```
+
+Nota:
+
+- Para produccion real no conviene usar SQLite en AWS si la app tendra varios accesos o reinicios del servidor.
+- Elastic Beanstalk no cobra extra por el servicio; cobran los recursos que uses como EC2, RDS, disco y transferencia.
+- Si tu cuenta AWS fue creada el 15 de julio de 2025 o despues, el plan gratis nuevo funciona con creditos y vence a los 6 meses o cuando se acaben esos creditos.
+
+## Despliegue recomendado para demo gratis: EC2
+
+Si quieres dejarlo funcional hoy mismo con el menor costo posible, la mejor ruta practica es:
+
+- `EC2`
+- `1 sola instancia`
+- `t3.micro`
+- `Amazon Linux`
+- `SQLite`
+- `nginx + gunicorn`
+
+Archivos listos para eso:
+
+- [deploy/aws/ec2/gunicorn.service](C:/Users/Joseph/Desktop/edadpromedio/Proyecto_lenguaje_II/deploy/aws/ec2/gunicorn.service)
+- [deploy/aws/ec2/nginx-proyecto.conf](C:/Users/Joseph/Desktop/edadpromedio/Proyecto_lenguaje_II/deploy/aws/ec2/nginx-proyecto.conf)
+- [deploy/aws/ec2/.env.ec2.example](C:/Users/Joseph/Desktop/edadpromedio/Proyecto_lenguaje_II/deploy/aws/ec2/.env.ec2.example)
+- [deploy/aws/ec2/deploy_commands.md](C:/Users/Joseph/Desktop/edadpromedio/Proyecto_lenguaje_II/deploy/aws/ec2/deploy_commands.md)
+
 ## Importacion desde archivos planos
 
 Los archivos planos del proyecto ahora viven en la raiz del repositorio:
