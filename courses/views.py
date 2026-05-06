@@ -69,6 +69,7 @@ def teacher_courses(request):
         course_badge_label="Nivelacion",
         empty_message="Aun no tienes cursos de nivelacion asignados.",
         active_career=active_career,
+        allow_career_switch=True,
     )
 
 
@@ -99,6 +100,7 @@ def teacher_training_courses(request):
         course_badge_label="Induccion",
         empty_message="Aun no tienes cursos de induccion asignados.",
         active_career=active_career,
+        allow_career_switch=False,
     )
 
 
@@ -739,6 +741,7 @@ def _render_teacher_course_list(
     course_badge_label,
     empty_message,
     active_career,
+    allow_career_switch,
 ):
     return render(
         request,
@@ -751,6 +754,7 @@ def _render_teacher_course_list(
             "empty_message": empty_message,
             "active_career": active_career,
             "available_careers": get_available_teacher_careers(request.user),
+            "allow_career_switch": allow_career_switch,
         },
     )
 

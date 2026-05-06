@@ -2,6 +2,113 @@
 
 {% block title %}{{ course.name }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    .course-shell {
+        display: grid;
+        gap: 1.5rem;
+    }
+
+    .course-summary-grid,
+    .course-module-grid {
+        display: grid;
+        gap: 1.5rem;
+        align-items: start;
+    }
+
+    .course-summary-grid {
+        grid-template-columns: minmax(0, 1.7fr) minmax(18rem, 1fr);
+    }
+
+    .course-module-grid {
+        grid-template-columns: minmax(0, 1.45fr) minmax(20rem, 1fr);
+    }
+
+    .course-side-stack {
+        display: grid;
+        gap: 1rem;
+    }
+
+    .course-panel {
+        overflow: hidden;
+    }
+
+    .course-copy {
+        max-width: 68ch;
+    }
+
+    .course-metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+        gap: 0.9rem;
+    }
+
+    .course-stat {
+        padding: 1rem 1.05rem;
+        border-radius: 1.2rem;
+        border: 1px solid rgba(76, 29, 149, 0.1);
+        background: rgba(255, 255, 255, 0.68);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+    }
+
+    .course-stat .metric-value {
+        font-size: 1.65rem;
+    }
+
+    .course-roster {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        max-height: 18rem;
+        overflow: auto;
+        padding-right: 0.15rem;
+    }
+
+    .course-roster-item {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.55rem 0.8rem;
+        border-radius: 999px;
+        background: rgba(124, 58, 237, 0.1);
+        border: 1px solid rgba(124, 58, 237, 0.12);
+        color: var(--primary-deep);
+        font-size: 0.88rem;
+        font-weight: 700;
+        line-height: 1.1;
+    }
+
+    .course-table-link {
+        color: var(--primary-deep);
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .course-table-link:hover,
+    .course-table-link:focus {
+        color: var(--primary);
+    }
+
+    .course-test-list {
+        display: grid;
+        gap: 0.9rem;
+    }
+
+    .course-test-item {
+        padding: 1rem 1.05rem;
+        border-radius: 1.2rem;
+        border: 1px solid rgba(76, 29, 149, 0.1);
+        background: rgba(255, 255, 255, 0.68);
+    }
+
+    @media (max-width: 1199.98px) {
+        .course-summary-grid,
+        .course-module-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <section class="hero-strip p-4 p-lg-5 mb-4">
     <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
@@ -33,125 +140,165 @@
     </div>
 </section>
 
-<div class="row g-4 mb-4">
-    <div class="col-lg-7">
-        <div class="glass-card dashboard-card h-100">
+<div class="course-shell">
+    <div class="course-summary-grid">
+        <div class="glass-card dashboard-card course-panel">
             <div class="card-header">
-                <div class="soft-label">Contenido inicial</div>
-                <h2 class="h4 mb-0">Bienvenida</h2>
+                <div class="soft-label">Resumen</div>
+                <h2 class="h4 mb-0">Bienvenida al curso</h2>
             </div>
             <div class="card-body">
-                <p class="mb-0">{{ course.welcome_message }}</p>
+                <p class="course-copy mb-4">
+                    {{ course.welcome_message|default:"Este espacio reune el contenido, las asignaciones y los tests principales del curso." }}
+                </p>
+
+                <div class="course-metrics">
+                    <div class="course-stat">
+                        <div class="soft-label mb-2">Actividades</div>
+                        <div class="metric-value">{{ activities|length }}</div>
+                        <div class="small text-secondary">Asignaciones registradas en el curso.</div>
+                    </div>
+                    <div class="course-stat">
+                        <div class="soft-label mb-2">Tests</div>
+                        <div class="metric-value">{{ tests|length }}</div>
+                        <div class="small text-secondary">Evaluaciones asociadas a esta materia.</div>
+                    </div>
+                    <div class="course-stat">
+                        <div class="soft-label mb-2">Docentes</div>
+                        <div class="metric-value">{{ teachers|length }}</div>
+                        <div class="small text-secondary">Profesores responsables del curso.</div>
+                    </div>
+                    <div class="course-stat">
+                        <div class="soft-label mb-2">
+                            {% if request.user.tipo_usuario == "estudiante" %}Tu avance{% else %}Estudiantes{% endif %}
+                        </div>
+                        <div class="metric-value">
+                            {% if request.user.tipo_usuario == "estudiante" and student_progress %}
+                                {{ student_progress.percentage|floatformat:0 }}%
+                            {% else %}
+                                {{ students|length }}
+                            {% endif %}
+                        </div>
+                        <div class="small text-secondary">
+                            {% if request.user.tipo_usuario == "estudiante" and student_progress %}
+                                {{ student_progress.completed_items }}/{{ student_progress.total_items }} elementos completados.
+                            {% else %}
+                                Participantes vinculados a esta materia.
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="col-lg-5">
-        {% if request.user.tipo_usuario == "estudiante" and student_progress %}
-            <div class="glass-card dashboard-card mb-4">
+
+        <div class="course-side-stack">
+            {% if request.user.tipo_usuario == "estudiante" and student_progress %}
+                <div class="glass-card dashboard-card course-panel">
+                    <div class="card-header">
+                        <div class="soft-label">Avance</div>
+                        <h2 class="h5 mb-0">Progreso de la {{ course.category_label|lower }}</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between small text-secondary mb-1">
+                            <span>Completado</span>
+                            <strong>{{ student_progress.percentage|floatformat:0 }}%</strong>
+                        </div>
+                        <div class="progress mb-2" role="progressbar" aria-label="Progreso del curso" aria-valuenow="{{ student_progress.percentage|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100">
+                            <div class="progress-bar" style="width: {{ student_progress.percentage }}%;"></div>
+                        </div>
+                        <div class="small text-secondary">
+                            {{ student_progress.completed_items }}/{{ student_progress.total_items }} completados
+                            (Tareas {{ student_progress.completed_activities }}/{{ student_progress.total_activities }}, tests {{ student_progress.completed_tests }}/{{ student_progress.total_tests }})
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="glass-card dashboard-card course-panel">
                 <div class="card-header">
-                    <div class="soft-label">Avance</div>
-                    <h2 class="h5 mb-0">Progreso de la {{ course.category_label|lower }}</h2>
+                    <div class="soft-label">Docentes</div>
+                    <h2 class="h5 mb-0">Profesores asignados</h2>
                 </div>
                 <div class="card-body">
-                    <div class="d-flex justify-content-between small text-secondary mb-1">
-                        <span>Completado</span>
-                        <strong>{{ student_progress.percentage|floatformat:0 }}%</strong>
-                    </div>
-                    <div class="progress mb-2" role="progressbar" aria-label="Progreso del curso" aria-valuenow="{{ student_progress.percentage|floatformat:0 }}" aria-valuemin="0" aria-valuemax="100">
-                        <div class="progress-bar" style="width: {{ student_progress.percentage }}%;"></div>
-                    </div>
-                    <div class="small text-secondary">
-                        {{ student_progress.completed_items }}/{{ student_progress.total_items }} completados
-                        (Tareas {{ student_progress.completed_activities }}/{{ student_progress.total_activities }}, tests {{ student_progress.completed_tests }}/{{ student_progress.total_tests }})
-                    </div>
-                </div>
-            </div>
-        {% endif %}
-
-        <div class="glass-card dashboard-card mb-4">
-            <div class="card-header">
-                <div class="soft-label">Docentes</div>
-                <h2 class="h5 mb-0">Profesores asignados</h2>
-            </div>
-            <div class="card-body">
-                {% if teachers %}
-                    <ul class="list-clean mb-0">
-                        {% for teacher in teachers %}
-                            <li>{{ teacher.display_name }}</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <div class="empty-state">No hay profesores asignados.</div>
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="glass-card dashboard-card">
-            <div class="card-header">
-                <div class="soft-label">Participantes</div>
-                <h2 class="h5 mb-0">Estudiantes asignados</h2>
-            </div>
-            <div class="card-body">
-                {% if students %}
-                    <ul class="list-clean mb-0">
-                        {% for student in students %}
-                            <li>{{ student.display_name }}</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <div class="empty-state">No hay estudiantes asignados.</div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-{% if request.user.tipo_usuario == "profesor" %}
-    <div class="glass-card dashboard-card mb-4">
-        <div class="card-header">
-            <div class="soft-label">Seguimiento</div>
-            <h2 class="h4 mb-0">Progreso de estudiantes en esta materia</h2>
-        </div>
-        <div class="card-body">
-            {% if teacher_progress_rows %}
-                <div class="table-responsive">
-                    <table class="table table-soft align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th>Estudiante</th>
-                                <th>Completado</th>
-                                <th>Detalle</th>
-                                <th>Porcentaje</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for row in teacher_progress_rows %}
-                                <tr>
-                                    <td>{{ row.student.username }}</td>
-                                    <td>{{ row.completed_items }}/{{ row.total_items }}</td>
-                                    <td class="small text-secondary">Tareas {{ row.completed_activities }} - Tests {{ row.completed_tests }}</td>
-                                    <td>
-                                        <strong>{{ row.percentage|floatformat:0 }}%</strong>
-                                    </td>
-                                    <td class="text-end">
-                                        <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_student_course_detail' course.id row.student.id %}">Ver detalle</a>
-                                    </td>
-                                </tr>
+                    {% if teachers %}
+                        <div class="course-roster">
+                            {% for teacher in teachers %}
+                                <span class="course-roster-item">{{ teacher.display_name }}</span>
                             {% endfor %}
-                        </tbody>
-                    </table>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">No hay profesores asignados.</div>
+                    {% endif %}
                 </div>
-            {% else %}
-                <div class="empty-state">No hay estudiantes inscritos en esta materia.</div>
+            </div>
+
+            {% if request.user.tipo_usuario == "profesor" %}
+                <div class="glass-card dashboard-card course-panel">
+                    <div class="card-header">
+                        <div class="soft-label">Participantes</div>
+                        <h2 class="h5 mb-0">{{ students|length }} estudiantes asignados</h2>
+                    </div>
+                    <div class="card-body">
+                        {% if students %}
+                            <div class="course-roster">
+                                {% for student in students %}
+                                    <span class="course-roster-item">{{ student.display_name }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state">No hay estudiantes asignados.</div>
+                        {% endif %}
+                    </div>
+                </div>
             {% endif %}
         </div>
     </div>
-{% endif %}
 
-<div class="row g-4">
-    <div class="col-xl-6">
-        <div class="glass-card dashboard-card h-100">
+    {% if request.user.tipo_usuario == "profesor" %}
+        <div class="glass-card dashboard-card course-panel">
+            <div class="card-header">
+                <div class="soft-label">Seguimiento</div>
+                <h2 class="h4 mb-0">Progreso de estudiantes en esta materia</h2>
+            </div>
+            <div class="card-body">
+                {% if teacher_progress_rows %}
+                    <div class="table-responsive">
+                        <table class="table table-soft align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Estudiante</th>
+                                    <th>Completado</th>
+                                    <th>Detalle</th>
+                                    <th>Porcentaje</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in teacher_progress_rows %}
+                                    <tr>
+                                        <td>{{ row.student.username }}</td>
+                                        <td>{{ row.completed_items }}/{{ row.total_items }}</td>
+                                        <td class="small text-secondary">Tareas {{ row.completed_activities }} - Tests {{ row.completed_tests }}</td>
+                                        <td>
+                                            <strong>{{ row.percentage|floatformat:0 }}%</strong>
+                                        </td>
+                                        <td class="text-end">
+                                            <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_student_course_detail' course.id row.student.id %}">Ver detalle</a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">No hay estudiantes inscritos en esta materia.</div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="course-module-grid">
+        <div class="glass-card dashboard-card course-panel">
             <div class="card-header d-flex justify-content-between align-items-center gap-3 flex-wrap">
                 <div>
                     <div class="soft-label">Actividades</div>
@@ -180,7 +327,7 @@
                                     <tr id="activity-{{ activity.id }}">
                                         <td>
                                             <strong>
-                                                <a class="link-light text-decoration-none" href="{% url 'course_activity_submission_module' course.id activity.id %}">
+                                                <a class="course-table-link" href="{% url 'course_activity_submission_module' course.id activity.id %}">
                                                     {{ activity.title }}
                                                 </a>
                                             </strong>
@@ -235,10 +382,8 @@
                 {% endif %}
             </div>
         </div>
-    </div>
 
-    <div class="col-xl-6">
-        <div class="glass-card dashboard-card h-100">
+        <div class="glass-card dashboard-card course-panel">
             <div class="card-header d-flex justify-content-between align-items-center gap-3 flex-wrap">
                 <div>
                     <div class="soft-label">Tests</div>
@@ -250,32 +395,30 @@
             </div>
             <div class="card-body">
                 {% if tests %}
-                    <ul class="status-list mb-0">
+                    <div class="course-test-list">
                         {% for test in tests %}
-                            <li>
-                                <div class="w-100">
-                                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
-                                        <strong>{{ test.name }}</strong>
-                                        <span class="status-pill {% if test.is_active %}success{% else %}warn{% endif %}">{% if test.is_active %}Activo{% else %}Inactivo{% endif %}</span>
-                                    </div>
-                                    <div class="text-secondary small mb-2">
-                                        {% if test.available_date and test.opening_time and test.closing_time %}
-                                            {{ test.available_date|date:"d/m/Y" }} | {{ test.opening_time|time:"H:i" }} - {{ test.closing_time|time:"H:i" }}
-                                        {% else %}
-                                            Sin restriccion de calendario.
-                                        {% endif %}
-                                    </div>
-                                    <div class="d-flex gap-2 flex-wrap">
-                                        {% if request.user.tipo_usuario == "profesor" %}
-                                            <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_test_edit' test.id %}">Editar</a>
-                                        {% else %}
-                                            <a class="btn btn-outline-primary btn-sm" href="{% url 'take_test' test.id %}">Rendir test</a>
-                                        {% endif %}
-                                    </div>
+                            <div class="course-test-item">
+                                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                                    <strong>{{ test.name }}</strong>
+                                    <span class="status-pill {% if test.is_active %}success{% else %}warn{% endif %}">{% if test.is_active %}Activo{% else %}Inactivo{% endif %}</span>
                                 </div>
-                            </li>
+                                <div class="text-secondary small mb-3">
+                                    {% if test.available_date and test.opening_time and test.closing_time %}
+                                        {{ test.available_date|date:"d/m/Y" }} | {{ test.opening_time|time:"H:i" }} - {{ test.closing_time|time:"H:i" }}
+                                    {% else %}
+                                        Sin restriccion de calendario.
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    {% if request.user.tipo_usuario == "profesor" %}
+                                        <a class="btn btn-outline-primary btn-sm" href="{% url 'teacher_test_edit' test.id %}">Editar</a>
+                                    {% else %}
+                                        <a class="btn btn-outline-primary btn-sm" href="{% url 'take_test' test.id %}">Rendir test</a>
+                                    {% endif %}
+                                </div>
+                            </div>
                         {% endfor %}
-                    </ul>
+                    </div>
                 {% else %}
                     <div class="empty-state">Este curso no tiene tests asignados por ahora.</div>
                 {% endif %}

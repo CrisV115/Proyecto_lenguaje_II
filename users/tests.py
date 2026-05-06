@@ -5,9 +5,9 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase
+from django.urls import reverse
 
 from .csv_storage import save_user_registration_to_csv
-from django.urls import reverse
 
 
 class UsersImportTests(TestCase):
@@ -125,6 +125,21 @@ class LoginIdentifierTests(TestCase):
         )
         self.assertRedirects(response, reverse("student_dashboard"))
 
+    def test_login_page_sets_csrf_cookie_and_disables_caching(self):
+        response = self.client.get(reverse("login"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("csrftoken", response.cookies)
+        self.assertIn("no-store", response.headers.get("Cache-Control", ""))
+
+    def test_authenticated_pages_disable_browser_caching(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("student_dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("no-store", response.headers.get("Cache-Control", ""))
+
     def test_user_with_pending_password_change_is_redirected(self):
         self.user.debe_cambiar_password = True
         self.user.save(update_fields=["debe_cambiar_password"])
@@ -229,6 +244,27 @@ class LoginIdentifierTests(TestCase):
         professor.refresh_from_db()
         self.assertEqual(professor.carrera, "Marketing")
         self.assertEqual(professor.get_carreras(), ["Marketing", "Contabilidad"])
+
+    def test_logout_requires_post(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("logout"))
+
+        self.assertEqual(response.status_code, 405)
+        dashboard_response = self.client.get(reverse("role_dashboard"))
+        self.assertRedirects(dashboard_response, reverse("student_dashboard"))
+
+    def test_logout_post_closes_session(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(reverse("logout"))
+
+        self.assertRedirects(response, reverse("home"))
+        dashboard_response = self.client.get(reverse("role_dashboard"))
+        self.assertRedirects(
+            dashboard_response,
+            f"{reverse('login')}?next={reverse('role_dashboard')}",
+        )
 
     def test_professor_csv_keeps_cedula_separate_from_telefono(self):
         professor = self.user_model.objects.create_user(

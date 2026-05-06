@@ -7,6 +7,8 @@ from django.db.models import Q
 from django.urls import reverse
 from django.shortcuts import redirect, render
 from django.utils import timezone
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.http import require_POST
 
 from certifications.models import Certificate
 from certifications.services import get_student_certificate_status
@@ -45,6 +47,7 @@ def home(request):
     return render(request, "home.html")
 
 
+@ensure_csrf_cookie
 def register(request):
     if request.user.is_authenticated:
         return redirect_user_dashboard(request.user)
@@ -79,6 +82,7 @@ def register(request):
     return render(request, "register.html", {"form": form})
 
 
+@ensure_csrf_cookie
 def login_view(request):
     if request.user.is_authenticated:
         return redirect_user_dashboard(request.user)
@@ -110,6 +114,7 @@ def login_view(request):
     return render(request, "login.html")
 
 
+@require_POST
 def logout_view(request):
     logout(request)
     messages.info(request, "Sesion cerrada correctamente.")
@@ -117,6 +122,7 @@ def logout_view(request):
 
 
 @login_required
+@ensure_csrf_cookie
 def force_password_change(request):
     if not request.user.debe_cambiar_password:
         return redirect_user_dashboard(request.user)
@@ -151,6 +157,7 @@ def switch_teacher_career(request):
     return redirect(target)
 
 
+@ensure_csrf_cookie
 def password_reset_security(request):
     context = {}
 

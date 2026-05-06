@@ -191,6 +191,17 @@
             outline: none;
         }
 
+        .topbar-inline-form {
+            display: inline-flex;
+            margin: 0;
+        }
+
+        button.topbar-link {
+            appearance: none;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
         .topbar-link.is-active {
             color: white;
             border-color: transparent;
@@ -1217,7 +1228,10 @@
                                     <a class="topbar-link {% if current_name == 'teacher_tests' or current_name == 'teacher_test_create' or current_name == 'teacher_test_edit' %}is-active{% endif %}" href="{% url 'teacher_tests' %}">Gestionar tests</a>
                                     <a class="topbar-link {% if current_name == 'teacher_results' or current_name == 'teacher_result_detail' or current_name == 'teacher_results_preview' %}is-active{% endif %}" href="{% url 'teacher_results' %}">Resultados</a>
                                     <a class="topbar-link {% if current_name == 'teacher_students' %}is-active{% endif %}" href="{% url 'teacher_students' %}">Estudiantes</a>
-                                    <a class="topbar-link topbar-link--accent" href="{% url 'logout' %}">Salir</a>
+                                    <form method="post" action="{% url 'logout' %}" class="topbar-inline-form">
+                                        {% csrf_token %}
+                                        <button type="submit" class="topbar-link topbar-link--accent">Salir</button>
+                                    </form>
                                 </div>
                             {% else %}
                                 <div class="topbar-links">
@@ -1260,7 +1274,10 @@
                                     <a class="topbar-link {% if current_name == 'student_training_courses' %}is-active{% endif %}" href="{% url 'student_training_courses' %}">Induccion</a>
                                     <a class="topbar-link {% if current_name == 'tests_index' or current_name == 'take_test' or current_name == 'test_result' %}is-active{% endif %}" href="{% url 'tests_index' %}">Tests</a>
                                     <a class="topbar-link {% if current_name == 'tracking_overview' %}is-active{% endif %}" href="{% url 'tracking_overview' %}">Seguimiento</a>
-                                    <a class="topbar-link topbar-link--accent" href="{% url 'logout' %}">Salir</a>
+                                    <form method="post" action="{% url 'logout' %}" class="topbar-inline-form">
+                                        {% csrf_token %}
+                                        <button type="submit" class="topbar-link topbar-link--accent">Salir</button>
+                                    </form>
                                 </div>
                             {% endif %}
                         {% endwith %}
