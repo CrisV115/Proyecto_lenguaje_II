@@ -114,7 +114,7 @@ class Command(BaseCommand):
                     "last_name": apellido,
                     "email": correo,
                     "carrera": carrera,
-                    "telefono": "",
+                    "telefono": normalized.get("Telefono", ""),
                     "tipo_usuario": role,
                     "debe_cambiar_password": True,
                     "pregunta_seguridad": "ciudad",
@@ -122,19 +122,49 @@ class Command(BaseCommand):
                     "is_active": True,
                 }
 
-                user, was_created = user_model.objects.update_or_create(
-                    cedula=cedula,
-                    defaults=defaults,
+                user = (
+                    user_model.objects.filter(cedula=cedula).first()
+                    or user_model.objects.filter(email__iexact=correo).first()
+                    or user_model.objects.filter(username=cedula).first()
                 )
+
+                if user is not None:
+                    email_owner = (
+                        user_model.objects.filter(email__iexact=correo)
+                        .exclude(pk=user.pk)
+                        .first()
+                    )
+                    if email_owner is not None:
+                        raise CommandError(
+                            f"El correo {correo} ya pertenece a otro usuario ({email_owner.username})."
+                        )
+
+                    username_owner = (
+                        user_model.objects.filter(username=cedula)
+                        .exclude(pk=user.pk)
+                        .first()
+                    )
+                    if username_owner is not None:
+                        raise CommandError(
+                            f"La cedula {cedula} no se puede usar como username porque ya pertenece a otro usuario ({username_owner.email})."
+                        )
+
+                    for field, value in defaults.items():
+                        setattr(user, field, value)
+                    user.cedula = cedula
+                    was_created = False
+                else:
+                    user = user_model(cedula=cedula, **defaults)
+                    was_created = True
 
                 if was_created:
                     user.set_password(cedula)
-                    user.save(update_fields=["password"])
+                    user.save()
                     created += 1
                 else:
                     user.set_password(cedula)
                     user.debe_cambiar_password = True
-                    user.save(update_fields=["password", "debe_cambiar_password"])
+                    user.save()
                     updated += 1
 
                 if role == "estudiante":

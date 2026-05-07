@@ -1,15 +1,56 @@
 from django.contrib import admin
 
 from tests_academic.utils import sync_course_student_assignments
+from users.csv_storage import rewrite_failed_students_csv
 
-from .forms import CourseAdminForm
+from .forms import ClassroomAdminForm, CourseAdminForm
 from .models import (
+    Classroom,
     Course,
     CourseActivity,
     CourseActivitySubmission,
     CourseClassAttendance,
     CourseClassSession,
+    InductionCourse,
 )
+
+
+@admin.register(Classroom)
+class ClassroomAdmin(admin.ModelAdmin):
+    form = ClassroomAdminForm
+    list_display = ("name", "students_count", "teachers_count", "updated_at")
+    search_fields = (
+        "name",
+        "students__cedula",
+        "students__username",
+        "students__first_name",
+        "students__last_name",
+        "teachers__username",
+        "teachers__first_name",
+        "teachers__last_name",
+    )
+    autocomplete_fields = ("students", "teachers")
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        ("Informacion del aula", {"fields": ("name", "description")}),
+        ("Asignaciones", {"fields": ("students", "teachers")}),
+        ("Tiempos", {"fields": ("created_at", "updated_at")}),
+    )
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        classroom = form.instance
+        for course in classroom.courses.filter(is_training=False):
+            sync_course_student_assignments(course)
+        rewrite_failed_students_csv()
+
+    @admin.display(description="Estudiantes")
+    def students_count(self, obj):
+        return obj.students.count()
+
+    @admin.display(description="Profesores")
+    def teachers_count(self, obj):
+        return obj.teachers.count()
 
 
 @admin.register(Course)
@@ -23,21 +64,25 @@ class CourseAdmin(admin.ModelAdmin):
         "students_count",
         "updated_at",
     )
-    search_fields = ("name", "description", "career")
-    list_filter = ("is_training", "career")
+    search_fields = ("name", "description", "classroom__name")
+    list_filter = ("classroom",)
     filter_horizontal = ("teachers",)
     readonly_fields = ("created_at", "updated_at", "category_label")
 
-    def get_fieldsets(self, request, obj=None):
-        info_fields = ["name", "career", "description", "welcome_message"]
-        if obj and obj.is_training:
-            info_fields = ["name", "category_label", "description", "welcome_message"]
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(is_training=False)
 
+    def get_fieldsets(self, request, obj=None):
         return (
             (
                 "Informacion del curso",
                 {
-                    "fields": tuple(info_fields),
+                    "fields": (
+                        "name",
+                        "classroom",
+                        "description",
+                        "welcome_message",
+                    ),
                 },
             ),
             ("Asignaciones", {"fields": ("teachers",)}),
@@ -79,6 +124,45 @@ class CourseAdmin(admin.ModelAdmin):
     @admin.display(description="Alcance")
     def course_audience(self, obj):
         return obj.audience_label
+
+
+@admin.register(InductionCourse)
+class InductionCourseAdmin(admin.ModelAdmin):
+    list_display = ("name", "teachers_count", "students_count", "updated_at")
+    search_fields = ("name", "description")
+    filter_horizontal = ("teachers",)
+    readonly_fields = ("created_at", "updated_at", "category_label")
+    fieldsets = (
+        (
+            "Informacion de induccion",
+            {"fields": ("name", "description", "welcome_message")},
+        ),
+        ("Asignaciones", {"fields": ("teachers",)}),
+        ("Tiempos", {"fields": ("created_at", "updated_at")}),
+    )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(is_training=True)
+
+    def save_model(self, request, obj, form, change):
+        obj.is_training = True
+        obj.classroom = None
+        obj.career = ""
+        super().save_model(request, obj, form, change)
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        if form.instance.classroom_id:
+            form.instance.classroom.teachers.add(*form.instance.teachers.all())
+        sync_course_student_assignments(form.instance)
+
+    @admin.display(description="Profesores")
+    def teachers_count(self, obj):
+        return obj.teachers.count()
+
+    @admin.display(description="Estudiantes")
+    def students_count(self, obj):
+        return obj.students.count()
 
 
 @admin.register(CourseActivity)

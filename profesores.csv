@@ -1,2 +1,6 @@
-Cedula;Nombres;Apellidos;Carrera;Correo;Carreras;Telefono;Username;TipoUsuario
-1750126739;Carlos;Lopez;Enfermeria;cris115@gmail.com;Enfermeria;0992826436;ProfesorPrueba1;profesor
+Cedula;Nombres;Apellidos;Carrera;Correo;Carreras;Telefono;Username;TipoUsuario;Aula
+1750126740;Carlos;Lopez;Software;carlos.lopez@example.com;Software;0992000001;carloslopez;profesor;
+1750126741;Patricia;Salazar;Software;patricia.salazar@example.com;Software;0992000002;patriciasalazar;profesor;
+1750126742;Andres;Castillo;Software;andres.castillo@example.com;Software;0992000003;andrescastillo;profesor;
+1750126743;Diana;Morales;Enfermeria;diana.morales@example.com;Enfermeria;0992000004;dianamorales;profesor;
+1750126744;Roberto;Cedeño;Enfermeria;roberto.cedeno@example.com;Enfermeria;0992000005;robertocedeno;profesor;

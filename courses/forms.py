@@ -1,8 +1,45 @@
 from django import forms
+from django.db.models import Q
 
 from users.models import Usuario
 
-from .models import Course, CourseActivity, CourseActivitySubmission
+from .models import Classroom, Course, CourseActivity, CourseActivitySubmission
+
+
+def _failed_diagnostic_students_queryset():
+    return (
+        Usuario.objects.filter(
+            tipo_usuario="estudiante",
+            results__test__type="conocimientos",
+            results__test__course__isnull=True,
+            results__passed=False,
+        )
+        .exclude(
+            results__test__type="conocimientos",
+            results__test__course__isnull=True,
+            results__passed=True,
+        )
+        .distinct()
+        .order_by("last_name", "first_name", "cedula", "username")
+    )
+
+
+class ClassroomAdminForm(forms.ModelForm):
+    class Meta:
+        model = Classroom
+        fields = ["name", "description", "students", "teachers"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        failed_students = _failed_diagnostic_students_queryset()
+        if self.instance.pk:
+            failed_students = Usuario.objects.filter(
+                Q(id__in=failed_students.values("id")) | Q(classrooms=self.instance)
+            ).distinct()
+        self.fields["students"].queryset = failed_students
+        self.fields["teachers"].queryset = Usuario.objects.filter(
+            tipo_usuario="profesor"
+        ).order_by("last_name", "first_name", "username")
 
 
 class CourseAdminForm(forms.ModelForm):
@@ -10,7 +47,7 @@ class CourseAdminForm(forms.ModelForm):
         model = Course
         fields = [
             "name",
-            "career",
+            "classroom",
             "description",
             "welcome_message",
             "teachers",
@@ -18,52 +55,31 @@ class CourseAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if "career" not in self.fields:
+        if "classroom" not in self.fields:
             return
 
-        careers = sorted(
-            {
-                career
-                for career in Usuario.objects.exclude(carrera="")
-                .values_list("carrera", flat=True)
-                if career
-            },
-            key=str.casefold,
-        )
-        current_career = Usuario.normalize_carrera(
-            getattr(self.instance, "career", "")
-        )
-        if current_career and current_career not in careers:
-            careers.append(current_career)
-            careers.sort(key=str.casefold)
-
-        self.fields["career"].required = False
-        self.fields["career"].label = "Carrera de la nivelacion"
-        self.fields["career"].widget = forms.Select(
-            choices=[
-                ("", "Seleccione una carrera"),
-                *[(career, career) for career in careers],
-            ]
-        )
-        self.fields["career"].help_text = (
-            "Las carreras se cargan automaticamente desde los estudiantes y profesores importados."
+        self.fields["classroom"].required = True
+        self.fields["classroom"].label = "Aula de nivelacion"
+        self.fields["classroom"].queryset = Classroom.objects.order_by("name")
+        self.fields["classroom"].help_text = (
+            "Selecciona el aula donde se impartira esta materia de nivelacion."
         )
 
-    def clean_career(self):
-        return Usuario.normalize_carrera(self.cleaned_data.get("career", ""))
+        if self.instance.pk and self.instance.is_training:
+            self.fields["classroom"].required = False
 
     def clean(self):
         cleaned_data = super().clean()
-        career = cleaned_data.get("career", "")
+        classroom = cleaned_data.get("classroom")
 
         if getattr(self.instance, "is_training", False):
-            cleaned_data["career"] = ""
+            cleaned_data["classroom"] = None
             return cleaned_data
 
-        if "career" in self.fields and not career:
+        if "classroom" in self.fields and not classroom:
             self.add_error(
-                "career",
-                "Selecciona la carrera a la que pertenece esta nivelacion.",
+                "classroom",
+                "Selecciona el aula a la que pertenece esta nivelacion.",
             )
 
         return cleaned_data

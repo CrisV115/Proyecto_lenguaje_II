@@ -7,10 +7,11 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from courses.models import Course
+from courses.models import Classroom, Course
 from courses.models import CourseActivitySubmission
 from tracking.models import Progress
 from users.career_utils import get_active_teacher_career, get_available_teacher_careers
+from users.csv_storage import rewrite_failed_students_csv
 from users.decorators import role_required
 
 from .forms import TeacherTestForm, TestForm
@@ -18,6 +19,7 @@ from .models import Answer, Question, Result, StudentAnswer, Test
 from .utils import (
     get_course_students_for_teacher,
     get_student_accessible_courses,
+    get_student_managed_tests_queryset,
     get_teacher_editable_tests_queryset,
     get_teacher_managed_tests_queryset,
     sync_student_course_assignments,
@@ -33,13 +35,10 @@ def index(request):
         request.user,
         diagnostic_approved=diagnostic_approved,
     )
+    managed_tests = get_student_managed_tests_queryset(request.user).filter(is_active=True)
+    course_tests = Test.objects.filter(is_active=True, course__in=accessible_courses)
     tests = (
-        Test.objects.filter(
-            is_active=True,
-        )
-        .filter(
-            Q(course__in=accessible_courses) | Q(course__isnull=True)
-        )
+        Test.objects.filter(Q(id__in=managed_tests.values("id")) | Q(id__in=course_tests.values("id")))
         .select_related("course")
         .distinct()
         .order_by("name")
@@ -70,6 +69,9 @@ def take_test(request, test_id):
     )
     if test.course and not get_student_accessible_courses(request.user).filter(id=test.course_id).exists():
         messages.warning(request, "No tienes acceso a este test de curso.")
+        return redirect("tests_index")
+    if not test.course_id and not get_student_managed_tests_queryset(request.user).filter(id=test.id).exists():
+        messages.warning(request, "No tienes acceso a este test diagnostico.")
         return redirect("tests_index")
 
     if not _is_test_open(test, timezone.localtime()):
@@ -146,6 +148,8 @@ def take_test(request, test_id):
                         request.user,
                         diagnostic_approved=passed,
                     )
+                    if test.type == "conocimientos":
+                        rewrite_failed_students_csv()
 
             messages.success(request, "Test enviado y calificado correctamente.")
             return redirect("test_result", test_id=test.id)
@@ -178,36 +182,38 @@ def test_result(request, test_id):
 
 @role_required("profesor")
 def teacher_tests(request):
-    active_career = get_active_teacher_career(request.user, request)
-    request.user.active_career = active_career
+    classroom_id = request.GET.get("classroom", "")
     course_id = request.GET.get("course")
     tests = (
-        get_teacher_managed_tests_queryset(request.user)
-        .select_related("created_by")
+        get_teacher_editable_tests_queryset(request.user)
+        .select_related("created_by", "course", "course__classroom")
         .annotate(
             questions_count=Count("questions", distinct=True),
             results_count=Count("results", distinct=True),
         )
         .order_by("-created_at")
     )
+    if classroom_id:
+        tests = tests.filter(course__classroom_id=classroom_id)
     if course_id:
         tests = tests.filter(course_id=course_id)
+    available_classrooms = _get_teacher_classrooms(request.user)
+    available_courses = _get_teacher_courses(request.user, classroom_id=classroom_id)
     return render(
         request,
         "tests_academic/teacher_tests.html",
         {
             "tests": tests,
             "course_id": course_id,
-            "active_career": active_career,
-            "available_careers": get_available_teacher_careers(request.user),
+            "classroom_id": classroom_id,
+            "available_classrooms": available_classrooms,
+            "available_courses": available_courses,
         },
     )
 
 
 @role_required("profesor")
 def teacher_test_create(request):
-    active_career = get_active_teacher_career(request.user, request)
-    request.user.active_career = active_career
     initial_course = _resolve_course_for_teacher(request, request.GET.get("course"))
     course_context = initial_course is not None
     if request.method == "POST":
@@ -216,6 +222,7 @@ def teacher_test_create(request):
             course_context=course_context,
             course_queryset=_teacher_courses_queryset(request.user),
             initial_course=initial_course,
+            teacher=request.user,
         )
         if form.is_valid() and (not course_context or _validate_teacher_course(form, request.user)):
             _save_test_with_questions(form, request.user)
@@ -228,6 +235,7 @@ def teacher_test_create(request):
             course_context=course_context,
             course_queryset=_teacher_courses_queryset(request.user),
             initial_course=initial_course,
+            teacher=request.user,
         )
 
     return render(
@@ -238,16 +246,12 @@ def teacher_test_create(request):
             "page_title": "Crear test del curso" if course_context else "Crear test diagnostico o vocacional",
             "back_course": initial_course,
             "course_form_context": course_context,
-            "active_career": active_career,
-            "available_careers": get_available_teacher_careers(request.user),
         },
     )
 
 
 @role_required("profesor")
 def teacher_test_edit(request, test_id):
-    active_career = get_active_teacher_career(request.user, request)
-    request.user.active_career = active_career
     test = get_object_or_404(get_teacher_editable_tests_queryset(request.user), id=test_id)
     course_context = test.is_course_test
 
@@ -257,6 +261,7 @@ def teacher_test_edit(request, test_id):
             instance=test,
             course_context=course_context,
             course_queryset=_teacher_courses_queryset(request.user),
+            teacher=request.user,
         )
         if form.is_valid() and (not course_context or _validate_teacher_course(form, request.user)):
             _save_test_with_questions(form, request.user)
@@ -269,6 +274,7 @@ def teacher_test_edit(request, test_id):
             instance=test,
             course_context=course_context,
             course_queryset=_teacher_courses_queryset(request.user),
+            teacher=request.user,
         )
 
     return render(
@@ -280,28 +286,35 @@ def teacher_test_edit(request, test_id):
             "test": test,
             "back_course": test.course if course_context else None,
             "course_form_context": course_context,
-            "active_career": active_career,
-            "available_careers": get_available_teacher_careers(request.user),
         },
     )
 
 
 @role_required("profesor")
 def teacher_results(request):
-    active_career = get_active_teacher_career(request.user, request)
-    request.user.active_career = active_career
+    classroom_id = request.GET.get("classroom", "")
+    course_id = request.GET.get("course", "")
+    teacher_tests = get_teacher_editable_tests_queryset(request.user)
+    if classroom_id:
+        teacher_tests = teacher_tests.filter(course__classroom_id=classroom_id)
+    if course_id:
+        teacher_tests = teacher_tests.filter(course_id=course_id)
     results = (
         Result.objects.filter(
-            test__in=get_teacher_managed_tests_queryset(request.user),
+            test__in=teacher_tests,
         )
         .select_related("student", "test")
         .order_by("-submitted_at")
     )
+    available_classrooms = _get_teacher_classrooms(request.user)
+    available_courses = _get_teacher_courses(request.user, classroom_id=classroom_id)
     context = {
         "results": results,
         "generated_at": _get_report_generated_at(),
-        "active_career": active_career,
-        "available_careers": get_available_teacher_careers(request.user),
+        "classroom_id": classroom_id,
+        "course_id": course_id,
+        "available_classrooms": available_classrooms,
+        "available_courses": available_courses,
     }
     context.update(_build_teacher_diagnostic_report_context(request.user))
     return render(request, "tests_academic/teacher_results.html", context)
@@ -412,21 +425,22 @@ def _get_report_generated_at():
 
 @role_required("profesor")
 def teacher_students(request):
-    active_career = get_active_teacher_career(request.user, request)
-    request.user.active_career = active_career
-    teacher_courses = list(
-        Course.objects.filter(teachers=request.user)
-        .prefetch_related("students")
-        .order_by("name")
-    )
+    classroom_id = request.GET.get("classroom", "")
+    course_id = request.GET.get("course", "")
+    teacher_courses_queryset = _get_teacher_courses(request.user, classroom_id=classroom_id)
+    if course_id:
+        teacher_courses_queryset = teacher_courses_queryset.filter(id=course_id)
+    teacher_courses = list(teacher_courses_queryset.prefetch_related("students"))
     if not teacher_courses:
         return render(
             request,
             "tests_academic/teacher_students.html",
             {
                 "rows": [],
-                "active_career": active_career,
-                "available_careers": get_available_teacher_careers(request.user),
+                "classroom_id": classroom_id,
+                "course_id": course_id,
+                "available_classrooms": _get_teacher_classrooms(request.user),
+                "available_courses": _get_teacher_courses(request.user, classroom_id=classroom_id),
             },
         )
 
@@ -448,8 +462,10 @@ def teacher_students(request):
             "tests_academic/teacher_students.html",
             {
                 "rows": [],
-                "active_career": active_career,
-                "available_careers": get_available_teacher_careers(request.user),
+                "classroom_id": classroom_id,
+                "course_id": course_id,
+                "available_classrooms": _get_teacher_classrooms(request.user),
+                "available_courses": _get_teacher_courses(request.user, classroom_id=classroom_id),
             },
         )
 
@@ -507,8 +523,10 @@ def teacher_students(request):
         "tests_academic/teacher_students.html",
         {
             "rows": rows,
-            "active_career": active_career,
-            "available_careers": get_available_teacher_careers(request.user),
+            "classroom_id": classroom_id,
+            "course_id": course_id,
+            "available_classrooms": _get_teacher_classrooms(request.user),
+            "available_courses": _get_teacher_courses(request.user, classroom_id=classroom_id),
         },
     )
 
@@ -539,8 +557,8 @@ def _save_test_with_questions(form, user):
             test.created_by = user
         if not test.type:
             test.type = "conocimientos"
-        if not test.course_id:
-            test.target_career = getattr(user, "active_career", "") or getattr(user, "carrera", "")
+        if not test.course_id and not test.target_career:
+            test.target_career = getattr(user, "carrera", "")
         test.save()
 
         test.questions.all().delete()
@@ -616,7 +634,18 @@ def _is_test_open(test, now):
 
 
 def _teacher_courses_queryset(user):
-    return Course.objects.filter(teachers=user).order_by("name")
+    return Course.objects.filter(teachers=user, is_training=False).order_by("classroom__name", "name")
+
+
+def _get_teacher_classrooms(user):
+    return Classroom.objects.filter(courses__teachers=user, courses__is_training=False).distinct().order_by("name")
+
+
+def _get_teacher_courses(user, *, classroom_id=""):
+    queryset = Course.objects.filter(teachers=user, is_training=False).select_related("classroom")
+    if classroom_id:
+        queryset = queryset.filter(classroom_id=classroom_id)
+    return queryset.distinct().order_by("classroom__name", "name")
 
 
 def _resolve_course_for_teacher(request, course_id):

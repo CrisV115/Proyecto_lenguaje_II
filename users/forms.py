@@ -1,4 +1,4 @@
-import re
+﻿import re
 
 from django import forms
 from django.contrib.auth.forms import PasswordChangeForm, UserCreationForm
@@ -138,15 +138,15 @@ class PrimerIngresoPasswordForm(PasswordChangeForm):
     )
 
     old_password = forms.CharField(
-        label="Contrasena actual",
+        label="Contraseña actual",
         widget=forms.PasswordInput(attrs={"class": "form-control"}),
     )
     new_password1 = forms.CharField(
-        label="Nueva contrasena",
+        label="Nueva contraseña",
         widget=forms.PasswordInput(attrs={"class": "form-control"}),
     )
     new_password2 = forms.CharField(
-        label="Confirmar nueva contrasena",
+        label="Confirmar nueva contraseña",
         widget=forms.PasswordInput(attrs={"class": "form-control"}),
     )
 

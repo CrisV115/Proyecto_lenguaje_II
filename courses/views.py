@@ -45,31 +45,28 @@ def student_courses(request):
         request,
         courses=courses,
         page_title="Nivelaciones asignadas",
-        page_description="Aqui ves las nivelaciones que el sistema te asigno automaticamente segun tu carrera y resultado diagnostico.",
+        page_description="Aqui ves las nivelaciones que se habilitan cuando repruebas el diagnostico y ya tienes un aula asignada.",
         course_badge_label="Nivelacion",
         enter_label="Entrar a la nivelacion",
         empty_message=(
             "No tienes ninguna nivelacion asignada porque aprobaste el test diagnostico."
             if diagnostic_approved
-            else "Aun no tienes ninguna nivelacion asignada."
+            else "Aun no tienes ninguna nivelacion asignada. Se habilitara cuando tengas un aula asignada."
         ),
     )
 
 
 @role_required("profesor")
 def teacher_courses(request):
-    active_career = get_active_teacher_career(request.user, request)
-    request.user.active_career = active_career
-    courses = _get_teacher_courses_for_active_career(request.user, is_training=False)
+    courses = request.user.courses_taught.filter(is_training=False).select_related("classroom").order_by("classroom__name", "name")
     return _render_teacher_course_list(
         request,
         courses=courses,
         page_title="Cursos de nivelacion",
-        page_description="Aqui ves las nivelaciones que administras y sus estudiantes asignados automaticamente por carrera.",
+        page_description="Aqui ves las nivelaciones que administras por aula.",
         course_badge_label="Nivelacion",
         empty_message="Aun no tienes cursos de nivelacion asignados.",
-        active_career=active_career,
-        allow_career_switch=True,
+        allow_career_switch=False,
     )
 
 
@@ -89,9 +86,7 @@ def student_training_courses(request):
 
 @role_required("profesor")
 def teacher_training_courses(request):
-    active_career = get_active_teacher_career(request.user, request)
-    request.user.active_career = active_career
-    courses = _get_teacher_courses_for_active_career(request.user, is_training=True)
+    courses = request.user.courses_taught.filter(is_training=True).order_by("name")
     return _render_teacher_course_list(
         request,
         courses=courses,
@@ -99,7 +94,6 @@ def teacher_training_courses(request):
         page_description="Aqui administras los cursos de induccion y los docentes asignados manualmente.",
         course_badge_label="Induccion",
         empty_message="Aun no tienes cursos de induccion asignados.",
-        active_career=active_career,
         allow_career_switch=False,
     )
 
@@ -740,7 +734,6 @@ def _render_teacher_course_list(
     page_description,
     course_badge_label,
     empty_message,
-    active_career,
     allow_career_switch,
 ):
     return render(
@@ -752,8 +745,6 @@ def _render_teacher_course_list(
             "page_description": page_description,
             "course_badge_label": course_badge_label,
             "empty_message": empty_message,
-            "active_career": active_career,
-            "available_careers": get_available_teacher_careers(request.user),
             "allow_career_switch": allow_career_switch,
         },
     )

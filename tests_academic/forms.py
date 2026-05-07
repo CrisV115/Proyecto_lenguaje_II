@@ -75,6 +75,7 @@ class TeacherTestForm(forms.ModelForm):
             "name",
             "type",
             "course",
+            "target_career",
             "description",
             "duration",
             "passing_score",
@@ -94,6 +95,7 @@ class TeacherTestForm(forms.ModelForm):
         self.course_context = kwargs.pop("course_context", False)
         course_queryset = kwargs.pop("course_queryset", None)
         initial_course = kwargs.pop("initial_course", None)
+        self.teacher = kwargs.pop("teacher", None)
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
             widget = field.widget
@@ -120,8 +122,20 @@ class TeacherTestForm(forms.ModelForm):
             if initial_course and not self.instance.pk:
                 self.fields["course"].initial = initial_course
             self.fields.pop("type")
+            self.fields.pop("target_career", None)
         else:
             self.fields["type"].label = "Tipo de test"
+            self.fields["target_career"].label = "Carrera destino"
+            self.fields["target_career"].required = True
+            careers = []
+            if self.teacher is not None:
+                careers = list(self.teacher.get_carreras())
+            current_target = getattr(self.instance, "target_career", "")
+            if current_target and current_target not in careers:
+                careers.append(current_target)
+            self.fields["target_career"].widget = forms.Select(
+                choices=[("", "Seleccione una carrera"), *[(career, career) for career in careers]]
+            )
             self.fields.pop("course")
 
         if self.instance.pk:

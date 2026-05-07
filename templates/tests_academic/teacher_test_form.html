@@ -51,6 +51,13 @@
                         {% if form.type.errors %}<div class="text-danger small mt-1">{{ form.type.errors }}</div>{% endif %}
                     </div>
                 {% endif %}
+                {% if form.target_career %}
+                    <div class="col-lg-4">
+                        <label class="form-label">Carrera destino</label>
+                        {{ form.target_career }}
+                        {% if form.target_career.errors %}<div class="text-danger small mt-1">{{ form.target_career.errors }}</div>{% endif %}
+                    </div>
+                {% endif %}
                 {% if form.course %}
                     <div class="col-lg-5">
                         <label class="form-label">Curso</label>

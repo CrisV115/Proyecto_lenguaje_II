@@ -6,6 +6,35 @@ from django.core.exceptions import ValidationError
 from django.db import models
 
 
+class Classroom(models.Model):
+    name = models.CharField(max_length=120, unique=True, verbose_name="Aula")
+    description = models.TextField(blank=True, verbose_name="Descripcion")
+    students = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name="classrooms",
+        limit_choices_to={"tipo_usuario": "estudiante"},
+        verbose_name="Estudiantes reprobados",
+    )
+    teachers = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name="classrooms_taught",
+        limit_choices_to={"tipo_usuario": "profesor"},
+        verbose_name="Profesores asignados",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "Aula"
+        verbose_name_plural = "Aulas"
+
+    def __str__(self):
+        return self.name
+
+
 class Course(models.Model):
     INDUCTION_COURSE_NAMES = (
         "Microsoft Teams",
@@ -13,12 +42,20 @@ class Course(models.Model):
         "PAO",
     )
 
-    name = models.CharField(max_length=120, unique=True)
+    name = models.CharField(max_length=120)
     career = models.CharField(
         max_length=120,
         blank=True,
         verbose_name="Carrera",
         help_text="Selecciona la carrera para las nivelaciones. Los cursos de induccion aplican a todos.",
+    )
+    classroom = models.ForeignKey(
+        Classroom,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="courses",
+        verbose_name="Aula de nivelacion",
     )
     description = models.TextField(blank=True)
     is_training = models.BooleanField(
@@ -51,6 +88,8 @@ class Course(models.Model):
         verbose_name_plural = "Cursos"
 
     def __str__(self):
+        if not self.is_training and self.classroom_id:
+            return f"{self.name} - {self.classroom.name}"
         return self.name
 
     @property
@@ -61,22 +100,28 @@ class Course(models.Model):
     def audience_label(self):
         if self.is_training:
             return "Todas las carreras"
-        return self.career or "Sin carrera"
+        if self.classroom_id:
+            return self.classroom.name
+        return self.career or "Sin aula"
 
     def clean(self):
         super().clean()
         from users.models import Usuario
 
         self.career = Usuario.normalize_carrera(self.career)
+        errors = {}
         if self.is_training and self.career:
-            raise ValidationError(
-                {
-                    "career": (
-                        "Los cursos de induccion no se asignan por carrera. "
-                        "Deja este campo vacio."
-                    )
-                }
+            errors["career"] = (
+                "Los cursos de induccion no se asignan por carrera. "
+                "Deja este campo vacio."
             )
+        if self.is_training and self.classroom_id:
+            errors["classroom"] = (
+                "Los cursos de induccion no se asignan por aula. "
+                "Deja este campo vacio."
+            )
+        if errors:
+            raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
         from users.models import Usuario
@@ -84,7 +129,15 @@ class Course(models.Model):
         self.career = Usuario.normalize_carrera(self.career)
         if self.is_training:
             self.career = ""
+            self.classroom = None
         super().save(*args, **kwargs)
+
+
+class InductionCourse(Course):
+    class Meta:
+        proxy = True
+        verbose_name = "Curso de induccion"
+        verbose_name_plural = "Cursos de induccion"
 
 
 class CourseActivity(models.Model):

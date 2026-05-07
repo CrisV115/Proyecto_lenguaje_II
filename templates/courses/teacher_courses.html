@@ -44,6 +44,9 @@
                     <div class="metric-card h-100">
                         <div class="soft-label mb-2">{{ course_badge_label }}</div>
                         <h2 class="h5">{{ course.name }}</h2>
+                        {% if course.classroom %}
+                            <div class="small text-secondary mb-2">Aula: {{ course.classroom.name }}</div>
+                        {% endif %}
                         <p class="text-secondary mb-2">{{ course.description|default:"Sin descripcion disponible." }}</p>
                         <div class="small text-secondary mb-3">{{ course.students.count }} estudiantes asignados</div>
                         <a class="btn btn-outline-primary btn-sm" href="{% url 'course_detail' course.id %}">Entrar al curso</a>

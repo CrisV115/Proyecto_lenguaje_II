@@ -1,2 +1,6 @@
 Cedula;Nombres;Apellidos;Correo;Carrera;Carreras;Telefono;Username;TipoUsuario;Aula
-1750126730;Juan;Perez;juan@gmail.com;Ingenieria Informatica;Desarrollo de software;1234567890;juanperez;Estudiante;Aula B2
+1750126730;Juan;Perez;juan.perez@example.com;Software;Software;0991000001;juanperez;Estudiante;
+1750126731;Ana;Mendoza;ana.mendoza@example.com;Software;Software;0991000002;anamendoza;Estudiante;
+1750126732;Luis;Torres;luis.torres@example.com;Software;Software;0991000003;luistorres;Estudiante;
+1750126733;Maria;Vera;maria.vera@example.com;Enfermeria;Enfermeria;0991000004;mariavera;Estudiante;
+1750126734;Carla;Rojas;carla.rojas@example.com;Enfermeria;Enfermeria;0991000005;carlarojas;Estudiante;

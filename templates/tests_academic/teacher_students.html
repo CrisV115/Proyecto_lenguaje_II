@@ -14,6 +14,32 @@
     </div>
 </section>
 
+<div class="glass-card rounded-4 p-4 mb-4">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-5">
+            <label class="form-label">Aula</label>
+            <select name="classroom" class="form-select" onchange="this.form.submit()">
+                <option value="">Todas las aulas</option>
+                {% for classroom in available_classrooms %}
+                    <option value="{{ classroom.id }}" {% if classroom.id|stringformat:"s" == classroom_id %}selected{% endif %}>{{ classroom.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-5">
+            <label class="form-label">Curso</label>
+            <select name="course" class="form-select">
+                <option value="">Todos los cursos</option>
+                {% for course in available_courses %}
+                    <option value="{{ course.id }}" {% if course.id|stringformat:"s" == course_id %}selected{% endif %}>{{ course.name }}{% if course.classroom %} - {{ course.classroom.name }}{% endif %}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Filtrar</button>
+        </div>
+    </form>
+</div>
+
 <div class="glass-card rounded-4 p-4">
     {% if rows %}
         <div class="table-responsive">
@@ -21,6 +47,7 @@
                 <thead>
                     <tr>
                         <th>Materia</th>
+                        <th>Aula</th>
                         <th>Nombres</th>
                         <th>Apellidos</th>
                         <th>Completado</th>
@@ -33,6 +60,7 @@
                     {% for row in rows %}
                         <tr>
                             <td>{{ row.course.name }}</td>
+                            <td>{{ row.course.classroom.name|default:"Sin aula" }}</td>
                             <td>{{ row.student.first_name|default:"-" }}</td>
                             <td>{{ row.student.last_name|default:"-" }}</td>
                             <td>{{ row.completed_items }}/{{ row.total_items }}</td>

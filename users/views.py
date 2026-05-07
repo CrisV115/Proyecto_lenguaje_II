@@ -1,4 +1,4 @@
-from datetime import datetime
+﻿from datetime import datetime
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
@@ -104,7 +104,7 @@ def login_view(request):
 
         user = authenticate(request, username=username, password=password)
         if user is None:
-            messages.error(request, "Usuario o contrasena incorrectos.")
+            messages.error(request, "Usuario o contraseña incorrectos.")
             return redirect("login")
 
         login(request, user)
@@ -134,7 +134,7 @@ def force_password_change(request):
             user.debe_cambiar_password = False
             user.save()
             update_session_auth_hash(request, user)
-            messages.success(request, "Contrasena actualizada correctamente.")
+            messages.success(request, "Contraseña actualizada correctamente.")
             return redirect_user_dashboard(user)
         messages.error(request, "Corrija los errores del formulario.")
     else:
@@ -196,7 +196,7 @@ def password_reset_security(request):
 
         usuario.set_password(nueva_password)
         usuario.save()
-        messages.success(request, "Contrasena cambiada correctamente.")
+        messages.success(request, "Contraseña cambiada correctamente.")
         return redirect("login")
 
     return render(request, "password_reset.html", context)
@@ -258,12 +258,11 @@ def teacher_dashboard(request):
     if request.user.tipo_usuario != "profesor":
         return redirect_user_dashboard(request.user)
 
-    active_career = get_active_teacher_career(request.user, request)
-    request.user.active_career = active_career
     teacher_courses = list(
-        Course.objects.filter(teachers=request.user)
+        Course.objects.filter(teachers=request.user, is_training=False)
+        .select_related("classroom")
         .prefetch_related("students")
-        .order_by("name")
+        .order_by("classroom__name", "name")
     )
     course_students = _get_teacher_related_students(request.user, teacher_courses=teacher_courses)
 
@@ -283,8 +282,7 @@ def teacher_dashboard(request):
         "tests": tests,
         "recent_results": recent_results,
         "students": students,
-        "available_careers": get_available_teacher_careers(request.user),
-        "active_career": active_career,
+        "assigned_careers": get_available_teacher_careers(request.user),
         "teacher_courses": teacher_courses,
     }
     return render(request, "teachers/dashboard.html", context)
@@ -295,12 +293,11 @@ def teacher_test_monitor(request):
     if request.user.tipo_usuario != "profesor":
         return redirect_user_dashboard(request.user)
 
-    active_career = get_active_teacher_career(request.user, request)
-    request.user.active_career = active_career
     teacher_courses = list(
-        Course.objects.filter(teachers=request.user)
+        Course.objects.filter(teachers=request.user, is_training=False)
+        .select_related("classroom")
         .prefetch_related("students")
-        .order_by("name")
+        .order_by("classroom__name", "name")
     )
     students = list(_get_teacher_related_students(request.user, teacher_courses=teacher_courses))
     if not students:
@@ -313,8 +310,7 @@ def teacher_test_monitor(request):
                 "diagnostic_taken_count": 0,
                 "diagnostic_passed_count": 0,
                 "leveling_passed_count": 0,
-                "available_careers": get_available_teacher_careers(request.user),
-                "active_career": active_career,
+                "assigned_careers": get_available_teacher_careers(request.user),
             },
         )
 
@@ -395,8 +391,7 @@ def teacher_test_monitor(request):
         "diagnostic_taken_count": sum(1 for row in rows if row["diagnostic_result"]),
         "diagnostic_passed_count": sum(1 for row in rows if row["diagnostic_status"] == "Aprobado"),
         "leveling_passed_count": sum(1 for row in rows if row["leveling_status"] == "Aprobada"),
-        "available_careers": get_available_teacher_careers(request.user),
-        "active_career": active_career,
+        "assigned_careers": get_available_teacher_careers(request.user),
     }
     return render(request, "teachers/test_monitor.html", context)
 
@@ -468,23 +463,13 @@ def _get_teacher_related_students(teacher, teacher_courses=None):
         for student in get_course_students_for_teacher(course, teacher)
     }
 
-    students_queryset = Usuario.objects.filter(tipo_usuario="estudiante")
-    teacher_career = Usuario.normalize_carrera(
-        getattr(teacher, "active_career", "") or getattr(teacher, "carrera", "")
-    )
-    if teacher_career:
-        students_queryset = students_queryset.filter(carrera__iexact=teacher_career)
-    elif course_student_ids:
-        students_queryset = students_queryset.filter(id__in=course_student_ids)
-    else:
+    if not course_student_ids:
         return Usuario.objects.none()
 
-    if course_student_ids:
-        students_queryset = students_queryset.filter(
-            Q(id__in=course_student_ids) | Q(carrera__iexact=teacher_career)
-        )
-
-    return students_queryset.distinct().order_by("username")
+    return Usuario.objects.filter(
+        tipo_usuario="estudiante",
+        id__in=course_student_ids,
+    ).distinct().order_by("username")
 
 
 def _is_test_open_now(test, now):
