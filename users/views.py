@@ -33,6 +33,9 @@ from .forms import PrimerIngresoPasswordForm, RegistroForm
 from .models import Usuario
 
 
+REGISTRATION_ENABLED = False
+
+
 def redirect_user_dashboard(user):
     if getattr(user, "debe_cambiar_password", False):
         return redirect("force_password_change")
@@ -51,6 +54,10 @@ def home(request):
 def register(request):
     if request.user.is_authenticated:
         return redirect_user_dashboard(request.user)
+
+    if not REGISTRATION_ENABLED:
+        messages.info(request, "Registro desactivado. Inicia sesion con tu cuenta institucional.")
+        return redirect("login")
 
     if request.method == "POST":
         form = RegistroForm(request.POST)
