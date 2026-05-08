@@ -22,6 +22,9 @@
                     <div class="metric-card h-100">
                         <div class="soft-label mb-2">{{ course_badge_label }}</div>
                         <h2 class="h5">{{ card.course.name }}</h2>
+                        {% if card.course.classroom %}
+                            <div class="small text-secondary mb-2">Aula: {{ card.course.classroom.name }}</div>
+                        {% endif %}
                         <p class="text-secondary mb-3">{{ card.course.description|default:"Sin descripcion disponible." }}</p>
                         <div class="d-flex justify-content-between small text-secondary mb-1">
                             <span>Progreso</span>
